@@ -84,6 +84,19 @@ type MCPGovernor struct {
 	consecutiveIncreases int64         // 价格连续上涨次数 (用于指数衰减策略)
 	decayRate            float64       // 衰减率
 	maxToken             int64         // 最大令牌容量
+
+	// === 优化参数 (v1.1) ===
+	priceDecayStep   int64 // 降价步长，替代硬编码的 1（使降价速度与涨价成比例）
+	priceSensitivity int64 // 价格灵敏度系数，替代硬编码的 10000，独立控制 Kp 增益
+	// 移动平均平滑窗口（消除短期延迟抖动对定价的干扰）
+	smoothingWindow int       // 窗口大小（1=不平滑，>1 启用移动平均）
+	latencyHistory  []float64 // 延迟历史记录（环形缓冲区）
+	historyIndex    int       // 环形缓冲区写入位置
+	historyCount    int       // 已写入的样本数
+	// 简化积分项（解决轻微持续过载下的稳态误差）
+	latencyIntegral   float64 // 延迟差异积分累加值
+	integralThreshold float64 // 积分阈值，超过后额外提供涨价 boost
+	integralDecay     float64 // 非过载时积分衰减系数
 }
 
 // ToolCallHandler 工具调用处理函数签名

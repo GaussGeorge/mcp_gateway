@@ -68,6 +68,12 @@ func NewMCPGovernor(nodeName string, callmap map[string][]string, options map[st
 		consecutiveIncreases: 0,
 		decayRate:            0.8,
 		maxToken:             10,
+		// v1.1 新增参数（默认值保持向后兼容）
+		priceDecayStep:    1,     // 降价步长：默认 1（与旧版行为一致）
+		priceSensitivity:  10000, // 灵敏度系数：默认 10000（与旧版行为一致）
+		smoothingWindow:   1,     // 平滑窗口：默认 1（不平滑）
+		integralThreshold: 0,     // 积分阈值：默认 0（不启用积分项）
+		integralDecay:     0.8,   // 积分衰减：默认 0.8
 	}
 
 	// --- 解析 options 中的配置选项 ---
@@ -240,6 +246,69 @@ func NewMCPGovernor(nodeName string, callmap map[string][]string, options map[st
 	if guidePrice, ok := options["guidePrice"].(int64); ok {
 		gov.guidePrice = guidePrice
 		logger("guidePrice      of %s set to %v\n", nodeName, guidePrice)
+	}
+
+	// === v1.1 新增参数 ===
+
+	// 降价步长（替代硬编码的 1，使降价速度与涨价成比例）
+	if priceDecayStep, ok := options["priceDecayStep"].(int64); ok {
+		if priceDecayStep > 0 {
+			gov.priceDecayStep = priceDecayStep
+		}
+		logger("priceDecayStep      of %s set to %v\n", nodeName, priceDecayStep)
+	}
+
+	// 价格灵敏度系数（替代硬编码的 10000，独立控制 Kp 增益）
+	if priceSensitivity, ok := options["priceSensitivity"].(int64); ok {
+		if priceSensitivity > 0 {
+			gov.priceSensitivity = priceSensitivity
+		}
+		logger("priceSensitivity    of %s set to %v\n", nodeName, priceSensitivity)
+	}
+
+	// 衰减率（expdecay 策略专用，控制连续涨价时的刹车力度）
+	if decayRate, ok := options["decayRate"].(float64); ok {
+		if decayRate > 0 && decayRate <= 1.0 {
+			gov.decayRate = decayRate
+		}
+		logger("decayRate           of %s set to %v\n", nodeName, decayRate)
+	}
+
+	// 最大令牌容量（放大预算表达空间）
+	if maxToken, ok := options["maxToken"].(int64); ok {
+		if maxToken > 0 {
+			gov.maxToken = maxToken
+		}
+		logger("maxToken            of %s set to %v\n", nodeName, maxToken)
+	}
+
+	// 移动平均平滑窗口大小（1=不平滑，>1 启用移动平均消除短期抖动）
+	if smoothingWindow, ok := options["smoothingWindow"].(int); ok {
+		if smoothingWindow >= 1 {
+			gov.smoothingWindow = smoothingWindow
+		}
+		logger("smoothingWindow     of %s set to %v\n", nodeName, smoothingWindow)
+	}
+
+	// 积分阈值（>0 时启用积分项，解决稳态误差）
+	if integralThreshold, ok := options["integralThreshold"].(float64); ok {
+		if integralThreshold >= 0 {
+			gov.integralThreshold = integralThreshold
+		}
+		logger("integralThreshold   of %s set to %v\n", nodeName, integralThreshold)
+	}
+
+	// 积分衰减系数（非过载时积分快速回落）
+	if integralDecay, ok := options["integralDecay"].(float64); ok {
+		if integralDecay > 0 && integralDecay <= 1.0 {
+			gov.integralDecay = integralDecay
+		}
+		logger("integralDecay       of %s set to %v\n", nodeName, integralDecay)
+	}
+
+	// 初始化移动平均环形缓冲区
+	if gov.smoothingWindow > 1 {
+		gov.latencyHistory = make([]float64, gov.smoothingWindow)
 	}
 
 	// --- 启动后台任务 ---

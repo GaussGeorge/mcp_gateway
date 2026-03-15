@@ -124,8 +124,11 @@ func (gov *MCPGovernor) UpdateOwnPrice(congestion bool) error {
 			ownPrice = gov.guidePrice
 		}
 	} else if ownPrice > 0 {
-		// 如果不拥塞且价格大于0，缓慢降价（线性回退），模拟价格“冷却”
-		ownPrice -= 1
+		// 如果不拥塞且价格大于0，按 priceDecayStep 降价（与涨价幅度成比例）
+		ownPrice -= gov.priceDecayStep
+		if ownPrice < 0 {
+			ownPrice = 0
+		}
 	}
 	gov.priceTableMap.Store("ownprice", ownPrice)
 	logger("[更新自身价格]:  自身价格已更新为 %d\n", ownPrice)
@@ -148,13 +151,28 @@ func (gov *MCPGovernor) UpdatePrice(ctx context.Context) error {
 		gapLatency = val.(float64)
 	}
 
+	// 2.5 移动平均平滑 (Smoothing Window)：降低短期抖动对定价的干扰
+	if gov.smoothingWindow > 1 && gov.latencyHistory != nil {
+		gov.latencyHistory[gov.historyIndex] = gapLatency
+		gov.historyIndex = (gov.historyIndex + 1) % gov.smoothingWindow
+		if gov.historyCount < gov.smoothingWindow {
+			gov.historyCount++
+		}
+		sum := 0.0
+		for i := 0; i < gov.historyCount; i++ {
+			sum += gov.latencyHistory[i]
+		}
+		gapLatency = sum / float64(gov.historyCount)
+	}
+
 	// 3. 计算差异 (Error)：实际排队延迟 - 目标阈值
 	// gapLatency 单位是 ms，需要 *1000 转微秒
 	diff := int64(gapLatency*1000) - gov.latencyThreshold.Microseconds()
 
 	// 4. 比例调整 (P-Controller)：根据延迟差异的大小来决定价格调整的幅度
 	// 差异越大，涨价/降价越快
-	adjustment := diff * gov.priceStep / 10000
+	// priceSensitivity 控制增益 Kp = priceStep / priceSensitivity
+	adjustment := diff * gov.priceStep / gov.priceSensitivity
 
 	// 5. 实现指数衰减机制 (Exponential Decay)
 	// 防止价格因为网络抖动而剧烈震荡 (Oscillation)
@@ -172,6 +190,23 @@ func (gov *MCPGovernor) UpdatePrice(ctx context.Context) error {
 		} else if adjustment < 0 {
 			// 如果价格开始下降，说明拥塞缓解，重置计数器，恢复灵敏度
 			gov.consecutiveIncreases = 0
+		}
+	}
+
+	// 4.5 积分项 (Integral)：解决轻微持续过载下的稳态误差
+	if gov.integralThreshold > 0 {
+		if diff > 0 {
+			gov.latencyIntegral += float64(diff)
+		} else {
+			// 非过载时快速衰减积分，防止过度累积
+			gov.latencyIntegral *= gov.integralDecay
+		}
+		if gov.latencyIntegral > gov.integralThreshold {
+			// 积分超过阈值时，额外增加涨价 boost
+			integralBoost := int64(gov.latencyIntegral / gov.integralThreshold)
+			adjustment += integralBoost
+			logger("[积分项]: 积分值 %.2f 超过阈值 %.2f, 额外涨价 %d\n",
+				gov.latencyIntegral, gov.integralThreshold, integralBoost)
 		}
 	}
 
