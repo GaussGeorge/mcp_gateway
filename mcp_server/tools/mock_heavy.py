@@ -13,8 +13,8 @@ from tools import ToolDefinition, ToolRegistry
 def register(registry: ToolRegistry):
     registry.register(ToolDefinition(
         name="mock_heavy",
-        description="纯测试桩：精准控制CPU燃烧时间(ms)和内存占用(MB)，用于生成无硬件抖动的基准对照数据。",
-        category="benchmark",
+        description="可控重载工具：精准控制CPU燃烧时间(ms)和内存占用(MB)，替代真实LLM消除硬件抖动。",
+        category="heavyweight",
         input_schema={
             "type": "object",
             "properties": {

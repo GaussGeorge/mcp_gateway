@@ -47,7 +47,7 @@ registry = ToolRegistry()
 def load_tools():
     """Import and register all tool modules."""
     from tools import calculator, mock_weather, mock_web_fetch, text_formatter
-    from tools import llm_reasoner, doc_embedding, python_sandbox, mock_heavy
+    from tools import doc_embedding, python_sandbox, mock_heavy
 
     # 轻量级工具（老鼠流）
     calculator.register(registry)
@@ -56,11 +56,8 @@ def load_tools():
     text_formatter.register(registry)
 
     # 重量级工具（大象流）
-    llm_reasoner.register(registry)
     doc_embedding.register(registry)
     python_sandbox.register(registry)
-
-    # 基准对照工具
     mock_heavy.register(registry)
 
     log.info(f"已注册 {len(registry.all())} 个工具:")
@@ -221,6 +218,7 @@ class MCPRequestHandler(BaseHTTPRequestHandler):
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
     """Multi-threaded HTTP server — each request runs in its own thread."""
     daemon_threads = True
+    allow_reuse_address = True
 
 
 def main():

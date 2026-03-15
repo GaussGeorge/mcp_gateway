@@ -136,35 +136,28 @@ print(f"  exit_code: {result['exit_code']}")
 print(f"  Time: {result['execution_time_s']}s")
 print(f"  Latency: {ms}ms")
 
-section("重量级: llm_reason (本地大模型摘要)")
-llm_text = "云计算中的负载均衡是一种将网络流量和工作负载分配到多个服务器上的技术。它的核心目标是优化资源利用率、最大化吞吐量、最小化响应时间，并避免任何单一服务器的过载。"
-text, ms = call_tool("llm_reason", {"operation": "summarize", "text": llm_text, "max_tokens": 100})
-result = json.loads(text)
-if "error" in result:
-    print(f"  ✗ LLM 调用失败: {result['error']}")
-    print(f"    提示: {result.get('hint', '')}")
-else:
-    print(f"  Result: {result['result'][:100]}...")
-    metrics = result.get('metrics', {})
-    print(f"  TTFT: {metrics.get('ttft_ms', 0)}ms")
-    print(f"  Tokens: {metrics.get('tokens', 0)}, Speed: {metrics.get('tokens_per_sec', 0)} tok/s")
-    print(f"  Total: {metrics.get('total_time_s', 0)}s")
-print(f"  Latency: {ms}ms")
-
-# ─── 4. Benchmark Tool ───
-section("基准: mock_heavy (CPU 500ms + Memory 5MB)")
-text, ms = call_tool("mock_heavy", {"cpu_burn_ms": 500, "memory_mb": 5})
+section("重量级: mock_heavy (模拟LLM重载, CPU 8000ms + Memory 50MB)")
+text, ms = call_tool("mock_heavy", {"cpu_burn_ms": 8000, "memory_mb": 50})
 result = json.loads(text)
 print(f"  Requested CPU: {result['requested_cpu_burn_ms']}ms")
 print(f"  Actual CPU:    {result['actual_cpu_burn_ms']}ms")
-print(f"  Precision:     ±{result['precision_error_ms']}ms")
+print(f"  Precision:     +/-{result['precision_error_ms']}ms")
 print(f"  Memory:        {result['requested_memory_mb']}MB")
 print(f"  Total:         {result['total_time_ms']}ms")
 print(f"  Latency:       {ms}ms")
 
-# ─── 5. Summary ───
+section("重量级: mock_heavy (轻度重载, CPU 500ms + Memory 5MB)")
+text, ms = call_tool("mock_heavy", {"cpu_burn_ms": 500, "memory_mb": 5})
+result = json.loads(text)
+print(f"  Requested CPU: {result['requested_cpu_burn_ms']}ms")
+print(f"  Actual CPU:    {result['actual_cpu_burn_ms']}ms")
+print(f"  Precision:     +/-{result['precision_error_ms']}ms")
+print(f"  Memory:        {result['requested_memory_mb']}MB")
+print(f"  Total:         {result['total_time_ms']}ms")
+print(f"  Latency:       {ms}ms")
+
+# ─── 4. Summary ───
 section("测试总结")
 print("  [PASS] 协议: initialize, ping, tools/list")
 print("  [PASS] 轻量级: calculate, get_current_time, get_weather(Mock), web_fetch(Mock), text_format")
-print("  [PASS] 重量级: doc_embedding, python_sandbox, llm_reason")
-print("  [PASS] 基准:   mock_heavy")
+print("  [PASS] 重量级: doc_embedding, python_sandbox, mock_heavy(8s), mock_heavy(500ms)")
