@@ -74,6 +74,15 @@ func NewMCPGovernor(nodeName string, callmap map[string][]string, options map[st
 		smoothingWindow:   1,     // 平滑窗口：默认 1（不平滑）
 		integralThreshold: 0,     // 积分阈值：默认 0（不启用积分项）
 		integralDecay:     0.8,   // 积分衰减：默认 0.8
+		// v1.2 Load Regime Detector + Parameter Profile
+		enableAdaptiveProfile: true,                  // 启用自适应档位
+		regimeWindow:          20,                    // 负载状态检测窗口大小
+		regimeVarianceLow:     0.02,                  // 方差低阈值 (ms^2)
+		regimeVarianceHigh:    0.20,                  // 方差高阈值 (ms^2)
+		regimeSpikeThreshold:  0.80,                  // 突刺阈值 (ms)
+		activeRegime:          "steady",              // 初始档位
+		profileSwitchCooldown: 200 * time.Millisecond,
+		lastProfileSwitch:     time.Now(),
 	}
 
 	// --- 解析 options 中的配置选项 ---
@@ -306,10 +315,66 @@ func NewMCPGovernor(nodeName string, callmap map[string][]string, options map[st
 		logger("integralDecay       of %s set to %v\n", nodeName, integralDecay)
 	}
 
+	// === v1.2 Load Regime Detector + Parameter Profile ===
+
+	if enableAdaptiveProfile, ok := options["enableAdaptiveProfile"].(bool); ok {
+		gov.enableAdaptiveProfile = enableAdaptiveProfile
+		logger("enableAdaptiveProfile of %s set to %v\n", nodeName, enableAdaptiveProfile)
+	}
+	if regimeWindow, ok := options["regimeWindow"].(int); ok {
+		if regimeWindow >= 3 {
+			gov.regimeWindow = regimeWindow
+		}
+		logger("regimeWindow          of %s set to %v\n", nodeName, regimeWindow)
+	}
+	if regimeVarianceLow, ok := options["regimeVarianceLow"].(float64); ok {
+		if regimeVarianceLow >= 0 {
+			gov.regimeVarianceLow = regimeVarianceLow
+		}
+		logger("regimeVarianceLow     of %s set to %v\n", nodeName, regimeVarianceLow)
+	}
+	if regimeVarianceHigh, ok := options["regimeVarianceHigh"].(float64); ok {
+		if regimeVarianceHigh >= gov.regimeVarianceLow {
+			gov.regimeVarianceHigh = regimeVarianceHigh
+		}
+		logger("regimeVarianceHigh    of %s set to %v\n", nodeName, regimeVarianceHigh)
+	}
+	if regimeSpikeThreshold, ok := options["regimeSpikeThreshold"].(float64); ok {
+		if regimeSpikeThreshold > 0 {
+			gov.regimeSpikeThreshold = regimeSpikeThreshold
+		}
+		logger("regimeSpikeThreshold  of %s set to %v\n", nodeName, regimeSpikeThreshold)
+	}
+	if profileSwitchCooldown, ok := options["profileSwitchCooldown"].(time.Duration); ok {
+		if profileSwitchCooldown >= 0 {
+			gov.profileSwitchCooldown = profileSwitchCooldown
+		}
+		logger("profileSwitchCooldown of %s set to %v\n", nodeName, profileSwitchCooldown)
+	}
+
+	// 三套 profile 的 options 覆盖
+	var burstyOpt, periodicOpt, steadyOpt map[string]interface{}
+	if v, ok := options["burstyProfile"].(map[string]interface{}); ok {
+		burstyOpt = v
+	}
+	if v, ok := options["periodicProfile"].(map[string]interface{}); ok {
+		periodicOpt = v
+	}
+	if v, ok := options["steadyProfile"].(map[string]interface{}); ok {
+		steadyOpt = v
+	}
+
 	// 初始化移动平均环形缓冲区
 	if gov.smoothingWindow > 1 {
 		gov.latencyHistory = make([]float64, gov.smoothingWindow)
 	}
+
+	// 初始化负载状态检测窗口与参数档位
+	if gov.regimeWindow < 3 {
+		gov.regimeWindow = 3
+	}
+	gov.regimeHistory = make([]float64, gov.regimeWindow)
+	gov.initAdaptiveProfiles(burstyOpt, periodicOpt, steadyOpt)
 
 	// --- 启动后台任务 ---
 

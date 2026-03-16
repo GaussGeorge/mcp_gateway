@@ -2,6 +2,7 @@ package mcpgov
 
 import (
 	"context"
+	"math"
 	"runtime/metrics"
 	"sync/atomic"
 	"time"
@@ -81,6 +82,9 @@ func (gov *MCPGovernor) queuingCheck() {
 		// 即在上一个周期(prev)到当前周期(curr)之间，产生的排队延迟的最大值
 		// 这是通过两个直方图相减（Differential Histogram）计算出来的
 		gapLatency := maximumQueuingDelayms(prevHist, currHist)
+
+		// 自适应档位检测（在定价前执行，以便本轮使用新参数）
+		gov.maybeApplyAdaptiveProfile(gapLatency)
 
 		ctx := context.Background()
 
@@ -194,4 +198,194 @@ func (gov *MCPGovernor) overloadDetection(ctx context.Context) bool {
 		}
 	}
 	return false
+}
+
+// ================================================================
+// Load Regime Detector + Parameter Profile
+// ================================================================
+
+// initAdaptiveProfiles 初始化参数档位，支持 options 覆盖。
+func (gov *MCPGovernor) initAdaptiveProfiles(
+	burstyOpt, periodicOpt, steadyOpt map[string]interface{},
+) {
+	// 默认值（对齐参考表）
+	bursty := Profile{
+		PriceStep:         200,
+		PriceDecayStep:    20,
+		PriceSensitivity:  8000,
+		LatencyThreshold:  300 * time.Microsecond,
+		DecayRate:         0.9,
+		PriceUpdateRate:   5 * time.Millisecond,
+		MaxToken:          200,
+		IntegralThreshold: gov.integralThreshold,
+		IntegralDecay:     gov.integralDecay,
+	}
+	periodic := Profile{
+		PriceStep:         100,
+		PriceDecayStep:    10,
+		PriceSensitivity:  15000,
+		LatencyThreshold:  500 * time.Microsecond,
+		DecayRate:         0.75,
+		PriceUpdateRate:   20 * time.Millisecond,
+		MaxToken:          200,
+		IntegralThreshold: gov.integralThreshold,
+		IntegralDecay:     gov.integralDecay,
+	}
+	steady := Profile{
+		PriceStep:         150,
+		PriceDecayStep:    15,
+		PriceSensitivity:  10000,
+		LatencyThreshold:  400 * time.Microsecond,
+		DecayRate:         0.8,
+		PriceUpdateRate:   10 * time.Millisecond,
+		MaxToken:          200,
+		IntegralThreshold: gov.integralThreshold,
+		IntegralDecay:     gov.integralDecay,
+	}
+
+	// options 覆盖
+	if burstyOpt != nil {
+		applyProfileOptions(&bursty, burstyOpt)
+	}
+	if periodicOpt != nil {
+		applyProfileOptions(&periodic, periodicOpt)
+	}
+	if steadyOpt != nil {
+		applyProfileOptions(&steady, steadyOpt)
+	}
+
+	if gov.parameterProfiles == nil {
+		gov.parameterProfiles = make(map[string]Profile)
+	}
+	gov.parameterProfiles["steady"] = steady
+	gov.parameterProfiles["periodic"] = periodic
+	gov.parameterProfiles["bursty"] = bursty
+}
+
+// applyProfileOptions 用 options 字典覆盖 profile 字段。
+func applyProfileOptions(p *Profile, opt map[string]interface{}) {
+	if v, ok := opt["PriceStep"].(int64); ok {
+		p.PriceStep = v
+	}
+	if v, ok := opt["PriceDecayStep"].(int64); ok {
+		p.PriceDecayStep = v
+	}
+	if v, ok := opt["PriceSensitivity"].(int64); ok {
+		p.PriceSensitivity = v
+	}
+	if v, ok := opt["LatencyThreshold"].(time.Duration); ok {
+		p.LatencyThreshold = v
+	}
+	if v, ok := opt["DecayRate"].(float64); ok {
+		p.DecayRate = v
+	}
+	if v, ok := opt["PriceUpdateRate"].(time.Duration); ok {
+		p.PriceUpdateRate = v
+	}
+	if v, ok := opt["MaxToken"].(int64); ok {
+		p.MaxToken = v
+	}
+	if v, ok := opt["IntegralThreshold"].(float64); ok {
+		p.IntegralThreshold = v
+	}
+	if v, ok := opt["IntegralDecay"].(float64); ok {
+		p.IntegralDecay = v
+	}
+}
+
+// maybeApplyAdaptiveProfile 根据最近窗口统计特征识别状态并热切换参数。
+func (gov *MCPGovernor) maybeApplyAdaptiveProfile(gapLatency float64) {
+	if !gov.enableAdaptiveProfile || gov.regimeWindow <= 0 {
+		return
+	}
+
+	gov.regimeHistory[gov.regimeIndex] = gapLatency
+	gov.regimeIndex = (gov.regimeIndex + 1) % gov.regimeWindow
+	if gov.regimeCount < gov.regimeWindow {
+		gov.regimeCount++
+	}
+
+	if gov.regimeCount < 3 {
+		gov.lastGapLatency = gapLatency
+		return
+	}
+
+	variance := calculateVariance(gov.regimeHistory, gov.regimeCount)
+	delta := math.Abs(gapLatency - gov.lastGapLatency)
+	gov.lastGapLatency = gapLatency
+
+	targetRegime := gov.activeRegime
+	if delta >= gov.regimeSpikeThreshold {
+		targetRegime = "bursty"
+	} else if variance >= gov.regimeVarianceHigh {
+		targetRegime = "periodic"
+	} else if variance <= gov.regimeVarianceLow {
+		targetRegime = "steady"
+	}
+
+	if targetRegime == gov.activeRegime {
+		return
+	}
+	if time.Since(gov.lastProfileSwitch) < gov.profileSwitchCooldown {
+		return
+	}
+
+	profile, ok := gov.parameterProfiles[targetRegime]
+	if !ok {
+		return
+	}
+
+	gov.priceStep = maxInt64(profile.PriceStep, 1)
+	gov.priceDecayStep = maxInt64(profile.PriceDecayStep, 1)
+	gov.priceSensitivity = maxInt64(profile.PriceSensitivity, 1)
+	if profile.LatencyThreshold > 0 {
+		gov.latencyThreshold = profile.LatencyThreshold
+	}
+	if profile.DecayRate > 0 && profile.DecayRate <= 1.0 {
+		gov.decayRate = profile.DecayRate
+	}
+	if profile.PriceUpdateRate > 0 {
+		gov.priceUpdateRate = profile.PriceUpdateRate
+	}
+	if profile.MaxToken > 0 {
+		gov.maxToken = profile.MaxToken
+	}
+	if profile.IntegralThreshold >= 0 {
+		gov.integralThreshold = profile.IntegralThreshold
+	}
+	if profile.IntegralDecay > 0 && profile.IntegralDecay <= 1.0 {
+		gov.integralDecay = profile.IntegralDecay
+	}
+
+	logger("[AdaptiveProfile]: %s -> %s, variance=%.4f, delta=%.4f, priceStep=%d, threshold=%s, decay=%.2f, updateRate=%s\n",
+		gov.activeRegime, targetRegime, variance, delta, gov.priceStep, gov.latencyThreshold.String(), gov.decayRate, gov.priceUpdateRate.String())
+
+	gov.activeRegime = targetRegime
+	gov.lastProfileSwitch = time.Now()
+}
+
+// calculateVariance 计算环形缓冲区中 count 个样本的方差。
+func calculateVariance(data []float64, count int) float64 {
+	if count < 2 {
+		return 0
+	}
+	sum := 0.0
+	for i := 0; i < count; i++ {
+		sum += data[i]
+	}
+	mean := sum / float64(count)
+	variance := 0.0
+	for i := 0; i < count; i++ {
+		diff := data[i] - mean
+		variance += diff * diff
+	}
+	return variance / float64(count)
+}
+
+// maxInt64 返回两个 int64 中较大的那个。
+func maxInt64(a, b int64) int64 {
+	if a > b {
+		return a
+	}
+	return b
 }

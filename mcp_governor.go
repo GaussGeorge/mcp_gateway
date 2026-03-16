@@ -97,6 +97,34 @@ type MCPGovernor struct {
 	latencyIntegral   float64 // 延迟差异积分累加值
 	integralThreshold float64 // 积分阈值，超过后额外提供涨价 boost
 	integralDecay     float64 // 非过载时积分衰减系数
+
+	// === 自适应参数档位 (Load Regime Detector + Parameter Profile) ===
+	enableAdaptiveProfile bool               // 是否启用负载状态检测与热切换
+	regimeWindow          int                // 用于计算方差的窗口大小
+	regimeHistory         []float64          // 排队延迟历史 (ms)
+	regimeIndex           int                // 环形缓冲区写入位置
+	regimeCount           int                // 已写入样本数
+	regimeVarianceLow     float64            // 低方差阈值 (ms^2)
+	regimeVarianceHigh    float64            // 高方差阈值 (ms^2)
+	regimeSpikeThreshold  float64            // 突刺阈值 (ms)
+	lastGapLatency        float64            // 上一周期的 gap latency
+	activeRegime          string             // 当前生效的负载状态
+	profileSwitchCooldown time.Duration      // 档位切换冷却时间
+	lastProfileSwitch     time.Time          // 上次切换时间
+	parameterProfiles     map[string]Profile // 各负载状态的参数档位
+}
+
+// Profile 定义一组可热切换的治理参数。
+type Profile struct {
+	PriceStep         int64
+	PriceDecayStep    int64
+	PriceSensitivity  int64
+	LatencyThreshold  time.Duration
+	DecayRate         float64
+	PriceUpdateRate   time.Duration
+	MaxToken          int64
+	IntegralThreshold float64
+	IntegralDecay     float64
 }
 
 // ToolCallHandler 工具调用处理函数签名
