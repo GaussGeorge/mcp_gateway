@@ -98,6 +98,9 @@ type MCPGovernor struct {
 	integralThreshold float64 // 积分阈值，超过后额外提供涨价 boost
 	integralDecay     float64 // 非过载时积分衰减系数
 
+	// === 工具权重 (v1.3) ===
+	toolWeights map[string]int64 // 工具权重乘数：重量工具 weight 高，实际价格 = ownprice × weight
+
 	// === 自适应参数档位 (Load Regime Detector + Parameter Profile) ===
 	enableAdaptiveProfile bool               // 是否启用负载状态检测与热切换
 	regimeWindow          int                // 用于计算方差的窗口大小
@@ -179,6 +182,12 @@ func (gov *MCPGovernor) LoadShedding(ctx context.Context, tokens int64, toolName
 		return 0, "", fmt.Errorf("[负载削减]: 未找到 %s 的自身价格", toolName)
 	}
 	ownPrice := ownPriceVal.(int64)
+
+	// 应用工具权重乘数：重量工具的实际价格 = ownprice × weight
+	if w, exists := gov.toolWeights[toolName]; exists && w > 1 {
+		ownPrice *= w
+	}
+
 	downstreamPrice, err := gov.RetrieveDSPrice(ctx, toolName)
 	if err != nil {
 		logger("[负载削减]: 获取 %s 的下游价格失败: %v\n", toolName, err)

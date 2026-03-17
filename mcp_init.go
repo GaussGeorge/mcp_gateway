@@ -83,6 +83,8 @@ func NewMCPGovernor(nodeName string, callmap map[string][]string, options map[st
 		activeRegime:          "steady",              // 初始档位
 		profileSwitchCooldown: 200 * time.Millisecond,
 		lastProfileSwitch:     time.Now(),
+		// v1.3 工具权重
+		toolWeights: make(map[string]int64),
 	}
 
 	// --- 解析 options 中的配置选项 ---
@@ -362,6 +364,17 @@ func NewMCPGovernor(nodeName string, callmap map[string][]string, options map[st
 	}
 	if v, ok := options["steadyProfile"].(map[string]interface{}); ok {
 		steadyOpt = v
+	}
+
+	// === v1.3 工具权重乘数 ===
+	// 格式：map[string]int64，例如 {"mock_heavy": 10, "doc_embedding": 8}
+	if toolWeights, ok := options["toolWeights"].(map[string]int64); ok {
+		for k, v := range toolWeights {
+			if v > 0 {
+				gov.toolWeights[k] = v
+			}
+		}
+		logger("toolWeights           of %s set to %v\n", nodeName, gov.toolWeights)
 	}
 
 	// 初始化移动平均环形缓冲区

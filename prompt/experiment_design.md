@@ -117,18 +117,61 @@
 
 ---
 
-## 五、请求模型（2×2 矩阵）
+## 五、请求模型与工具权重
+
+### 5.1 价格如何形成？
+
+`ownprice` 是动态变化的，由 P-controller 根据排队延迟实时计算。
+空闲时 `ownprice=0`，过载时 `ownprice` 自动上涨。
+
+但如果轻/重工具共享同一个 `ownprice`，就无法区分“轻量工具占用 1ms CPU”和“重量工具占用 5s CPU + 50MB 内存”。
+因此引入 **工具权重乘数 (Tool Weight)**：
+
+```
+客户端实际需支付的价格 = ownprice × toolWeight
+```
+
+### 5.2 工具权重配置
+
+| 工具 | weight | 理由 |
+|------|:---:|------|
+| `calculate` | 1 | 计算型，资源开销可忽略 |
+| `get_weather` (mock) | 1 | I/O mock，仅 sleep |
+| `text_format` | 1 | 纯 CPU 但极快 |
+| `web_fetch` (mock) | 2 | I/O 稍重 |
+| `mock_heavy` | **10** | CPU burn + 内存分配，是轻量工具的 10 倍资源 |
+| `doc_embedding` | **8** | 内存密集 |
+| `python_sandbox` | **10** | CPU 密集 + 长队列 |
+
+### 5.3 价格与准入的 2×2 矩阵
+
+假设过载时 `ownprice = 8`：
 
 ```
                     低预算(budget=10)         高预算(budget=100)
-  轻量请求          cost≈1, 几乎必过          cost≈1, 几乎必过
-  重量请求          cost≈50, 可能被拒 ❌       cost≈50, 优先通过 ✓
+  轻量请求          实际价格=8×1=8              实际价格=8×1=8
+  (weight=1)        10≥8 → 通过 ✅          100≥8 → 通过 ✅
+
+  重量请求          实际价格=8×10=80            实际价格=8×10=80
+  (weight=10)       10<80 → 拒绝 ❌          100≥80 → 通过 ✅
 ```
 
-- **轻量请求**：随机调 `calculator` / `mock_weather` / `text_format`，cost ≈ 1
-- **重量请求**：统一调 `mock_heavy(cpu_burn_ms=5000, memory_mb=50)`，cost ≈ 50
+**核心洞察**：工具权重使得 DP 在过载时自然形成“保护轻量请求、筛选重量请求、优先放行高预算”的三层准入。空闲时 `ownprice=0`，所有请求免费通过。
 
-**核心洞察**：DP 方法的差异化准入在「重量 × 低预算」这个象限体现最明显 — SRL 和 NG 无法区分这四种请求类型。
+### 5.4 代码用法
+
+```go
+gov := NewMCPGovernor("server-1", callMap, map[string]interface{}{
+    "loadShedding":    true,
+    "pinpointQueuing": true,
+    "toolWeights": map[string]int64{
+        "mock_heavy":      10,
+        "doc_embedding":   8,
+        "python_sandbox":  10,
+        // 轻量工具不需配置，默认 weight=1
+    },
+})
+```
 
 ---
 
@@ -288,10 +331,18 @@ QPS
 |------|------|------|
 | **Throughput** | 单位时间成功处理的请求数 (req/s) | 衡量系统的基本处理能力 |
 | **Latency P50 / P95 / P99** | 请求延迟百分位数 | 尾部延迟是治理质量的核心体现 |
-| **Rejection Rate** | 被拒请求占比（总体 + 按类型/预算分组） | 衡量治理的"精准度" |
+| **Rejection Rate (%)** | 被治理层拒绝的请求占比（tokens < price → 主动拒绝） | 衡量治理的“精准度”（拒的是不是该拒的） |
+| **Error Rate (%)** | 后端执行失败的请求占比（超时/崩溃/OOM） | 衡量治理的“保护力”（没拒的是不是都能成功） |
 | **Fairness Index** | Jain's Fairness Index，按预算分组计算 | 证明 DP 的经济公平性 |
 | **Goodput** | 加权吞吐 = Σ(通过请求 × budget 权重) | 衡量经济效率——同样的资源下谁创造更多价值 |
+| **Hi-Budget Success Rate (%)** | 高预算请求的成功率 | DP 核心卖点：高预算优先通过 |
 | **Recovery Time** | 从过载到 P95 恢复到基线 1.5 倍以内的时间 | Step 实验专用 |
+
+> **Rejection vs Error 的区别**：
+> - **Rejection (拒绝)**：治理层主动拒绝，请求**未到达后端**，是“健康的保护行为”
+> - **Error (错误)**：请求到达了后端，但执行**失败**（超时、crash、OOM、后端报错）
+> - 理想的治理：**Rejection 高、Error 低** → 说明治理层有效保护了后端
+> - 最差情况：**Rejection 低、Error 高** → 治理层没拤住，后端被压崩
 
 ### B. 辅助资源指标（解释性图表）
 
@@ -321,7 +372,7 @@ QPS
 |------|------|
 | 固定 | heavy_ratio=0.3, high_budget_ratio=0.5 |
 | 变化 | 3 methods × 3 load patterns (Step/Sine/Poisson) |
-| **主力指标** | Throughput, P95, Rejection Rate |
+| **主力指标** | Throughput, P95, Rejection Rate, Error Rate |
 | **资源指标** | 每种模式下 Avg CPU%, Peak CPU%, Peak RSS |
 | **目标** | 证明 DP 在所有负载模式下均表现最优 |
 
@@ -335,7 +386,7 @@ QPS
 |------|------|
 | 固定 | Poisson, high_budget_ratio=0.5 |
 | 变化 | 3 methods × 4 heavy_ratio {0.1, 0.2, 0.3, 0.5} |
-| **主力指标** | Throughput, P95, P99, Rejection Rate, Goodput |
+| **主力指标** | Throughput, P95, P99, Rejection Rate, Error Rate, Goodput |
 | **资源指标** | Avg CPU%, Peak CPU%, Peak RSS MB |
 | **目标** | 随着重量比例增大，DP 降级最优雅，资源利用最高效 |
 
@@ -372,9 +423,9 @@ QPS
 |------|------|
 | 固定 | Step, heavy_ratio=0.3, high_budget_ratio=0.5 |
 | 变化 | 3 methods 的时间序列对比 |
-| **主力指标** | P95 延迟(t), Rejection Rate(t), Recovery Time |
+| **主力指标** | P95 延迟(t), Rejection Rate(t), Error Rate(t), Recovery Time |
 | **资源指标** | CPU%(t), RSS MB(t) |
-| **目标** | DP 恢复最快、尖峰最小 |
+| **目标** | DP 恢复最快、尖峰最小、Error 最低 |
 
 **图表（整张图的核心亮点）**：四行子图叠加，共享 X 轴（时间）
 
@@ -417,7 +468,93 @@ def monitor_process(pid, output_csv, interval=0.5):
 
 ---
 
-## 十一、实验矩阵汇总
+## 十一、可视化图表清单
+
+以下是论文中需要的全部图表，按实验分组：
+
+### 图表 1：全局摘要表 (Table)
+
+参考样式（对应附件表格图）：
+
+| Strategy | Throughput | P50 (ms) | P95 (ms) | P99 (ms) | Reject % | Error % | Hi-Budget Succ% |
+|----------|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| No Governance | 173.4 | 94 | 660 | 854 | 0.0 | 0.1 | 99.9 |
+| Dynamic Pricing | 134.2 | 44 | 145 | 292 | 73.1 | 0.0 | 56.2 |
+| Static Rate Limit | 174.6 | 98 | 406 | 504 | 34.9 | 0.1 | 64.9 |
+
+说明：DP 的 Reject% 高但 Error% 为 0，证明所有放行的请求都成功执行了。
+
+### 图表 2：公平性分析 — 按预算分组的成功率柱状图 (Exp3)
+
+参考样式（对应附件 Fairness Analysis 图）：
+
+- **左图 (All-Phase)**：X 轴 = Budget 分组 {10, 50, 100}，Y 轴 = Success Rate (%)，三条柱子 = NG/DP/SRL
+- **右图 (Overload-Phase)**：仅统计过载阶段的成功率
+- **核心故事**：过载时 DP 的 Budget=100 成功率远高于 Budget=10，而 NG/SRL 无此区分
+
+### 图表 3：过载保护时间序列图 (Exp4)
+
+参考样式（对应附件 Overload Protection 图）：
+
+- 三个子图并排：NG / DP / SRL
+- 每个子图的 X 轴 = Time (s)，Y 轴 = Requests/sec
+- 三个面积叠加：✅ Success (绿) / ⚠️ Rejected (橙) / ❌ Error (红)
+- 子图标题显示统计汇总：`Succ 9879 (59%) Rej 6845 (41%) Err 157 (1%)`
+- **核心故事**：
+  - NG：红色区域 (Error) 在过载期迅速扩大 → 后端被压崩
+  - SRL：橙色区域 (Rejected) 占据大部分 → 盲拒，绿色区域极小
+  - DP：过载后橙色区域适度扩大，绿色区域保持可观，红色区域极小 → **精准拒绝，保护后端**
+
+### 图表 4：四合一时间序列图 (Exp4 深入版)
+
+四行子图叠加，共享 X 轴（时间）：
+
+```
+子图1: QPS 输入曲线 (Step 脉冲)                        ← 实验条件
+子图2: P95 延迟 (三条线: NG/SRL/DP)                  ← 主力指标
+子图3: CPU% (三条线)                               ← 资源解释
+子图4: Memory RSS MB (三条线)                      ← OOM 危险
+```
+
+### 图表 5：heavy_ratio 敏感性曲线图 (Exp2)
+
+- 图 A：X 轴 heavy_ratio {0.1, 0.2, 0.3, 0.5} → Y 轴 Throughput，三条线
+- 图 B：X 轴 heavy_ratio → Y 轴 Rejection Rate，三条线
+- 图 C：X 轴 heavy_ratio → Y 轴 Avg CPU%，三条线
+
+### 图表 6：资源效率散点图 (Exp3)
+
+- X 轴 = Avg CPU%，Y 轴 = Goodput
+- 每个点 = 一个 (method, high_budget_ratio) 组合
+- 证明：DP 在相同 CPU 消耗下 Goodput 最高
+
+### 图表 7：CDF 延迟分布图 (Exp1)
+
+- 3×3 小多图（3 负载模式 × 3 方法）
+- 每个子图：X 轴 = Latency (ms), Y 轴 = CDF (%)
+
+### 图表 8：DP 价格曲线 vs CPU 利用率（双 Y 轴图，Sine 实验用）
+
+- X 轴 = Time (s)
+- 左 Y 轴 = ownprice，右 Y 轴 = CPU%
+- 证明价格曲线与负载正弦波高度相关
+
+### 图表汇总
+
+| 编号 | 图表类型 | 对应实验 | 核心证据 |
+|:---:|------|:---:|------|
+| 图1 | 摘要表 (Table) | 全局 | 一督三方核心指标 |
+| 图2 | 柱状图 (按预算分组) | Exp3 | DP 预算公平性 |
+| 图3 | 面积时间序列图 | Exp4 | 过载保护 (Succ/Rej/Err) |
+| 图4 | 四合一时间序列 | Exp4 | 延迟+CPU+内存的综合故事 |
+| 图5 | 曲线图 (敏感性) | Exp2 | heavy_ratio 影响 |
+| 图6 | 散点图 (效率) | Exp3 | Goodput/CPU 资源效率 |
+| 图7 | CDF 小多图 | Exp1 | 全负载模式延迟分布 |
+| 图8 | 双 Y 轴曲线 | Sine | 价格自适应能力 |
+
+---
+
+## 十二、实验矩阵汇总
 
 | 实验 | 自变量 | 组合数 | 核心证据 |
 |------|--------|:---:|---------|
@@ -431,7 +568,186 @@ def monitor_process(pid, output_csv, interval=0.5):
 
 ---
 
-## 十二、代码实现位置
+## 十三、部署方案：本地 vs 云端
+
+### 13.1 结论先行
+
+**推荐云端两台 VM 部署**，原因：
+
+| 维度 | 本地 | 云端 |
+|------|------|------|
+| 论文可信度 | "作者笔记本" → 审稿人质疑 | "ecs.c7.xlarge, 4vCPU/8GB" → 可复现 |
+| CPU 稳定性 | 桌面 OS 后台进程干扰、睿频波动 | 独占 vCPU，可关闭 turbo boost |
+| 负载生成器干扰 | 与 Server 共享 CPU → psutil 测量被污染 | 分离到独立 VM → 干净测量 |
+| 并行加速 | 只能串行跑 99 次 | 可同时开 3 组 Server VM 并行 |
+| 环境一致性 | 每次重启可能不同 | 镜像固化，随时销毁重建 |
+
+> **但如果工具全是 mock 的，本地跑的"相对差异"也是有效的。**
+> 云端的核心价值是：(1) 论文"实验环境"一节更专业，(2) 排除 CPU 抖动的绝对值偏差。
+> 如果经费有限，**先本地调通全部流程，最终上云跑正式数据**即可。
+
+### 13.2 架构：两台 VM
+
+```
+┌──────────────────────┐          JSON-RPC          ┌──────────────────────────────┐
+│     VM-1 (Client)    │ ─────────(内网)──────────► │        VM-2 (Server)         │
+│                      │                            │                              │
+│  Load Generator (Py) │                            │  Gateway (Go)                │
+│  - Step / Sine /     │                            │    ├─ NG / SRL / DP          │
+│    Poisson           │                            │    └─ Regime Detector        │
+│  - heavy_ratio       │                            │          │                   │
+│  - budget            │                            │          ▼                   │
+│                      │                            │  MCP Server (Py, :8080)      │
+│  结果收集 & 画图     │                            │    ├─ calculator             │
+│  - matplotlib        │                            │    ├─ mock_weather           │
+│  - pandas            │                            │    ├─ mock_heavy             │
+│                      │                            │    └─ ...                    │
+│                      │                            │                              │
+│                      │                            │  psutil Monitor (Py)         │
+│                      │                            │    → cpu%, rss_mb → CSV      │
+└──────────────────────┘                            └──────────────────────────────┘
+        2 vCPU / 4GB                                        4 vCPU / 8GB
+```
+
+**为什么不是三台？**
+- Gateway (Go) 和 MCP Server (Python) 是同一进程内的中间件调用关系，拆开反而引入额外网络延迟
+- psutil 必须与 MCP Server 在同一台机器上才能采集进程级指标
+- Load Generator 独立出去是为了防止它自身的 CPU 消耗污染 Server 侧的 psutil 测量
+
+### 13.3 云服务器配置清单
+
+以阿里云为例（腾讯云/AWS 选等价机型即可）：
+
+#### VM-2：Server（核心，决定实验质量）
+
+| 项 | 推荐 | 说明 |
+|-------|------|------|
+| **机型** | ecs.c7.xlarge | 计算优化型，CPU 性能稳定 |
+| **vCPU** | 4 | `mock_heavy(cpu_burn_ms=5000)` 在 4 核下 CPU% 表现明显；2 核太容易打满看不出差异 |
+| **内存** | 8 GB | 10 个并发 `mock_heavy(memory_mb=50)` = 500MB，8GB 留足余量不触发 swap |
+| **磁盘** | 40GB ESSD (PL0) | 写 CSV 日志即可，无高 IOPS 需求 |
+| **OS** | Ubuntu 22.04 LTS | Go 1.21+ / Python 3.10+ 官方支持 |
+| **网络** | 与 VM-1 同 VPC、同可用区 | 内网延迟 < 0.1ms，排除网络变量 |
+
+#### VM-1：Client（辅助，要求不高）
+
+| 项 | 推荐 | 说明 |
+|-------|------|------|
+| **机型** | ecs.c7.large | 够用即可 |
+| **vCPU** | 2 | Load Generator 是单线程 asyncio，2 核足够 |
+| **内存** | 4 GB | 仅发请求 + 收集结果 |
+| **磁盘** | 40GB ESSD (PL0) | 存结果 CSV + 画图脚本 |
+| **OS** | Ubuntu 22.04 LTS | 与 Server 一致 |
+
+#### 费用估算（按需计费）
+
+| VM | 单价 (约) | 99 次试验 × 2min ≈ 4h | 含调试 |
+|----|:---:|:---:|:---:|
+| VM-2 (4C8G) | ¥0.8/h | ¥3.2 | ¥20 (含调试5天) |
+| VM-1 (2C4G) | ¥0.4/h | ¥1.6 | ¥10 |
+| **合计** | | | **¥30 左右** |
+
+> 实际费用极低。如果用抢占式实例 (Spot)，还可再降 50-70%。
+
+### 13.4 环境搭建步骤（Server VM-2）
+
+```bash
+# 1. 系统准备
+sudo apt update && sudo apt install -y build-essential python3-pip python3-venv
+
+# 2. Go 环境
+wget https://go.dev/dl/go1.22.4.linux-amd64.tar.gz
+sudo tar -C /usr/local -xzf go1.22.4.linux-amd64.tar.gz
+echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
+source ~/.bashrc
+
+# 3. Python 依赖
+python3 -m venv ~/mcp-env
+source ~/mcp-env/bin/activate
+pip install psutil matplotlib pandas
+
+# 4. 关闭 CPU turbo boost（消除频率波动，提高可复现性）
+echo 1 | sudo tee /sys/devices/system/cpu/intel_pstate/no_turbo
+# 或 AMD:
+# echo 0 | sudo tee /sys/devices/system/cpu/cpufreq/boost
+
+# 5. 编译 Gateway
+cd ~/mcp-governance
+go build ./...
+
+# 6. 启动 MCP Server
+python3 mcp_server.py --port 8080 &
+
+# 7. 启动 psutil 监控
+python3 monitor.py --pid $(pgrep -f mcp_server) --output /tmp/resource.csv &
+```
+
+### 13.5 环境搭建步骤（Client VM-1）
+
+```bash
+# 1. Python 环境
+sudo apt update && sudo apt install -y python3-pip python3-venv
+python3 -m venv ~/mcp-env
+source ~/mcp-env/bin/activate
+pip install aiohttp matplotlib pandas numpy
+
+# 2. 运行实验（以 Exp1-Step-DP 为例）
+python3 load_generator.py \
+    --server http://<VM-2内网IP>:8080 \
+    --pattern step \
+    --method DP \
+    --heavy_ratio 0.3 \
+    --high_budget_ratio 0.5 \
+    --duration 120 \
+    --output results/exp1_step_dp.csv
+```
+
+### 13.6 可复现性清单（论文"实验环境"一节直接用）
+
+论文建议写法：
+
+> **实验环境**：实验在阿里云上进行。服务端使用 ecs.c7.xlarge 实例（4 vCPU Intel Xeon Ice Lake, 8GB RAM, Ubuntu 22.04），关闭 Turbo Boost 以保证 CPU 频率稳定。负载生成器部署在同 VPC 同可用区的 ecs.c7.large 实例（2 vCPU, 4GB RAM）上，内网延迟 < 0.1ms。Go 1.22, Python 3.10。每组实验重复 3 次取均值，误差棒表示标准差。
+
+### 13.7 并行加速方案（可选）
+
+如果 99 次串行跑太慢（约 3-4 小时），可以：
+
+```
+VM-2a (Server) ←── VM-1 ──→ VM-2b (Server)
+                    │
+                    └──────→ VM-2c (Server)
+```
+
+- 3 台 Server VM 并行跑 3 个 Exp（Exp1/Exp2/Exp3 同时跑）
+- VM-1 用多线程或 tmux 同时向 3 台 Server 发请求
+- 额外费用 ≈ ¥60，但时间缩短到 1-1.5 小时
+- **注意**：每台 Server VM 的配置必须完全一致（同机型、同区域）
+
+### 13.8 本地调试 → 云端正式数据的推荐流程
+
+```
+阶段 1: 本地开发（不花钱）
+  ├─ 调通全部 7 个工具
+  ├─ 调通 Load Generator 的 3 种负载模式
+  ├─ 调通 NG / SRL / DP 三种网关
+  ├─ 跑 2-3 个 smoke test，验证指标采集正确
+  └─ 画出初版图表，确认图表格式
+
+阶段 2: 云端正式实验（花 ¥30）
+  ├─ 开两台 VM，部署环境
+  ├─ 关闭 Turbo Boost，确认 CPU 频率稳定
+  ├─ 跑完 99 次试验 + 收集结果
+  ├─ 将结果 CSV scp 回本地
+  └─ 本地画最终版论文图表
+
+阶段 3: 补充实验（如审稿人要求）
+  ├─ 保存 VM 镜像（¥0.1/GB·月）
+  └─ 随时从镜像重建，跑补充试验
+```
+
+---
+
+## 附录 A、代码实现位置
 
 | 文件 | 新增/修改内容 |
 |------|------|
@@ -441,7 +757,7 @@ def monitor_process(pid, output_csv, interval=0.5):
 
 ---
 
-## 十三、使用方式
+## 附录 B、使用方式
 
 ```go
 gov := NewMCPGovernor("server-1", callMap, map[string]interface{}{
