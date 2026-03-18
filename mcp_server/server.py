@@ -44,22 +44,23 @@ SERVER_VERSION = "1.0.0"
 registry = ToolRegistry()
 
 
-def load_tools():
-    """Import and register all tool modules."""
-    from tools import calculator, mock_weather, mock_web_fetch, text_formatter
-    from tools import doc_embedding, python_sandbox, mock_heavy
+def load_tools(mode="sterile"):
+    """Import and register tool modules based on experiment mode.
 
-    # 轻量级工具（老鼠流）
-    calculator.register(registry)
-    mock_weather.register(registry)
-    mock_web_fetch.register(registry)
-    text_formatter.register(registry)
+    Args:
+        mode: "sterile"      — 无菌实验室模式 (3 tools, Exp1-Exp7)
+              "battlefield"  — 真实战场模式   (7 tools, Exp8)
+    """
+    if mode == "sterile":
+        from tools.sterile import register_all
+        register_all(registry)
+    elif mode == "battlefield":
+        from tools.battlefield import register_all
+        register_all(registry)
+    else:
+        raise ValueError(f"Unknown mode: {mode}. Use 'sterile' or 'battlefield'.")
 
-    # 重量级工具（大象流）
-    doc_embedding.register(registry)
-    python_sandbox.register(registry)
-    mock_heavy.register(registry)
-
+    log.info(f"实验模式: {mode}")
     log.info(f"已注册 {len(registry.all())} 个工具:")
     for name, tool in registry.all().items():
         log.info(f"  [{tool.category:>11}] {name}")
@@ -225,9 +226,11 @@ def main():
     parser = argparse.ArgumentParser(description="MCP Tool Server")
     parser.add_argument("--host", default="0.0.0.0", help="绑定地址 (default: 0.0.0.0)")
     parser.add_argument("--port", type=int, default=8080, help="监听端口 (default: 8080)")
+    parser.add_argument("--mode", default="sterile", choices=["sterile", "battlefield"],
+                        help="实验模式: sterile=无菌实验室(3工具), battlefield=真实战场(7工具)")
     args = parser.parse_args()
 
-    load_tools()
+    load_tools(mode=args.mode)
 
     server = ThreadedHTTPServer((args.host, args.port), MCPRequestHandler)
     log.info("=" * 55)
