@@ -17,9 +17,33 @@ import json
 import time
 import logging
 import argparse
+import os
+import platform
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from socketserver import ThreadingMixIn
 from tools import ToolRegistry
+
+
+# ──────────────────────────────────────────────
+# CPU Affinity — 进程绑核隔离 (实验资源隔离)
+# ──────────────────────────────────────────────
+def set_cpu_affinity(cores=None):
+    """将当前进程绑定到指定的 CPU 核心集合。
+
+    Args:
+        cores: CPU 核心列表, 如 [4,5,6,...,15]。None 表示不绑核。
+    """
+    if cores is None or platform.system() != "Windows":
+        return
+    try:
+        import psutil
+        p = psutil.Process(os.getpid())
+        p.cpu_affinity(cores)
+        log.info(f"CPU 亲和性已设置: cores={cores}")
+    except ImportError:
+        log.warning("psutil 未安装，跳过 CPU 亲和性设置。请安装: pip install psutil")
+    except Exception as e:
+        log.warning(f"CPU 亲和性设置失败: {e}")
 
 # ──────────────────────────────────────────────
 # Logging
@@ -224,11 +248,18 @@ class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
 
 def main():
     parser = argparse.ArgumentParser(description="MCP Tool Server")
-    parser.add_argument("--host", default="0.0.0.0", help="绑定地址 (default: 0.0.0.0)")
+    parser.add_argument("--host", default="127.0.0.1", help="绑定地址 (default: 127.0.0.1)")
     parser.add_argument("--port", type=int, default=8080, help="监听端口 (default: 8080)")
     parser.add_argument("--mode", default="sterile", choices=["sterile", "battlefield"],
                         help="实验模式: sterile=无菌实验室(3工具), battlefield=真实战场(7工具)")
+    parser.add_argument("--cpu-affinity", type=str, default=None,
+                        help="CPU 亲和性核心列表, 如 '4,5,6,7,8,9,10,11,12,13,14,15'")
     args = parser.parse_args()
+
+    # 设置 CPU 亲和性 (实验资源隔离)
+    if args.cpu_affinity:
+        cores = [int(c.strip()) for c in args.cpu_affinity.split(",")]
+        set_cpu_affinity(cores)
 
     load_tools(mode=args.mode)
 
