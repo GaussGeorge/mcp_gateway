@@ -214,7 +214,7 @@ def run_load_generator(
     if step_stages and waveform == "step":
         cmd += ["--step-stages", step_stages]
 
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=900)
 
     # 打印输出（简要）
     for line in result.stdout.strip().split("\n"):
@@ -389,24 +389,29 @@ def run_exp3(pm: ProcessManager, repeats: int, dry_run: bool):
 
 
 # ══════════════════════════════════════════════════
-# Exp4: 极简消融实验 (Poisson 稳态)
+# Exp4: 消融实验 (Composite 复合流量 — 验证自适应档位在多模式负载下的价值)
 # ══════════════════════════════════════════════════
 def run_exp4(pm: ProcessManager, repeats: int, dry_run: bool):
     """
     Exp4: 消融实验 — DP-Full vs DP-NoRegime vs SRL
-    证明自适应档位检测的贡献
+    使用 120 秒复合流量 (过山车波形):
+      Phase 1 (0-20s):   Poisson 稳态 QPS=30
+      Phase 2 (20-45s):  突发 QPS=120
+      Phase 3 (45-80s):  正弦波 QPS=30~90, 周期=5s
+      Phase 4 (80-100s): 极低负载 QPS=10
+      Phase 5 (100-120s): 微脉冲方波 QPS=100/10, 周期=4s
     """
     exp_dir = RESULTS_DIR / "exp4_ablation"
     exp_dir.mkdir(parents=True, exist_ok=True)
 
-    qps = 50
-    duration = 60
+    duration = 120
     heavy_ratio = 0.3
     gateways = ["dp", "dp-noregime", "srl"]
 
     print(f"\n{'=' * 60}")
-    print(f"  Exp4: 消融实验 (Poisson)")
-    print(f"  QPS: {qps}, Heavy Ratio: {heavy_ratio}")
+    print(f"  Exp4: 消融实验 (Composite 复合流量, 120s 过山车)")
+    print(f"  阶段: steady(30)→burst(120)→sine(30~90)→idle(10)→square(100/10)")
+    print(f"  Heavy Ratio: {heavy_ratio}")
     print(f"  网关: {gateways}")
     print(f"  重复: {repeats} 次")
     print(f"{'=' * 60}")
@@ -419,8 +424,7 @@ def run_exp4(pm: ProcessManager, repeats: int, dry_run: bool):
         for gw in gateways:
             run_single_experiment(
                 pm, gw, "exp4", run_idx, exp_dir,
-                waveform="poisson",
-                qps=qps,
+                waveform="composite",
                 duration=duration,
                 heavy_ratio=heavy_ratio,
                 budget=100,

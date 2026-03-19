@@ -157,6 +157,51 @@ def get_step_qps(stages: List[StepStage], elapsed: float) -> float:
 
 
 # ══════════════════════════════════════════════════
+# 5b. Composite 复合波形 (过山车流量)
+# ══════════════════════════════════════════════════
+@dataclass
+class CompositePhase:
+    start: float
+    end: float
+    ptype: str        # "poisson" | "sine" | "square"
+    name: str
+    base_qps: float = 30
+    min_qps: float = 30
+    max_qps: float = 90
+    period: float = 5.0
+    high_qps: float = 100
+    low_qps: float = 10
+
+
+# 默认5阶段复合流量配置 (120秒 "过山车")
+DEFAULT_COMPOSITE_PHASES = [
+    CompositePhase(start=0,   end=20,  ptype="poisson", name="steady",      base_qps=30),
+    CompositePhase(start=20,  end=45,  ptype="poisson", name="burst",       base_qps=120),
+    CompositePhase(start=45,  end=80,  ptype="sine",    name="periodic",    min_qps=30, max_qps=90, period=5.0),
+    CompositePhase(start=80,  end=100, ptype="poisson", name="idle",        base_qps=10),
+    CompositePhase(start=100, end=120, ptype="square",  name="micro_burst", high_qps=100, low_qps=10, period=4.0),
+]
+
+
+def get_composite_qps(phases: List[CompositePhase], elapsed: float) -> float:
+    """根据当前时间返回复合波形的目标 QPS。"""
+    for phase in phases:
+        if phase.start <= elapsed < phase.end:
+            if phase.ptype == "poisson":
+                return phase.base_qps
+            elif phase.ptype == "sine":
+                offset = elapsed - phase.start
+                mid = (phase.max_qps + phase.min_qps) / 2
+                amp = (phase.max_qps - phase.min_qps) / 2
+                return mid + amp * np.sin(offset * 2 * np.pi / phase.period)
+            elif phase.ptype == "square":
+                offset = elapsed - phase.start
+                cycle = int(offset) % int(phase.period)
+                return phase.high_qps if cycle < phase.period / 2 else phase.low_qps
+    return 0
+
+
+# ══════════════════════════════════════════════════
 # 6. 核心：异步请求发送
 # ══════════════════════════════════════════════════
 @dataclass
@@ -274,6 +319,47 @@ async def generate_step(
 
         if current_qps <= 0:
             await asyncio.sleep(0.1)
+            continue
+
+        interval = np.random.exponential(1.0 / current_qps)
+        await asyncio.sleep(interval)
+
+        req_id += 1
+        tool_name, arguments = pick_request(heavy_ratio)
+        budget = pick_budget(budget_groups)
+
+        async def fire(tn=tool_name, args=arguments, b=budget, rid=req_id):
+            async with semaphore:
+                result = await send_single_request(session, url, tn, args, b, rid)
+                results.append(result)
+
+        tasks.append(asyncio.create_task(fire()))
+
+    if tasks:
+        await asyncio.gather(*tasks, return_exceptions=True)
+
+
+async def generate_composite(
+    session: aiohttp.ClientSession,
+    url: str,
+    phases: List[CompositePhase],
+    heavy_ratio: float,
+    budget_groups: List[BudgetGroup],
+    results: List[RequestResult],
+    semaphore: asyncio.Semaphore,
+):
+    """Composite 复合流量: 5阶段过山车波形 (steady→burst→sine→idle→square)。"""
+    duration = max(p.end for p in phases)
+    start_time = time.time()
+    req_id = 0
+    tasks = []
+
+    while (time.time() - start_time) < duration:
+        elapsed = time.time() - start_time
+        current_qps = get_composite_qps(phases, elapsed)
+
+        if current_qps <= 0:
+            await asyncio.sleep(0.01)
             continue
 
         interval = np.random.exponential(1.0 / current_qps)
@@ -414,6 +500,13 @@ async def run(args):
                 session, args.target, stages, total_dur,
                 args.heavy_ratio, budget_groups, results, semaphore,
             )
+        elif args.waveform == "composite":
+            phases = DEFAULT_COMPOSITE_PHASES
+            print(f"[发压机] Composite 阶段: {[(p.name, p.start, p.end, p.ptype) for p in phases]}")
+            await generate_composite(
+                session, args.target, phases,
+                args.heavy_ratio, budget_groups, results, semaphore,
+            )
 
         elapsed = time.time() - start
 
@@ -435,8 +528,8 @@ def main():
     )
     parser.add_argument("--target", required=True,
                         help="目标网关 URL, 如 http://127.0.0.1:9003")
-    parser.add_argument("--waveform", choices=["poisson", "step"], default="poisson",
-                        help="负载波形: poisson (稳态) | step (脉冲)")
+    parser.add_argument("--waveform", choices=["poisson", "step", "composite"], default="poisson",
+                        help="负载波形: poisson (稳态) | step (脉冲) | composite (120s复合过山车)")
     parser.add_argument("--qps", type=float, default=30,
                         help="Poisson 模式目标 QPS (default: 30)")
     parser.add_argument("--duration", type=float, default=60,

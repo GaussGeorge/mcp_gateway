@@ -209,28 +209,31 @@ func (gov *MCPGovernor) initAdaptiveProfiles(
 	burstyOpt, periodicOpt, steadyOpt map[string]interface{},
 ) {
 	// 默认值（对齐参考表）
+	// Bursty: 极速熔断 — 低阈值+高增益+高衰减率，快速拉高价格拒绝低价值请求
 	bursty := Profile{
-		PriceStep:         200,
-		PriceDecayStep:    20,
-		PriceSensitivity:  8000,
-		LatencyThreshold:  300 * time.Microsecond,
-		DecayRate:         0.9,
+		PriceStep:         350,
+		PriceDecayStep:    30,
+		PriceSensitivity:  6000,
+		LatencyThreshold:  200 * time.Microsecond,
+		DecayRate:         0.95,
 		PriceUpdateRate:   5 * time.Millisecond,
 		MaxToken:          200,
 		IntegralThreshold: gov.integralThreshold,
 		IntegralDecay:     gov.integralDecay,
 	}
+	// Periodic: 高阻尼防震荡 — 高阈值+低增益+快衰减，价格安如泰山不追波
 	periodic := Profile{
-		PriceStep:         100,
-		PriceDecayStep:    10,
-		PriceSensitivity:  15000,
-		LatencyThreshold:  500 * time.Microsecond,
-		DecayRate:         0.75,
+		PriceStep:         80,
+		PriceDecayStep:    8,
+		PriceSensitivity:  20000,
+		LatencyThreshold:  600 * time.Microsecond,
+		DecayRate:         0.6,
 		PriceUpdateRate:   20 * time.Millisecond,
 		MaxToken:          200,
 		IntegralThreshold: gov.integralThreshold,
 		IntegralDecay:     gov.integralDecay,
 	}
+	// Steady: 中庸稳态
 	steady := Profile{
 		PriceStep:         150,
 		PriceDecayStep:    15,

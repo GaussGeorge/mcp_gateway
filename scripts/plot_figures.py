@@ -35,7 +35,7 @@ C_GW = {"NG": "#D64541", "SRL": "#2E86C1", "DP": "#28B463",
          "DP-NoRegime": "#E67E22"}
 C_TOOL = {"calculate": "#5DADE2", "web_fetch": "#F4D03F",
            "mock_heavy": "#E74C3C"}
-C_STATUS = {"success": "#28B463", "rejected": "#8E44AD", "error": "#E74C3C"}
+C_STATUS = {"success": "#4CAF50", "rejected": "#FF9800", "error": "#F44336"}
 
 # ==========  matplotlib global style  ==========
 plt.rcParams.update({
@@ -76,6 +76,7 @@ def _run_metrics(rows):
     lats = sorted(float(r["latency_ms"]) for r in rows if r["status"] == "success")
     p50 = lats[len(lats) // 2] if lats else 0.0
     p95 = lats[int(len(lats) * 0.95)] if lats else 0.0
+    p999 = lats[int(len(lats) * 0.999)] if len(lats) > 1 else p95
 
     goodput = sum(TOOL_WEIGHTS.get(r.get("tool_name", ""), 1)
                   for r in rows if r["status"] == "success")
@@ -99,10 +100,11 @@ def _run_metrics(rows):
         duration=duration,
         success_pct=100 * success / total if total else 0,
         rejected_pct=100 * rejected / total if total else 0,
+        error_pct=100 * error / total if total else 0,
         throughput=success / duration if duration else 0,
         goodput=goodput,
         goodput_rate=goodput / duration if duration else 0,
-        p50=p50, p95=p95,
+        p50=p50, p95=p95, p999=p999,
         tool_goodput={k: v / duration for k, v in tg.items()},
         budget_stats=dict(bs),
     )
@@ -148,6 +150,17 @@ def _star(p):
     return ""
 
 
+def _sig_label(p):
+    """Return descriptive significance label with p-value."""
+    if p < 0.001:
+        return f"p < 0.001"
+    if p < 0.01:
+        return f"p = {p:.3f}"
+    if p < 0.05:
+        return f"p = {p:.2f}"
+    return f"n.s. (p = {p:.2f})"
+
+
 def _bracket(ax, x1, x2, y, dy, text, fs=10):
     """Significance bracket."""
     ax.plot([x1, x1, x2, x2], [y, y + dy, y + dy, y],
@@ -165,8 +178,9 @@ def fig1():
 
     gws = ["ng", "srl", "dp"]
     gw_lbl = ["NG", "SRL", "DP"]
-    mk = ["throughput", "p95", "goodput_rate"]
-    rl = ["Throughput (req/s)", "P95 Latency (ms)", "Goodput (w-req/s)"]
+    mk = ["throughput", "p95", "goodput_rate", "rejected_pct", "error_pct", "p999"]
+    rl = ["Throughput (req/s)", "P95 Latency (ms)", "Goodput (w-req/s)",
+          "Rejection Rate (%)", "Error Rate (%)", "P999 Latency (ms)"]
 
     vals = {}
     for gw in gws:
@@ -186,8 +200,10 @@ def fig1():
                 if star:
                     star = " " + star
 
-            if k == "p95":
+            if k in ("p95", "p999"):
                 row_t.append(f"{m:.0f} ± {s:.0f}{star}")
+            elif k in ("rejected_pct", "error_pct"):
+                row_t.append(f"{m:.1f} ± {s:.1f}{star}")
             else:
                 row_t.append(f"{m:.1f} ± {s:.1f}{star}")
 
@@ -195,19 +211,20 @@ def fig1():
         cell_txt.append(row_t)
         cell_clr.append(row_c)
 
-    fig, ax = plt.subplots(figsize=(7.5, 2.8))
+    fig, ax = plt.subplots(figsize=(9.5, 4.5))
     ax.axis("off")
 
+    nrows = len(rl)
     tbl = ax.table(
         cellText=cell_txt, rowLabels=rl, colLabels=gw_lbl,
         cellColours=cell_clr,
-        rowColours=["#EAF2F8"] * 3,
+        rowColours=["#EAF2F8"] * nrows,
         colColours=[C_GW[l] + "55" for l in gw_lbl],
         loc="center", cellLoc="center",
     )
     tbl.auto_set_font_size(False)
-    tbl.set_fontsize(11)
-    tbl.scale(1.2, 1.8)
+    tbl.set_fontsize(10)
+    tbl.scale(1.2, 1.7)
     for (r, c), cell in tbl.get_celld().items():
         cell.set_edgecolor("#CCCCCC")
 
@@ -259,8 +276,8 @@ def fig2():
         s = _star(p)
         if s:
             mx, sx = _ms(dp_v)
-            ax2.annotate(s, (hrs[i], mx + sx + 0.3),
-                         ha="center", fontsize=13, fontweight="bold")
+            ax2.annotate(_sig_label(p), (hrs[i], mx + sx + 0.3),
+                         ha="center", fontsize=9, fontweight="bold")
 
     for ax, title, ylabel in [
         (ax1, "(a) Throughput", "Throughput (req/s)"),
@@ -274,7 +291,7 @@ def fig2():
 
     fig.suptitle(
         "Figure 2: Impact of Heavy-Request Ratio on Gateway Performance (Exp2)",
-        fontsize=12, y=1.02)
+        fontsize=12, y=1.04)
     fig.tight_layout()
     fig.savefig(PDF_DIR / "fig2_heavy_ratio_sensitivity.pdf")
     fig.savefig(PNG_DIR / "fig2_heavy_ratio_sensitivity.png")
@@ -328,7 +345,7 @@ def fig3():
         xlo = x[0] + w   # DP bar for budget=10
         xhi = x[1] + w   # DP bar for budget=100
         ytop = bar_info["dp"][0][1] + bar_info["dp"][1][1] + 4
-        _bracket(ax, xlo, xhi, ytop, 2, s)
+        _bracket(ax, xlo, xhi, ytop, 2, _sig_label(p))
 
     # bracket: DP-High vs NG-High
     p2 = _ttest(rates["dp"]["100"], rates["ng"]["100"])
@@ -338,13 +355,12 @@ def fig3():
         xdp = x[1] + w
         y2 = max(bar_info["ng"][0][1], bar_info["dp"][0][1]) + \
              max(bar_info["ng"][1][1], bar_info["dp"][1][1]) + 10
-        _bracket(ax, xng, xdp, y2, 2, s2)
+        _bracket(ax, xng, xdp, y2, 2, _sig_label(p2))
 
     ax.set_xlabel("Budget Group")
     ax.set_ylabel("Success Rate (%)")
     ax.set_title(
-        "Figure 3: Budget Fairness — Success Rate by Budget Group (Exp3)\n"
-        "* p < 0.05  ** p < 0.01  *** p < 0.001")
+        "Figure 3: Budget Fairness — Success Rate by Budget Group (Exp3)")
     ax.set_xticks(x)
     ax.set_xticklabels(bud_lbl)
     ax.set_ylim(0, 115)
@@ -383,8 +399,16 @@ def fig4():
     bottoms = np.zeros(len(gws))
     for t, tl in zip(tools, tool_lbl):
         h = np.array(t_means[t])
-        ax.bar(x, h, w, bottom=bottoms, label=tl,
-               color=C_TOOL[t], edgecolor="white", lw=0.5)
+        bars = ax.bar(x, h, w, bottom=bottoms, label=tl,
+                      color=C_TOOL[t], edgecolor="white", lw=0.5)
+        # 在堆叠块内标注占比
+        for j, (bi, hi) in enumerate(zip(bottoms, h)):
+            total_gw = sum(t_means[tt][j] for tt in tools)
+            if total_gw > 0 and hi / total_gw > 0.08:  # 只标注>8%的块
+                pct = 100 * hi / total_gw
+                ax.text(j, bi + hi / 2, f"{pct:.0f}%",
+                        ha="center", va="center", fontsize=8,
+                        color="white", fontweight="bold")
         bottoms += h
 
     # total goodput error bar
@@ -406,13 +430,12 @@ def fig4():
     s = _star(p)
     if s:
         ymax = max(tot_m[0] + tot_s[0], tot_m[2] + tot_s[2]) + 3
-        _bracket(ax, 0, 2, ymax, 0.4, s)
+        _bracket(ax, 0, 2, ymax, 0.4, _sig_label(p))
 
     ax.set_xlabel("Gateway Strategy")
     ax.set_ylabel("Goodput (weighted req/s)")
     ax.set_title(
-        "Figure 4: Goodput Contribution by Tool Type (Exp3)\n"
-        "* p < 0.05  ** p < 0.01  *** p < 0.001")
+        "Figure 4: Goodput Contribution by Tool Type (Exp3)")
     ax.set_xticks(x)
     ax.set_xticklabels(gw_lbl)
     ax.legend(loc="upper left")
@@ -477,7 +500,21 @@ def fig5():
                              C_STATUS["error"]],
                      alpha=0.85)
         idx = gws.index(gw)
-        ax.set_title(f"({chr(97 + idx)}) {gl}")
+
+        # 计算子标题核心指标
+        tot = ms + mr + me
+        tot_sum = np.sum(tot)
+        s_pct = 100 * np.sum(ms) / tot_sum if tot_sum > 0 else 0
+        e_pct = 100 * np.sum(me) / tot_sum if tot_sum > 0 else 0
+        r_pct = 100 * np.sum(mr) / tot_sum if tot_sum > 0 else 0
+        ax.set_title(f"({chr(97 + idx)}) {gl}\n"
+                     f"Succ={s_pct:.0f}%  Rej={r_pct:.0f}%  Err={e_pct:.0f}%",
+                     fontsize=10)
+
+        # 添加 Step 脉冲触发时间垂直虚线
+        for t_line in [10, 25, 35, 45]:
+            ax.axvline(t_line, color="gray", ls="--", lw=0.8, alpha=0.6)
+
         ax.set_xlabel("Time (s)")
         ax.set_xlim(0, 65)
         if idx == 0:
@@ -507,56 +544,191 @@ def fig6():
     gw_lbl = ["DP-Full", "DP-NoRegime", "SRL"]
     colors = [C_GW["DP"], C_GW["DP-NoRegime"], C_GW["SRL"]]
 
-    fig, ax = plt.subplots(figsize=(6, 5))
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4.5))
     x = np.arange(len(gws))
     w = 0.5
 
-    all_v = {}
-    means, stds = [], []
+    # Panel (a): Goodput
+    all_gp = {}
+    gp_means, gp_stds = [], []
     for gw in gws:
         runs = data.get(("exp4", gw), [])
         v = [m["goodput_rate"] for m in runs]
-        all_v[gw] = v
+        all_gp[gw] = v
         m, s = _ms(v)
-        means.append(m); stds.append(s)
+        gp_means.append(m); gp_stds.append(s)
 
-    ax.bar(x, means, w, yerr=stds, capsize=5,
-           color=colors, edgecolor="white", lw=0.5)
-
-    for i, (m, s) in enumerate(zip(means, stds)):
-        ax.text(i, m + s + 0.3, f"{m:.1f}", ha="center", va="bottom", fontsize=10)
+    ax1.bar(x, gp_means, w, yerr=gp_stds, capsize=5,
+            color=colors, edgecolor="white", lw=0.5)
+    for i, (m, s) in enumerate(zip(gp_means, gp_stds)):
+        ax1.text(i, m + s + 0.3, f"{m:.1f}\n(±{s:.1f})",
+                 ha="center", va="bottom", fontsize=9)
 
     # bracket DP-Full vs SRL
-    p1 = _ttest(all_v["dp"], all_v["srl"])
+    p1 = _ttest(all_gp["dp"], all_gp["srl"])
     s1 = _star(p1)
     if s1:
-        y1 = max(means[0] + stds[0], means[2] + stds[2]) + 3
-        _bracket(ax, 0, 2, y1, 0.4, s1)
+        y1 = max(gp_means[0] + gp_stds[0], gp_means[2] + gp_stds[2]) + 5
+        _bracket(ax1, 0, 2, y1, 0.4, _sig_label(p1))
 
     # bracket DP-Full vs DP-NoRegime
-    p2 = _ttest(all_v["dp"], all_v["dp-noregime"])
+    p2 = _ttest(all_gp["dp"], all_gp["dp-noregime"])
     s2 = _star(p2)
     if s2:
-        y2 = max(means[0] + stds[0], means[1] + stds[1]) + 2
-        _bracket(ax, 0, 1, y2, 0.4, s2)
+        y2 = max(gp_means[0] + gp_stds[0], gp_means[1] + gp_stds[1]) + 2.5
+        _bracket(ax1, 0, 1, y2, 0.4, _sig_label(p2))
     else:
-        # not significant → show n.s.
-        y2 = max(means[0] + stds[0], means[1] + stds[1]) + 2
-        _bracket(ax, 0, 1, y2, 0.4, f"n.s.\n(p={p2:.2f})")
+        y2 = max(gp_means[0] + gp_stds[0], gp_means[1] + gp_stds[1]) + 2.5
+        _bracket(ax1, 0, 1, y2, 0.4, _sig_label(p2))
 
-    ax.set_xlabel("Gateway Strategy")
-    ax.set_ylabel("Goodput (weighted req/s)")
-    ax.set_title(
-        "Figure 6: Ablation — Adaptive Regime Impact (Exp4)\n"
-        "* p < 0.05  ** p < 0.01  *** p < 0.001")
-    ax.set_xticks(x)
-    ax.set_xticklabels(gw_lbl)
-    ax.set_ylim(0, max(means) * 1.35)
+    ax1.set_xlabel("Gateway Strategy")
+    ax1.set_ylabel("Goodput (weighted req/s)")
+    ax1.set_title("(a) Goodput")
+    ax1.set_xticks(x)
+    ax1.set_xticklabels(gw_lbl, fontsize=9)
+    ax1.set_ylim(0, max(gp_means) * 1.4)
+
+    # Panel (b): Error Rate
+    all_err = {}
+    err_means, err_stds = [], []
+    for gw in gws:
+        runs = data.get(("exp4", gw), [])
+        v = [m["error_pct"] for m in runs]
+        all_err[gw] = v
+        m, s = _ms(v)
+        err_means.append(m); err_stds.append(s)
+
+    ax2.bar(x, err_means, w, yerr=err_stds, capsize=5,
+            color=colors, edgecolor="white", lw=0.5)
+    for i, (m, s) in enumerate(zip(err_means, err_stds)):
+        ax2.text(i, m + s + 0.5, f"{m:.1f}%\n(±{s:.1f})",
+                 ha="center", va="bottom", fontsize=9)
+
+    # bracket DP vs SRL on error rate
+    p3 = _ttest(all_err["dp"], all_err["srl"])
+    s3 = _star(p3)
+    if s3:
+        y3 = max(err_means[0] + err_stds[0], err_means[2] + err_stds[2]) + 5
+        _bracket(ax2, 0, 2, y3, 1, _sig_label(p3))
+
+    ax2.set_xlabel("Gateway Strategy")
+    ax2.set_ylabel("Error Rate (%)")
+    ax2.set_title("(b) Error Rate (Backend Failures)")
+    ax2.set_xticks(x)
+    ax2.set_xticklabels(gw_lbl, fontsize=9)
+    ax2.set_ylim(0, max(err_means) * 1.4)
+
+    fig.suptitle(
+        "Figure 6: Ablation — Composite Workload (Exp4)",
+        fontsize=12, y=1.02)
     fig.tight_layout()
     fig.savefig(PDF_DIR / "fig6_ablation.pdf")
     fig.savefig(PNG_DIR / "fig6_ablation.png")
     plt.close(fig)
     print("    → fig6_ablation.pdf / .png")
+
+
+# ====================================================================
+#  Figure 7 — Composite Workload Timeline (Exp4)
+# ====================================================================
+# Composite 阶段边界 (秒)
+_COMPOSITE_BOUNDARIES = [0, 20, 45, 80, 100, 120]
+_COMPOSITE_LABELS = ["Steady\nQPS=30", "Burst\nQPS=120",
+                     "Sine\n30~90", "Idle\nQPS=10", "Square\n100/10"]
+
+def fig7():
+    print("  Fig 7: Composite Workload Timeline …")
+    exp_dir = RESULTS_DIR / "exp4_ablation"
+    gws = ["dp", "dp-noregime", "srl"]
+    gw_lbl = ["DP-Full", "DP-NoRegime", "SRL"]
+
+    BIN = 2  # seconds
+
+    fig, axes = plt.subplots(1, 3, figsize=(16, 4.5), sharey=True)
+
+    for ax, gw, gl in zip(axes, gws, gw_lbl):
+        all_s, all_r, all_e = [], [], []
+        for ri in range(1, 4):
+            fp = exp_dir / f"exp4_{gw}_run{ri}.csv"
+            if not fp.exists():
+                continue
+            rows = _load_csv(fp)
+            ts = [float(r["timestamp"]) for r in rows]
+            t0 = min(ts)
+            rel = [t - t0 for t in ts]
+            mx = max(rel)
+            n_bins = int(mx / BIN) + 1
+            sc = np.zeros(n_bins); rc = np.zeros(n_bins); ec = np.zeros(n_bins)
+            for r, rt in zip(rows, rel):
+                bi = min(int(rt / BIN), n_bins - 1)
+                if r["status"] == "success":
+                    sc[bi] += 1
+                elif r["status"] == "rejected":
+                    rc[bi] += 1
+                else:
+                    ec[bi] += 1
+            all_s.append(sc / BIN)
+            all_r.append(rc / BIN)
+            all_e.append(ec / BIN)
+
+        if not all_s:
+            continue
+
+        max_len = max(len(a) for a in all_s)
+        def _pad(lst):
+            return [np.pad(a, (0, max_len - len(a))) for a in lst]
+        all_s, all_r, all_e = _pad(all_s), _pad(all_r), _pad(all_e)
+
+        ms = np.mean(all_s, axis=0)
+        mr = np.mean(all_r, axis=0)
+        me = np.mean(all_e, axis=0)
+        centers = np.arange(max_len) * BIN + BIN / 2
+
+        ax.stackplot(centers, ms, mr, me,
+                     labels=["Success", "Rejected", "Error"],
+                     colors=[C_STATUS["success"], C_STATUS["rejected"],
+                             C_STATUS["error"]],
+                     alpha=0.85)
+        idx = gws.index(gw)
+
+        # 计算全局指标
+        tot = ms + mr + me
+        tot_sum = np.sum(tot)
+        s_pct = 100 * np.sum(ms) / tot_sum if tot_sum > 0 else 0
+        r_pct = 100 * np.sum(mr) / tot_sum if tot_sum > 0 else 0
+        e_pct = 100 * np.sum(me) / tot_sum if tot_sum > 0 else 0
+        ax.set_title(f"({chr(97 + idx)}) {gl}\n"
+                     f"Succ={s_pct:.0f}%  Rej={r_pct:.0f}%  Err={e_pct:.0f}%",
+                     fontsize=10)
+
+        # 阶段分界线 + 底部标签
+        for i, tb in enumerate(_COMPOSITE_BOUNDARIES[1:-1]):
+            ax.axvline(tb, color="gray", ls="--", lw=0.8, alpha=0.6)
+        # 阶段名标注 (仅首个子图)
+        if idx == 0:
+            for i in range(len(_COMPOSITE_LABELS)):
+                mid = (_COMPOSITE_BOUNDARIES[i] + _COMPOSITE_BOUNDARIES[i+1]) / 2
+                ax.text(mid, -0.12, _COMPOSITE_LABELS[i],
+                        ha="center", va="top", fontsize=7,
+                        transform=ax.get_xaxis_transform(),
+                        color="#555555")
+
+        ax.set_xlabel("Time (s)")
+        ax.set_xlim(0, 125)
+        if idx == 0:
+            ax.set_ylabel("Requests / sec")
+
+    handles, labels = axes[-1].get_legend_handles_labels()
+    fig.legend(handles, labels, loc="upper center", ncol=3,
+              bbox_to_anchor=(0.5, 1.03), frameon=False)
+    fig.suptitle(
+        "Figure 7: Composite Workload Timeline — Ablation (Exp4, mean of 3 runs)",
+        fontsize=12, y=1.10)
+    fig.tight_layout()
+    fig.savefig(PDF_DIR / "fig7_composite_timeline.pdf")
+    fig.savefig(PNG_DIR / "fig7_composite_timeline.png")
+    plt.close(fig)
+    print("    → fig7_composite_timeline.pdf / .png")
 
 
 # ====================================================================
@@ -566,7 +738,7 @@ def main():
     PDF_DIR.mkdir(parents=True, exist_ok=True)
     PNG_DIR.mkdir(parents=True, exist_ok=True)
     print("=" * 60)
-    print("  Phase 4: Generating 6 publication-quality figures (PDF + PNG)")
+    print("  Phase 4: Generating 7 publication-quality figures (PDF + PNG)")
     print("=" * 60)
 
     fig1()
@@ -575,6 +747,7 @@ def main():
     fig4()
     fig5()
     fig6()
+    fig7()
 
     n_pdf = len(list(PDF_DIR.glob("*.pdf")))
     n_png = len(list(PNG_DIR.glob("*.png")))
