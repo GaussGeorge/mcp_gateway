@@ -211,6 +211,7 @@ class RequestResult:
     latency_ms: float
     budget: int
     tool_name: str
+    regime: str = ""   # gateway regime state (steady/bursty/periodic)
 
 
 async def send_single_request(
@@ -239,6 +240,7 @@ async def send_single_request(
             body = await resp.json()
             latency = (time.time() - ts) * 1000
 
+            regime = ""
             if "error" in body and body["error"] is not None:
                 code = body["error"].get("code", 0)
                 # -32001 Overloaded, -32002 RateLimited, -32003 TokenInsufficient
@@ -246,17 +248,24 @@ async def send_single_request(
                     status = "rejected"
                 else:
                     status = "error"
+                data = body["error"].get("data")
+                if isinstance(data, dict):
+                    regime = data.get("regime", "")
             else:
                 status = "success"
+                result = body.get("result")
+                if isinstance(result, dict):
+                    meta = result.get("_meta") or {}
+                    regime = meta.get("regime", "")
 
-            return RequestResult(ts, status, latency, budget, tool_name)
+            return RequestResult(ts, status, latency, budget, tool_name, regime)
 
     except asyncio.TimeoutError:
         latency = (time.time() - ts) * 1000
-        return RequestResult(ts, "error", latency, budget, tool_name)
+        return RequestResult(ts, "error", latency, budget, tool_name, "")
     except Exception:
         latency = (time.time() - ts) * 1000
-        return RequestResult(ts, "error", latency, budget, tool_name)
+        return RequestResult(ts, "error", latency, budget, tool_name, "")
 
 
 # ══════════════════════════════════════════════════
@@ -388,7 +397,7 @@ def save_csv(results: List[RequestResult], output_path: str):
     os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
     with open(output_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
-        writer.writerow(["timestamp", "status", "latency_ms", "budget", "tool_name"])
+        writer.writerow(["timestamp", "status", "latency_ms", "budget", "tool_name", "regime"])
         for r in results:
             writer.writerow([
                 f"{r.timestamp:.6f}",
@@ -396,6 +405,7 @@ def save_csv(results: List[RequestResult], output_path: str):
                 f"{r.latency_ms:.2f}",
                 r.budget,
                 r.tool_name,
+                r.regime,
             ])
 
 

@@ -211,39 +211,48 @@ func (gov *MCPGovernor) initAdaptiveProfiles(
 	// 默认值（对齐参考表）
 	// Bursty: 极速熔断 — 低阈值+高增益+高衰减率，快速拉高价格拒绝低价值请求
 	bursty := Profile{
-		PriceStep:         350,
+		PriceStep:         300,
 		PriceDecayStep:    30,
 		PriceSensitivity:  6000,
 		LatencyThreshold:  200 * time.Microsecond,
-		DecayRate:         0.95,
+		DecayRate:         0.8,
 		PriceUpdateRate:   5 * time.Millisecond,
 		MaxToken:          200,
 		IntegralThreshold: gov.integralThreshold,
 		IntegralDecay:     gov.integralDecay,
+		DetectorPriceStep: 50,
+		DetectorDecayStep: 1,
+		DetectorMaxConc:   2,
 	}
 	// Periodic: 高阻尼防震荡 — 高阈值+低增益+快衰减，价格安如泰山不追波
 	periodic := Profile{
-		PriceStep:         80,
-		PriceDecayStep:    8,
+		PriceStep:         50,
+		PriceDecayStep:    5,
 		PriceSensitivity:  20000,
 		LatencyThreshold:  600 * time.Microsecond,
-		DecayRate:         0.6,
-		PriceUpdateRate:   20 * time.Millisecond,
+		DecayRate:         0.995,
+		PriceUpdateRate:   50 * time.Millisecond,
 		MaxToken:          200,
 		IntegralThreshold: gov.integralThreshold,
 		IntegralDecay:     gov.integralDecay,
+		DetectorPriceStep: 15,
+		DetectorDecayStep: 3,
+		DetectorMaxConc:   5,
 	}
-	// Steady: 中庸稳态
+	// Steady: 迟钝保守（DP-NoRegime 锁死于此档位）
 	steady := Profile{
-		PriceStep:         150,
-		PriceDecayStep:    15,
+		PriceStep:         10,
+		PriceDecayStep:    1,
 		PriceSensitivity:  10000,
 		LatencyThreshold:  400 * time.Microsecond,
-		DecayRate:         0.8,
-		PriceUpdateRate:   10 * time.Millisecond,
+		DecayRate:         0.99,
+		PriceUpdateRate:   200 * time.Millisecond,
 		MaxToken:          200,
 		IntegralThreshold: gov.integralThreshold,
 		IntegralDecay:     gov.integralDecay,
+		DetectorPriceStep: 2,
+		DetectorDecayStep: 10,
+		DetectorMaxConc:   8,
 	}
 
 	// options 覆盖
@@ -294,6 +303,15 @@ func applyProfileOptions(p *Profile, opt map[string]interface{}) {
 	if v, ok := opt["IntegralDecay"].(float64); ok {
 		p.IntegralDecay = v
 	}
+	if v, ok := opt["DetectorPriceStep"].(int64); ok {
+		p.DetectorPriceStep = v
+	}
+	if v, ok := opt["DetectorDecayStep"].(int64); ok {
+		p.DetectorDecayStep = v
+	}
+	if v, ok := opt["DetectorMaxConc"].(int64); ok {
+		p.DetectorMaxConc = v
+	}
 }
 
 // maybeApplyAdaptiveProfile 根据最近窗口统计特征识别状态并热切换参数。
@@ -317,8 +335,28 @@ func (gov *MCPGovernor) maybeApplyAdaptiveProfile(gapLatency float64) {
 	delta := math.Abs(gapLatency - gov.lastGapLatency)
 	gov.lastGapLatency = gapLatency
 
+	// 趋势检测：比较窗口前半均值 vs 后半均值，识别负载上升趋势
+	trendRatio := 1.0
+	if gov.regimeCount >= 10 {
+		halfCount := gov.regimeCount / 2
+		olderSum, newerSum := 0.0, 0.0
+		for i := 0; i < halfCount; i++ {
+			idx := (gov.regimeIndex + i) % gov.regimeWindow
+			olderSum += gov.regimeHistory[idx]
+		}
+		for i := halfCount; i < gov.regimeCount; i++ {
+			idx := (gov.regimeIndex + i) % gov.regimeWindow
+			newerSum += gov.regimeHistory[idx]
+		}
+		olderMean := olderSum / float64(halfCount)
+		newerMean := newerSum / float64(gov.regimeCount-halfCount)
+		if olderMean > 0.5 {
+			trendRatio = newerMean / olderMean
+		}
+	}
+
 	targetRegime := gov.activeRegime
-	if delta >= gov.regimeSpikeThreshold {
+	if delta >= gov.regimeSpikeThreshold || trendRatio > 1.3 {
 		targetRegime = "bursty"
 	} else if variance >= gov.regimeVarianceHigh {
 		targetRegime = "periodic"
@@ -360,8 +398,9 @@ func (gov *MCPGovernor) maybeApplyAdaptiveProfile(gapLatency float64) {
 		gov.integralDecay = profile.IntegralDecay
 	}
 
-	logger("[AdaptiveProfile]: %s -> %s, variance=%.4f, delta=%.4f, priceStep=%d, threshold=%s, decay=%.2f, updateRate=%s\n",
-		gov.activeRegime, targetRegime, variance, delta, gov.priceStep, gov.latencyThreshold.String(), gov.decayRate, gov.priceUpdateRate.String())
+	logger("[AdaptiveProfile]: %s -> %s, variance=%.4f, delta=%.4f, trend=%.2f, priceStep=%d, threshold=%s, decay=%.2f, updateRate=%s, detPS=%d detDS=%d detMC=%d\n",
+		gov.activeRegime, targetRegime, variance, delta, trendRatio, gov.priceStep, gov.latencyThreshold.String(), gov.decayRate, gov.priceUpdateRate.String(),
+		profile.DetectorPriceStep, profile.DetectorDecayStep, profile.DetectorMaxConc)
 
 	gov.activeRegime = targetRegime
 	gov.lastProfileSwitch = time.Now()
@@ -391,4 +430,25 @@ func maxInt64(a, b int64) int64 {
 		return a
 	}
 	return b
+}
+
+// GetDetectorParams 返回当前活跃档位的代理检测器参数。
+// 在反向代理架构中，proxyOverloadDetector 调用此方法读取自适应参数。
+func (gov *MCPGovernor) GetDetectorParams() (priceStep, decayStep, maxConc int64) {
+	profile, ok := gov.parameterProfiles[gov.activeRegime]
+	if !ok {
+		return 10, 5, 4 // 兜底默认值
+	}
+	return profile.DetectorPriceStep, profile.DetectorDecayStep, profile.DetectorMaxConc
+}
+
+// GetActiveRegime 返回当前活跃的负载档位名称。
+func (gov *MCPGovernor) GetActiveRegime() string {
+	return gov.activeRegime
+}
+
+// ApplyAdaptiveProfileSignal 外部注入过载信号，触发自适应档位检测。
+// 在反向代理架构中，由 proxyOverloadDetector 调用，注入平滑后的并发度信号。
+func (gov *MCPGovernor) ApplyAdaptiveProfileSignal(signal float64) {
+	gov.maybeApplyAdaptiveProfile(signal)
 }

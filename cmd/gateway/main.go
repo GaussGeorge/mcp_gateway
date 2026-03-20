@@ -28,16 +28,16 @@ import (
 
 // proxyOverloadDetector 代理级过载检测器
 // 在反向代理架构中，Go runtime 调度器延迟不反映实际负载，
-// 因此用并发请求计数和响应延迟来驱动 DP 价格机制。
+// 因此用并发请求计数来驱动 DP 价格机制。
+// 检测器参数（priceStep/decayStep/maxConc）从 MCPGovernor 的当前档位动态读取，
+// 实现自适应过载检测：不同负载模式下使用不同的检测灵敏度。
 type proxyOverloadDetector struct {
 	gov            *mcpgov.MCPGovernor
 	activeCount    int64   // atomic: 当前活跃的并发请求数
-	maxConc        int64   // 并发容量阈值，超过后开始涨价
-	priceStep      int64   // 每单位过载的涨价幅度
-	decayStep      int64   // 空闲时每 tick 的降价幅度
 	interval       time.Duration
 	currentPrice   int64   // 当前价格 (detector 内部跟踪)
-	smoothedActive float64 // 指数平滑后的并发数（提供"记忆"）
+	smoothActive   float64 // 指数平滑后的并发数（提供"记忆"，用于定价）
+	regimeSignal   float64 // 对称轻度平滑并发数（用于 regime 检测）
 }
 
 func (d *proxyOverloadDetector) onRequestStart() {
@@ -52,19 +52,28 @@ func (d *proxyOverloadDetector) run() {
 	for range time.Tick(d.interval) {
 		active := float64(atomic.LoadInt64(&d.activeCount))
 
-		// 非对称指数平滑：快速响应过载，缓慢松弛恢复
-		if active > d.smoothedActive {
-			d.smoothedActive = 0.7*d.smoothedActive + 0.3*active // 快速升
+		// 非对称指数平滑：快速响应过载，缓慢松弛恢复（用于定价）
+		if active > d.smoothActive {
+			d.smoothActive = 0.7*d.smoothActive + 0.3*active // 快速升
 		} else {
-				d.smoothedActive = 0.99*d.smoothedActive + 0.01*active // 缓慢降
+			d.smoothActive = 0.99*d.smoothActive + 0.01*active // 缓慢降
 		}
 
-		diff := int64(d.smoothedActive) - d.maxConc
+		// 对称轻度平滑（用于 regime 检测）：双向 alpha=0.2，保留负载变化信号
+		d.regimeSignal = 0.8*d.regimeSignal + 0.2*active
+
+		// 注入 regime 信号触发自适应档位检测
+		d.gov.ApplyAdaptiveProfileSignal(d.regimeSignal)
+
+		// 从当前活跃档位动态读取检测器参数
+		priceStep, decayStep, maxConc := d.gov.GetDetectorParams()
+
+		diff := int64(d.smoothActive) - maxConc
 
 		if diff > 0 {
-			d.currentPrice = diff * d.priceStep
+			d.currentPrice = diff * priceStep
 		} else if d.currentPrice > 0 {
-			d.currentPrice -= d.decayStep
+			d.currentPrice -= decayStep
 			if d.currentPrice < 0 {
 				d.currentPrice = 0
 			}
@@ -288,6 +297,12 @@ func setupDP(tools []mcpgov.MCPTool, backendURL string) http.Handler {
 		"tokenRefillDist":    "fixed",
 		"priceAggregation":   "maximal",
 		"enableAdaptiveProfile": true,
+		// Regime Detection 参数（标定为并发度信号，对称轻度平滑）
+		"regimeWindow":          100,
+		"regimeVarianceLow":     1.0,
+		"regimeVarianceHigh":    4.0,
+		"regimeSpikeThreshold":  2.0,
+		"profileSwitchCooldown": 500 * time.Millisecond,
 		"toolWeights": map[string]int64{
 			"mock_heavy": 5, // 重量工具权重乘数 (800ms vs ~100ms ≈ 8:1)
 		},
@@ -296,13 +311,10 @@ func setupDP(tools []mcpgov.MCPTool, backendURL string) http.Handler {
 	gov := mcpgov.NewMCPGovernor("dp-gateway", callMap, opts)
 	server := mcpgov.NewMCPServer("dp-gateway", gov)
 
-	// 创建代理级过载检测器
+	// 创建代理级过载检测器（参数从 governor 当前档位动态读取）
 	detector := &proxyOverloadDetector{
-		gov:       gov,
-		maxConc:   4,                   // 并发容量阈值
-		priceStep: 10,                  // 每单位过载每 tick 涨价 10
-		decayStep: 5,                   // 空闲时每 tick 降价 5
-		interval:  10 * time.Millisecond,
+		gov:      gov,
+		interval: 10 * time.Millisecond,
 	}
 	go detector.run()
 
@@ -339,6 +351,12 @@ func setupDPNoRegime(tools []mcpgov.MCPTool, backendURL string) http.Handler {
 		"tokenRefillDist":       "fixed",
 		"priceAggregation":      "maximal",
 		"enableAdaptiveProfile": false, // 关键差异：禁用自适应档位
+		// 与 DP-Full 相同的 Regime 参数（保证对比公平性）
+		"regimeWindow":          100,
+		"regimeVarianceLow":     1.0,
+		"regimeVarianceHigh":    4.0,
+		"regimeSpikeThreshold":  2.0,
+		"profileSwitchCooldown": 500 * time.Millisecond,
 		"toolWeights": map[string]int64{
 			"mock_heavy": 5,
 		},
@@ -347,13 +365,10 @@ func setupDPNoRegime(tools []mcpgov.MCPTool, backendURL string) http.Handler {
 	gov := mcpgov.NewMCPGovernor("dp-noregime-gateway", callMap, opts)
 	server := mcpgov.NewMCPServer("dp-noregime-gateway", gov)
 
-	// 与 DP-Full 相同的过载检测器
+	// 与 DP-Full 相同的过载检测器（但参数永远锁死在 Steady 档位）
 	detector := &proxyOverloadDetector{
-		gov:       gov,
-		maxConc:   4,
-		priceStep: 10,
-		decayStep: 5,
-		interval:  10 * time.Millisecond,
+		gov:      gov,
+		interval: 10 * time.Millisecond,
 	}
 	go detector.run()
 

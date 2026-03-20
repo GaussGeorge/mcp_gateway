@@ -128,6 +128,10 @@ type Profile struct {
 	MaxToken          int64
 	IntegralThreshold float64
 	IntegralDecay     float64
+	// proxyOverloadDetector 专用参数（代理架构下的自适应调节）
+	DetectorPriceStep int64 // 检测器每单位过载的涨价步长
+	DetectorDecayStep int64 // 检测器空闲时的降价步长
+	DetectorMaxConc   int64 // 检测器的并发容量阈值
 }
 
 // ToolCallHandler 工具调用处理函数签名
@@ -284,12 +288,13 @@ func (gov *MCPGovernor) HandleToolCall(ctx context.Context, req *JSONRPCRequest,
 		}
 		return NewErrorResponse(req.ID, CodeOverloaded,
 			fmt.Sprintf("工具 %s 过载，请求被 %s 拒绝。请稍后重试。", toolName, gov.nodeName),
-			map[string]string{"price": priceString, "name": gov.nodeName})
+			map[string]string{"price": priceString, "name": gov.nodeName, "regime": gov.activeRegime})
 	}
 
 	// 5. 其他错误
 	if err != nil && err != ErrInsufficientTokens {
-		return NewErrorResponse(req.ID, CodeInternalError, err.Error(), nil)
+		return NewErrorResponse(req.ID, CodeInternalError, err.Error(),
+			map[string]string{"regime": gov.activeRegime})
 	}
 
 	// 6. 如果是 additive 策略，将剩余令牌分配给下游工具
@@ -300,7 +305,8 @@ func (gov *MCPGovernor) HandleToolCall(ctx context.Context, req *JSONRPCRequest,
 	// 7. 调用实际的工具处理函数
 	result, err := handler(ctx, params)
 	if err != nil {
-		return NewErrorResponse(req.ID, CodeInternalError, err.Error(), nil)
+		return NewErrorResponse(req.ID, CodeInternalError, err.Error(),
+			map[string]string{"regime": gov.activeRegime})
 	}
 
 	// 8. 在响应 _meta 中附加价格信息，供客户端更新缓存
@@ -311,6 +317,7 @@ func (gov *MCPGovernor) HandleToolCall(ctx context.Context, req *JSONRPCRequest,
 			}
 			result.Meta.Price = priceString
 			result.Meta.Name = gov.nodeName
+			result.Meta.Regime = gov.activeRegime
 			logger("[响应]: 工具 %s 的当前价格为 %s\n", toolName, priceString)
 		}
 	}

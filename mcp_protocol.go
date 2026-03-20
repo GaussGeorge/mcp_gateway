@@ -177,8 +177,9 @@ type ContentBlock struct {
 // ResponseMeta 响应端治理元数据
 // 服务端在返回中携带当前价格，客户端据此更新本地价格缓存
 type ResponseMeta struct {
-	Price string `json:"price,omitempty"` // 当前服务价格 (字符串形式)
-	Name  string `json:"name,omitempty"`  // 服务端节点名称
+	Price  string `json:"price,omitempty"`  // 当前服务价格 (字符串形式)
+	Name   string `json:"name,omitempty"`   // 服务端节点名称
+	Regime string `json:"regime,omitempty"` // 当前负载档位
 }
 
 // ==================== 辅助构造函数 ====================
