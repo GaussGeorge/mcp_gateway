@@ -51,6 +51,16 @@ def register(registry: ToolRegistry):
             },
             "required": ["city"]
         },
+        output_schema={
+            "type": "object",
+            "properties": {
+                "city": {"type": "string"},
+                "temperature_c": {"type": "string"},
+                "humidity": {"type": "string"},
+                "condition": {"type": "string"},
+                "wind": {"type": "string"}
+            }
+        },
         handler=execute
     ))
 
@@ -67,6 +77,14 @@ def register(registry: ToolRegistry):
                     "description": "UTC偏移量(小时)，如中国为8，日本为9，美国东部为-5",
                     "default": 8
                 }
+            }
+        },
+        output_schema={
+            "type": "object",
+            "properties": {
+                "timezone_offset": {"type": "number"},
+                "datetime": {"type": "string"},
+                "timezone": {"type": "string"}
             }
         },
         handler=execute_time

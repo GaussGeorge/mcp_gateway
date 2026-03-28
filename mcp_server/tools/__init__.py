@@ -12,6 +12,7 @@ class ToolDefinition:
     category: str  # "lightweight", "heavyweight", "benchmark"
     input_schema: Dict[str, Any]
     handler: Callable
+    output_schema: Dict[str, Any] = None  # 可选: 输出 JSON Schema (用于 DAG 编排)
 
 
 class ToolRegistry:

@@ -53,6 +53,15 @@ def register(registry: ToolRegistry):
             },
             "required": ["text"]
         },
+        output_schema={
+            "type": "object",
+            "properties": {
+                "mode": {"type": "string"},
+                "total_chunks": {"type": "integer"},
+                "dimensions": {"type": "integer"},
+                "processing_time_s": {"type": "number"}
+            }
+        },
         handler=execute
     ))
 

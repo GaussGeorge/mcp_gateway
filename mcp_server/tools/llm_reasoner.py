@@ -57,6 +57,22 @@ def register(registry: ToolRegistry):
             },
             "required": ["operation", "text"]
         },
+        output_schema={
+            "type": "object",
+            "properties": {
+                "operation": {"type": "string"},
+                "result": {"type": "string"},
+                "metrics": {
+                    "type": "object",
+                    "properties": {
+                        "ttft_ms": {"type": "number"},
+                        "total_time_s": {"type": "number"},
+                        "tokens": {"type": "integer"},
+                        "tokens_per_sec": {"type": "number"}
+                    }
+                }
+            }
+        },
         handler=execute
     ))
 

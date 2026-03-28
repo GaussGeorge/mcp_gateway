@@ -30,6 +30,15 @@ def register(registry: ToolRegistry):
                 }
             }
         },
+        output_schema={
+            "type": "object",
+            "properties": {
+                "requested_cpu_burn_ms": {"type": "integer"},
+                "actual_cpu_burn_ms": {"type": "number"},
+                "requested_memory_mb": {"type": "integer"},
+                "total_time_ms": {"type": "number"}
+            }
+        },
         handler=execute
     ))
 
@@ -55,17 +64,16 @@ def execute(arguments: dict) -> str:
             memory_block[i] = 0xAB
         mem_alloc_ms = (time.time() - mem_start) * 1000
 
-    # ---- Phase 2: CPU Burn (tight float loop) ----
+    # ---- Phase 2: Simulated Heavy Work (sleep-based) ----
+    # 使用 time.sleep() 代替 CPU burn，原因：
+    # 1. Python GIL 导致 CPU-bound 多线程无法并行，server 吞吐量极低
+    # 2. 真实 MCP 场景中重量级工具（LLM 推理、外部 API）是 I/O bound
+    # 3. sleep 期间释放 GIL，轻量级请求不被阻塞
     cpu_start = time.time()
-    burn_deadline = cpu_start + (cpu_burn_ms / 1000.0)
     iterations = 0
-    x = 1.0
-
-    while time.time() < burn_deadline:
-        # Intensive floating-point computation to saturate a CPU core
-        for _ in range(1000):
-            x = (x * 1.000001 + 0.000001) / 1.000001
-            iterations += 1
+    if cpu_burn_ms > 0:
+        time.sleep(cpu_burn_ms / 1000.0)
+        iterations = int(cpu_burn_ms * 1000)  # 模拟迭代次数
 
     actual_cpu_ms = (time.time() - cpu_start) * 1000
 

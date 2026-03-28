@@ -1,0 +1,42 @@
+[DAG发压机] CPU 亲和性: cores=[0, 1]
+[DAG发压机] 目标: http://127.0.0.1:9123
+[DAG发压机] 总会话: 300  (P&S=300, ReAct=0)
+[DAG发压机] 总步骤: 1539
+[DAG发压机] 预算: 500
+[DAG发压机] 重载比: 30%
+[DAG发压机] 并发: 30
+[DAG发压机] 种子: 42
+
+============================================================
+  DAG 会话发压机 — 统计摘要
+============================================================
+  总会话数:        300
+  ├─ SUCCESS:      300  (100.0%)
+  ├─ REJECTED@S0:  0  (0.0%)
+  ├─ CASCADE_FAIL: 0  (0.0%)
+  └─ PENDING:      0
+
+  [Plan-and-Solve]  total=300  success=300  rejected@s0=0  cascade=0
+  [ReAct]           total=0  success=0  rejected@s0=0  cascade=0
+
+  ── Goodput 指标 ──
+  Raw Goodput (单步累加):       3327.0
+  Effective Goodput (全链路):    3327.0
+  Raw Goodput/s:                72.52
+  Effective Goodput/s:          72.52
+
+  ── 步骤级统计 ──
+  总步骤数:          1539
+  步骤成功数:        1539  (100.0%)
+  会话吞吐量:        6.5 sessions/s
+
+  ── 延迟 (ms) ──
+  P50:   156.5
+  P95:   2920.0
+  P99:   3052.5
+  Mean:  821.1
+============================================================
+
+[DAG发压机] 步骤级数据: D:\mcp-governance-main\scripts\..\results\exp1_core\breakwater_mcp_run3.csv
+[DAG发压机] 会话级数据: D:\mcp-governance-main\scripts\..\results\exp1_core\breakwater_mcp_run3_sessions.csv
+[DAG发压机] 总记录: 1539 步 / 300 会话

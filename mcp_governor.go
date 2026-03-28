@@ -456,3 +456,17 @@ func (gov *MCPGovernor) UpdateResponsePrice(ctx context.Context, toolName string
 	gov.UpdateDownstreamPrice(ctx, toolName, serverName, price)
 	logger("[响应后处理]: 收到来自 %s 的价格 %d\n", serverName, price)
 }
+
+// GetToolEffectivePrice 获取指定工具的有效价格（ownPrice × 工具权重）
+// 用于 MCPDP 网关计算 DAG 全链路总价格
+func (gov *MCPGovernor) GetToolEffectivePrice(toolName string) int64 {
+	ownPriceVal, ok := gov.priceTableMap.Load("ownprice")
+	if !ok {
+		return 0
+	}
+	ownPrice := ownPriceVal.(int64)
+	if w, exists := gov.toolWeights[toolName]; exists && w > 1 {
+		ownPrice *= w
+	}
+	return ownPrice
+}

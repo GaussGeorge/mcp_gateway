@@ -94,6 +94,22 @@ func main() {
 	srlBurst := flag.Int64("srl-burst", 100, "SRL: 令牌桶最大容量")
 	srlMaxConc := flag.Int64("srl-max-conc", 20, "SRL: 最大并发连接数")
 
+	// Rajomon 参数
+	rajomonPriceStep := flag.Int64("rajomon-price-step", 100, "Rajomon: 过载涨价步长")
+
+	// DAGOR 参数
+	dagorRTTThreshold := flag.Float64("dagor-rtt-threshold", 200.0, "DAGOR: RTT 过载检测阈值 (ms)")
+	dagorPriceStep := flag.Int64("dagor-price-step", 50, "DAGOR: 过载时优先级门槛每轮增量")
+
+	// SBAC 参数
+	sbacMaxSessions := flag.Int64("sbac-max-sessions", 50, "SBAC: 最大并发会话数")
+
+	// PlanGate (MCPDP) 参数
+	plangateMaxSessions := flag.Int("plangate-max-sessions", 30,
+		"PlanGate (Full): 并发会话上限（<=0 表示不限制）")
+	plangatePriceStep := flag.Int64("plangate-price-step", 40,
+		"PlanGate: 过载涨价步长")
+
 	flag.Parse()
 
 	// 先获取后端工具列表
@@ -114,8 +130,18 @@ func main() {
 		handler = setupDP(tools, *backendURL)
 	case "dp-noregime":
 		handler = setupDPNoRegime(tools, *backendURL)
+	case "mcpdp":
+		handler = setupMCPDP(tools, *backendURL, *plangatePriceStep, *plangateMaxSessions)
+	case "mcpdp-nolock":
+		handler = setupMCPDPNoLock(tools, *backendURL, *plangatePriceStep)
+	case "rajomon":
+		handler = setupRajomon(tools, *backendURL, *rajomonPriceStep)
+	case "dagor":
+		handler = setupDagor(tools, *backendURL, *dagorRTTThreshold, *dagorPriceStep)
+	case "sbac":
+		handler = setupSBAC(tools, *backendURL, *sbacMaxSessions)
 	default:
-		log.Fatalf("未知模式: %s (可选: ng, srl, dp, dp-noregime)", *mode)
+		log.Fatalf("未知模式: %s (可选: ng, srl, dp, dp-noregime, mcpdp, mcpdp-nolock, rajomon, dagor, sbac)", *mode)
 	}
 
 	addr := fmt.Sprintf("%s:%d", *host, *port)
@@ -379,7 +405,162 @@ func setupDPNoRegime(tools []mcpgov.MCPTool, backendURL string) http.Handler {
 	return server
 }
 
+func setupMCPDP(tools []mcpgov.MCPTool, backendURL string, priceStep int64, maxConcurrentSessions int) http.Handler {
+	callMap := make(map[string][]string)
+	for _, tool := range tools {
+		callMap[tool.Name] = []string{}
+	}
+
+	// DetectorMaxConc 设置为超过 sessionCap 的值，确保在会话并发控制下价格保持低位
+	// 这样 Pre-flight Atomic Admission 的预算检查不会误拒合理会话
+	detectorMaxConc := int64(maxConcurrentSessions + 10)
+	if detectorMaxConc < 20 {
+		detectorMaxConc = 20
+	}
+	profileOverride := map[string]interface{}{
+		"DetectorMaxConc":   detectorMaxConc,
+		"DetectorPriceStep": int64(2),  // 低涨价步长，避免价格过激
+		"DetectorDecayStep": int64(10), // 快速衰减，价格迅速回归 0
+	}
+
+	opts := map[string]interface{}{
+		"initprice":             int64(0),
+		"rateLimiting":          false,
+		"loadShedding":          true,
+		"pinpointQueuing":       false,
+		"latencyThreshold":      50 * time.Millisecond, // 降敏：50ms 而非 500µs
+		"priceStep":             priceStep,
+		"priceStrategy":         "expdecay",
+		"priceDecayStep":        int64(1),
+		"priceSensitivity":      int64(10000),
+		"maxToken":              int64(20),
+		"smoothingWindow":       5,
+		"integralThreshold":     0.5,
+		"priceUpdateRate":       5 * time.Millisecond,
+		"tokenUpdateRate":       100 * time.Millisecond,
+		"tokenUpdateStep":       int64(1),
+		"tokenRefillDist":       "fixed",
+		"priceAggregation":      "maximal",
+		"enableAdaptiveProfile": true,
+		"regimeWindow":          100,
+		"regimeVarianceLow":     1.0,
+		"regimeVarianceHigh":    4.0,
+		"regimeSpikeThreshold":  2.0,
+		"profileSwitchCooldown": 500 * time.Millisecond,
+		"burstyProfile":         profileOverride,
+		"periodicProfile":       profileOverride,
+		"steadyProfile":         profileOverride,
+		"toolWeights": map[string]int64{
+			"mock_heavy": 5,
+		},
+	}
+
+	gov := mcpgov.NewMCPGovernor("mcpdp-gateway", callMap, opts)
+	server := mcpgov.NewMCPDPServer("mcpdp-gateway", gov, 60*time.Second, maxConcurrentSessions)
+
+	// 创建代理级过载检测器
+	detector := &proxyOverloadDetector{
+		gov:      gov,
+		interval: 10 * time.Millisecond,
+	}
+	go detector.run()
+
+	for _, tool := range tools {
+		server.RegisterTool(tool, makeProxyHandler(backendURL, tool.Name, detector))
+		log.Printf("  [MCPDP] 注册工具: %s", tool.Name)
+	}
+	return server
+}
+
 func init() {
 	log.SetFlags(log.Ldate | log.Ltime | log.Lmicroseconds)
 	log.SetOutput(os.Stdout)
+}
+
+// setupMCPDPNoLock 消融变体：相同 priceStep，但无预算锁、无并发会话上限
+// 用于与 plangate_full 对比，展示预算锁+并发控制的价值
+func setupMCPDPNoLock(tools []mcpgov.MCPTool, backendURL string, priceStep int64) http.Handler {
+	callMap := make(map[string][]string)
+	for _, tool := range tools {
+		callMap[tool.Name] = []string{}
+	}
+
+	opts := map[string]interface{}{
+		"initprice":             int64(0),
+		"rateLimiting":          false,
+		"loadShedding":          true,
+		"pinpointQueuing":       false,
+		"latencyThreshold":      50 * time.Millisecond, // 与 Full 保持一致
+		"priceStep":             priceStep,
+		"priceStrategy":         "expdecay",
+		"priceDecayStep":        int64(1),
+		"priceSensitivity":      int64(10000),
+		"maxToken":              int64(20),
+		"smoothingWindow":       5,
+		"integralThreshold":     0.5,
+		"priceUpdateRate":       5 * time.Millisecond,
+		"tokenUpdateRate":       100 * time.Millisecond,
+		"tokenUpdateStep":       int64(1),
+		"tokenRefillDist":       "fixed",
+		"priceAggregation":      "maximal",
+		"enableAdaptiveProfile": true,
+		"regimeWindow":          100,
+		"regimeVarianceLow":     1.0,
+		"regimeVarianceHigh":    4.0,
+		"regimeSpikeThreshold":  2.0,
+		"profileSwitchCooldown": 500 * time.Millisecond,
+		"toolWeights": map[string]int64{
+			"mock_heavy": 5,
+		},
+	}
+
+	gov := mcpgov.NewMCPGovernor("mcpdp-nolock-gateway", callMap, opts)
+	// maxConcurrentSessions=0: 消融实验展示无并发控制时的级联失败
+	server := mcpgov.NewMCPDPServerNoLock("mcpdp-nolock-gateway", gov, 60*time.Second, 0)
+
+	detector := &proxyOverloadDetector{
+		gov:      gov,
+		interval: 10 * time.Millisecond,
+	}
+	go detector.run()
+
+	for _, tool := range tools {
+		server.RegisterTool(tool, makeProxyHandler(backendURL, tool.Name, detector))
+		log.Printf("  [MCPDP-NoLock] 注册工具: %s", tool.Name)
+	}
+	return server
+}
+
+func setupRajomon(tools []mcpgov.MCPTool, backendURL string, priceStep int64) http.Handler {
+	gw := baseline.NewRajomonGateway("rajomon-gateway", baseline.RajomonConfig{
+		PriceStep: priceStep,
+	})
+	for _, tool := range tools {
+		gw.RegisterTool(tool, makeProxyHandler(backendURL, tool.Name, nil))
+		log.Printf("  [Rajomon] 注册工具: %s (priceStep=%d)", tool.Name, priceStep)
+	}
+	return gw
+}
+
+func setupDagor(tools []mcpgov.MCPTool, backendURL string, rttThresholdMs float64, priceStep int64) http.Handler {
+	gw := baseline.NewDagorGateway("dagor-gateway", baseline.DagorConfig{
+		RTTThresholdMs: rttThresholdMs,
+		PriceStep:      priceStep,
+	})
+	for _, tool := range tools {
+		gw.RegisterTool(tool, makeProxyHandler(backendURL, tool.Name, nil))
+		log.Printf("  [DAGOR] 注册工具: %s (rttThreshold=%.0fms, priceStep=%d)", tool.Name, rttThresholdMs, priceStep)
+	}
+	return gw
+}
+
+func setupSBAC(tools []mcpgov.MCPTool, backendURL string, maxSessions int64) http.Handler {
+	gw := baseline.NewSBACGateway("sbac-gateway", baseline.SBACConfig{
+		MaxSessions: maxSessions,
+	})
+	for _, tool := range tools {
+		gw.RegisterTool(tool, makeProxyHandler(backendURL, tool.Name, nil))
+		log.Printf("  [SBAC] 注册工具: %s (maxSessions=%d)", tool.Name, maxSessions)
+	}
+	return gw
 }

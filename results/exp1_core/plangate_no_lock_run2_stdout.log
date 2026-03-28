@@ -1,0 +1,49 @@
+[DAG发压机] CPU 亲和性: cores=[0, 1]
+[DAG发压机] 客户端价格预测: ON (TTL=1.0s, Shadow Mode)
+[DAG发压机] 目标: http://127.0.0.1:9132
+[DAG发压机] 总会话: 500  (P&S=500, ReAct=0)
+[DAG发压机] 总步骤: 2535
+[DAG发压机] 预算: 500
+[DAG发压机] 重载比: 30%
+[DAG发压机] 并发: 200
+[DAG发压机] 种子: 42
+
+============================================================
+  DAG 会话发压机 — 统计摘要
+============================================================
+  总会话数:        500
+  ├─ SUCCESS:      81  (16.2%)
+  ├─ REJECTED@S0:  390  (78.0%)
+  ├─ CASCADE_FAIL: 29  (5.8%)
+  └─ PENDING:      0
+
+  [Plan-and-Solve]  total=500  success=81  rejected@s0=390  cascade=29
+  [ReAct]           total=0  success=0  rejected@s0=0  cascade=0
+
+  ── Goodput 指标 ──
+  Raw Goodput (单步累加):       622.0
+  Effective Goodput (全链路):    483.0
+  Raw Goodput/s:                55.62
+  Effective Goodput/s:          43.19
+
+  ── 步骤级统计 ──
+  总步骤数:          821
+  步骤成功数:        402  (49.0%)
+  会话吞吐量:        44.7 sessions/s
+
+  ── 延迟 (ms) ──
+  P50:   4.2
+  P95:   805.9
+  P99:   809.8
+  Mean:  95.5
+
+  ── 客户端预测准入 (Shadow Mode) ──
+  总检查次数:        821
+  Shadow 拒绝次数:   364  (44.3%)
+  Shadow→网关命中:   322  (命中率=88.5%)
+  Client_Saved_Requests: 364  (若启用 Hard Reject 可节省的请求)
+============================================================
+
+[DAG发压机] 步骤级数据: D:\mcp-governance-main\scripts\..\results\exp1_core\plangate_no_lock_run2.csv
+[DAG发压机] 会话级数据: D:\mcp-governance-main\scripts\..\results\exp1_core\plangate_no_lock_run2_sessions.csv
+[DAG发压机] 总记录: 821 步 / 500 会话

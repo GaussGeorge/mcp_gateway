@@ -28,6 +28,15 @@ def register(registry: ToolRegistry):
             },
             "required": ["operation", "a"]
         },
+        output_schema={
+            "type": "object",
+            "properties": {
+                "operation": {"type": "string"},
+                "a": {"type": "number"},
+                "b": {"type": "number"},
+                "result": {"type": "number"}
+            }
+        },
         handler=execute
     ))
 

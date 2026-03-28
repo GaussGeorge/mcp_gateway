@@ -1,0 +1,1097 @@
+2026/03/27 14:23:12.869395 从后端获取到 3 个工具
+2026/03/27 14:23:12.903950   [MCPDP] 注册工具: calculate
+2026/03/27 14:23:12.903950   [MCPDP] 注册工具: web_fetch
+2026/03/27 14:23:12.903950   [MCPDP] 注册工具: mock_heavy
+2026/03/27 14:23:12.903950 ========================================
+2026/03/27 14:23:12.903950   MCP Gateway [mcpdp] 启动
+2026/03/27 14:23:12.903950   监听: http://127.0.0.1:9123
+2026/03/27 14:23:12.903950   后端: http://127.0.0.1:8080
+2026/03/27 14:23:12.903950 ========================================
+2026/03/27 14:23:15.087033 [MCPDP Pre-flight] session=sess-0000-5861523b budget=500 totalCost=0 steps=3
+2026/03/27 14:23:15.087033 [MCPDP Budget Reserve] session=sess-0000-5861523b locked totalCost=0 prices=map[calculate:0 mock_heavy:0]
+2026/03/27 14:23:15.087033 [MCPDP Pre-flight] session=sess-0000-5861523b ADMITTED, reservation created
+2026/03/27 14:23:15.092107 [MCPDP Reserved] session=sess-0000-5861523b step=1 tool=mock_heavy tokens=500 lockedPrice=0
+2026/03/27 14:23:15.092971 [MCPDP Pre-flight] session=sess-0001-2dd8bc90 budget=500 totalCost=0 steps=3
+2026/03/27 14:23:15.092971 [MCPDP Budget Reserve] session=sess-0001-2dd8bc90 locked totalCost=0 prices=map[mock_heavy:0 web_fetch:0]
+2026/03/27 14:23:15.092971 [MCPDP Pre-flight] session=sess-0001-2dd8bc90 ADMITTED, reservation created
+2026/03/27 14:23:15.253495 [MCPDP Pre-flight] session=sess-0002-4e7c4b79 budget=500 totalCost=0 steps=7
+2026/03/27 14:23:15.253495 [MCPDP Budget Reserve] session=sess-0002-4e7c4b79 locked totalCost=0 prices=map[calculate:0 mock_heavy:0 web_fetch:0]
+2026/03/27 14:23:15.253495 [MCPDP Pre-flight] session=sess-0002-4e7c4b79 ADMITTED, reservation created
+2026/03/27 14:23:15.329832 [MCPDP Pre-flight] session=sess-0003-a0589e25 budget=500 totalCost=0 steps=3
+2026/03/27 14:23:15.329832 [MCPDP Budget Reserve] session=sess-0003-a0589e25 locked totalCost=0 prices=map[calculate:0 mock_heavy:0 web_fetch:0]
+2026/03/27 14:23:15.329832 [MCPDP Pre-flight] session=sess-0003-a0589e25 ADMITTED, reservation created
+2026/03/27 14:23:15.336094 [MCPDP Reserved] session=sess-0003-a0589e25 step=1 tool=web_fetch tokens=500 lockedPrice=0
+2026/03/27 14:23:15.393966 [MCPDP Pre-flight] session=sess-0004-f6f6676b budget=500 totalCost=0 steps=7
+2026/03/27 14:23:15.393966 [MCPDP Budget Reserve] session=sess-0004-f6f6676b locked totalCost=0 prices=map[calculate:0 mock_heavy:0 web_fetch:0]
+2026/03/27 14:23:15.393966 [MCPDP Pre-flight] session=sess-0004-f6f6676b ADMITTED, reservation created
+2026/03/27 14:23:15.395966 [MCPDP Pre-flight] session=sess-0005-e470f61f budget=500 totalCost=0 steps=5
+2026/03/27 14:23:15.395966 [MCPDP Budget Reserve] session=sess-0005-e470f61f locked totalCost=0 prices=map[calculate:0 mock_heavy:0]
+2026/03/27 14:23:15.395966 [MCPDP Pre-flight] session=sess-0005-e470f61f ADMITTED, reservation created
+2026/03/27 14:23:15.397968 [MCPDP Pre-flight] session=sess-0006-0b24b4c9 budget=500 totalCost=0 steps=7
+2026/03/27 14:23:15.397968 [MCPDP Budget Reserve] session=sess-0006-0b24b4c9 locked totalCost=0 prices=map[calculate:0 mock_heavy:0 web_fetch:0]
+2026/03/27 14:23:15.397968 [MCPDP Pre-flight] session=sess-0006-0b24b4c9 ADMITTED, reservation created
+2026/03/27 14:23:15.398967 [MCPDP Pre-flight] session=sess-0007-fe9be29f budget=500 totalCost=0 steps=6
+2026/03/27 14:23:15.398967 [MCPDP Budget Reserve] session=sess-0007-fe9be29f locked totalCost=0 prices=map[calculate:0 mock_heavy:0 web_fetch:0]
+2026/03/27 14:23:15.398967 [MCPDP Pre-flight] session=sess-0007-fe9be29f ADMITTED, reservation created
+2026/03/27 14:23:15.492838 [MCPDP Reserved] session=sess-0003-a0589e25 step=2 tool=mock_heavy tokens=500 lockedPrice=0
+2026/03/27 14:23:15.495001 [MCPDP Pre-flight] session=sess-0008-473659f8 budget=500 totalCost=210 steps=3
+2026/03/27 14:23:15.495001 [MCPDP Budget Reserve] session=sess-0008-473659f8 locked totalCost=210 prices=map[mock_heavy:150 web_fetch:30]
+2026/03/27 14:23:15.495001 [MCPDP Pre-flight] session=sess-0008-473659f8 ADMITTED, reservation created
+2026/03/27 14:23:15.545370 [MCPDP Pre-flight] session=sess-0009-21f439a3 budget=500 totalCost=630 steps=6
+2026/03/27 14:23:15.545370 [MCPDP Pre-flight] session=sess-0009-21f439a3 REJECTED (budget 500 < cost 630)
+2026/03/27 14:23:15.550366 [MCPDP Reserved] session=sess-0004-f6f6676b step=1 tool=calculate tokens=500 lockedPrice=0
+2026/03/27 14:23:15.555367 [MCPDP Reserved] session=sess-0004-f6f6676b step=2 tool=mock_heavy tokens=500 lockedPrice=0
+2026/03/27 14:23:15.604960 [MCPDP Pre-flight] session=sess-0010-c1edaff2 budget=500 totalCost=405 steps=5
+2026/03/27 14:23:15.604960 [MCPDP Budget Reserve] session=sess-0010-c1edaff2 locked totalCost=405 prices=map[calculate:45 mock_heavy:225 web_fetch:45]
+2026/03/27 14:23:15.604960 [MCPDP Pre-flight] session=sess-0010-c1edaff2 ADMITTED, reservation created
+2026/03/27 14:23:15.607959 [MCPDP Pre-flight] session=sess-0011-4d1866dd budget=500 totalCost=675 steps=7
+2026/03/27 14:23:15.607959 [MCPDP Pre-flight] session=sess-0011-4d1866dd REJECTED (budget 500 < cost 675)
+2026/03/27 14:23:15.609960 [MCPDP Reserved] session=sess-0010-c1edaff2 step=1 tool=calculate tokens=500 lockedPrice=45
+2026/03/27 14:23:15.613146 [MCPDP Reserved] session=sess-0010-c1edaff2 step=2 tool=web_fetch tokens=500 lockedPrice=45
+2026/03/27 14:23:15.766561 [MCPDP Reserved] session=sess-0010-c1edaff2 step=3 tool=calculate tokens=500 lockedPrice=45
+2026/03/27 14:23:15.767094 [MCPDP Pre-flight] session=sess-0012-99ebebac budget=500 totalCost=600 steps=6
+2026/03/27 14:23:15.767094 [MCPDP Pre-flight] session=sess-0012-99ebebac REJECTED (budget 500 < cost 600)
+2026/03/27 14:23:15.768152 [MCPDP Reserved] session=sess-0010-c1edaff2 step=4 tool=mock_heavy tokens=500 lockedPrice=225
+2026/03/27 14:23:15.866314 [MCPDP Pre-flight] session=sess-0013-27d3efeb budget=500 totalCost=720 steps=4
+2026/03/27 14:23:15.866314 [MCPDP Pre-flight] session=sess-0013-27d3efeb REJECTED (budget 500 < cost 720)
+2026/03/27 14:23:15.869934 [MCPDP Pre-flight] session=sess-0015-78511658 budget=500 totalCost=660 steps=7
+2026/03/27 14:23:15.869934 [MCPDP Pre-flight] session=sess-0015-78511658 REJECTED (budget 500 < cost 660)
+2026/03/27 14:23:15.870458 [MCPDP Pre-flight] session=sess-0014-09dd9566 budget=500 totalCost=180 steps=3
+2026/03/27 14:23:15.870458 [MCPDP Budget Reserve] session=sess-0014-09dd9566 locked totalCost=180 prices=map[calculate:60 web_fetch:60]
+2026/03/27 14:23:15.870978 [MCPDP Pre-flight] session=sess-0014-09dd9566 ADMITTED, reservation created
+2026/03/27 14:23:15.873652 [MCPDP Pre-flight] session=sess-0016-37bd6c90 budget=500 totalCost=540 steps=5
+2026/03/27 14:23:15.873652 [MCPDP Pre-flight] session=sess-0016-37bd6c90 REJECTED (budget 500 < cost 540)
+2026/03/27 14:23:15.873652 [MCPDP Pre-flight] session=sess-0017-4441b523 budget=500 totalCost=1140 steps=7
+2026/03/27 14:23:15.873652 [MCPDP Pre-flight] session=sess-0017-4441b523 REJECTED (budget 500 < cost 1140)
+2026/03/27 14:23:15.875233 [MCPDP Reserved] session=sess-0014-09dd9566 step=1 tool=web_fetch tokens=500 lockedPrice=60
+2026/03/27 14:23:15.897395 [MCPDP Reserved] session=sess-0001-2dd8bc90 step=1 tool=mock_heavy tokens=500 lockedPrice=0
+2026/03/27 14:23:15.899123 [MCPDP Reserved] session=sess-0000-5861523b step=2 tool=calculate tokens=500 lockedPrice=0
+2026/03/27 14:23:15.926001 [MCPDP Pre-flight] session=sess-0018-62690063 budget=500 totalCost=1425 steps=7
+2026/03/27 14:23:15.926001 [MCPDP Pre-flight] session=sess-0018-62690063 REJECTED (budget 500 < cost 1425)
+2026/03/27 14:23:15.957832 [MCPDP Pre-flight] session=sess-0019-b64ebf0c budget=500 totalCost=1125 steps=7
+2026/03/27 14:23:15.957832 [MCPDP Pre-flight] session=sess-0019-b64ebf0c REJECTED (budget 500 < cost 1125)
+2026/03/27 14:23:15.988660 [MCPDP Pre-flight] session=sess-0020-06e0d8ab budget=500 totalCost=900 steps=4
+2026/03/27 14:23:15.988660 [MCPDP Pre-flight] session=sess-0020-06e0d8ab REJECTED (budget 500 < cost 900)
+2026/03/27 14:23:16.030434 [MCPDP Reserved] session=sess-0014-09dd9566 step=2 tool=calculate tokens=500 lockedPrice=60
+2026/03/27 14:23:16.031551 [MCPDP Pre-flight] session=sess-0021-f5e780d0 budget=500 totalCost=6000 steps=7
+2026/03/27 14:23:16.031551 [MCPDP Pre-flight] session=sess-0021-f5e780d0 REJECTED (budget 500 < cost 6000)
+2026/03/27 14:23:16.032148 [MCPDP Pre-flight] session=sess-0022-7073b617 budget=500 totalCost=7600 steps=7
+2026/03/27 14:23:16.032148 [MCPDP Pre-flight] session=sess-0022-7073b617 REJECTED (budget 500 < cost 7600)
+2026/03/27 14:23:16.060240 [MCPDP Reserved] session=sess-0002-4e7c4b79 step=1 tool=calculate tokens=500 lockedPrice=0
+2026/03/27 14:23:16.060802 [MCPDP Pre-flight] session=sess-0023-49a1bec5 budget=500 totalCost=5200 steps=5
+2026/03/27 14:23:16.060802 [MCPDP Pre-flight] session=sess-0023-49a1bec5 REJECTED (budget 500 < cost 5200)
+2026/03/27 14:23:16.065257 [MCPDP Reserved] session=sess-0002-4e7c4b79 step=2 tool=web_fetch tokens=500 lockedPrice=0
+2026/03/27 14:23:16.096201 [MCPDP Pre-flight] session=sess-0024-7a95becc budget=500 totalCost=5200 steps=5
+2026/03/27 14:23:16.096201 [MCPDP Pre-flight] session=sess-0024-7a95becc REJECTED (budget 500 < cost 5200)
+2026/03/27 14:23:16.141465 [MCPDP Pre-flight] session=sess-0025-42d5332f budget=500 totalCost=1600 steps=4
+2026/03/27 14:23:16.141465 [MCPDP Pre-flight] session=sess-0025-42d5332f REJECTED (budget 500 < cost 1600)
+2026/03/27 14:23:16.201658 [MCPDP Reserved] session=sess-0005-e470f61f step=1 tool=calculate tokens=500 lockedPrice=0
+2026/03/27 14:23:16.202810 [MCPDP Pre-flight] session=sess-0026-c7f7cb9d budget=500 totalCost=4400 steps=7
+2026/03/27 14:23:16.202810 [MCPDP Pre-flight] session=sess-0026-c7f7cb9d REJECTED (budget 500 < cost 4400)
+2026/03/27 14:23:16.203927 [MCPDP Pre-flight] session=sess-0027-d239919f budget=500 totalCost=4800 steps=4
+2026/03/27 14:23:16.203927 [MCPDP Pre-flight] session=sess-0027-d239919f REJECTED (budget 500 < cost 4800)
+2026/03/27 14:23:16.205616 [MCPDP Reserved] session=sess-0006-0b24b4c9 step=1 tool=calculate tokens=500 lockedPrice=0
+2026/03/27 14:23:16.206803 [MCPDP Reserved] session=sess-0007-fe9be29f step=1 tool=mock_heavy tokens=500 lockedPrice=0
+2026/03/27 14:23:16.208162 [MCPDP Reserved] session=sess-0005-e470f61f step=2 tool=calculate tokens=500 lockedPrice=0
+2026/03/27 14:23:16.210845 [MCPDP Reserved] session=sess-0006-0b24b4c9 step=2 tool=mock_heavy tokens=500 lockedPrice=0
+2026/03/27 14:23:16.212859 [MCPDP Reserved] session=sess-0005-e470f61f step=3 tool=calculate tokens=500 lockedPrice=0
+2026/03/27 14:23:16.216347 [MCPDP Reserved] session=sess-0005-e470f61f step=4 tool=mock_heavy tokens=500 lockedPrice=0
+2026/03/27 14:23:16.219361 [MCPDP Reserved] session=sess-0002-4e7c4b79 step=3 tool=mock_heavy tokens=500 lockedPrice=0
+2026/03/27 14:23:16.249289 [MCPDP Pre-flight] session=sess-0028-9338f29c budget=500 totalCost=3200 steps=4
+2026/03/27 14:23:16.249289 [MCPDP Pre-flight] session=sess-0028-9338f29c REJECTED (budget 500 < cost 3200)
+2026/03/27 14:23:16.300547 [MCPDP Pre-flight] session=sess-0029-12976f86 budget=500 totalCost=7600 steps=7
+2026/03/27 14:23:16.300547 [MCPDP Pre-flight] session=sess-0029-12976f86 REJECTED (budget 500 < cost 7600)
+2026/03/27 14:23:16.300547 [MCPDP Pre-flight] session=sess-0030-35198340 budget=500 totalCost=4000 steps=6
+2026/03/27 14:23:16.300547 [MCPDP Pre-flight] session=sess-0030-35198340 REJECTED (budget 500 < cost 4000)
+2026/03/27 14:23:16.301641 [MCPDP Reserved] session=sess-0008-473659f8 step=1 tool=web_fetch tokens=500 lockedPrice=30
+2026/03/27 14:23:16.355574 [MCPDP Pre-flight] session=sess-0031-817a7179 budget=500 totalCost=1750 steps=5
+2026/03/27 14:23:16.355574 [MCPDP Pre-flight] session=sess-0031-817a7179 REJECTED (budget 500 < cost 1750)
+2026/03/27 14:23:16.356140 [MCPDP Pre-flight] session=sess-0032-c52b7aa2 budget=500 totalCost=1400 steps=4
+2026/03/27 14:23:16.356140 [MCPDP Pre-flight] session=sess-0032-c52b7aa2 REJECTED (budget 500 < cost 1400)
+2026/03/27 14:23:16.356140 [MCPDP Pre-flight] session=sess-0033-1ad6711d budget=500 totalCost=4550 steps=5
+2026/03/27 14:23:16.356140 [MCPDP Pre-flight] session=sess-0033-1ad6711d REJECTED (budget 500 < cost 4550)
+2026/03/27 14:23:16.456579 [MCPDP Reserved] session=sess-0008-473659f8 step=2 tool=web_fetch tokens=500 lockedPrice=30
+2026/03/27 14:23:16.509079 [MCPDP Pre-flight] session=sess-0034-59ffe867 budget=500 totalCost=22 steps=7
+2026/03/27 14:23:16.509079 [MCPDP Budget Reserve] session=sess-0034-59ffe867 locked totalCost=22 prices=map[calculate:2 mock_heavy:10 web_fetch:2]
+2026/03/27 14:23:16.509079 [MCPDP Pre-flight] session=sess-0034-59ffe867 ADMITTED, reservation created
+2026/03/27 14:23:16.512335 [MCPDP Reserved] session=sess-0034-59ffe867 step=1 tool=calculate tokens=500 lockedPrice=2
+2026/03/27 14:23:16.515059 [MCPDP Reserved] session=sess-0034-59ffe867 step=2 tool=web_fetch tokens=500 lockedPrice=2
+2026/03/27 14:23:16.669655 [MCPDP Reserved] session=sess-0034-59ffe867 step=3 tool=calculate tokens=500 lockedPrice=2
+2026/03/27 14:23:16.670536 [MCPDP Pre-flight] session=sess-0035-ef57cfde budget=500 totalCost=14 steps=7
+2026/03/27 14:23:16.670536 [MCPDP Budget Reserve] session=sess-0035-ef57cfde locked totalCost=14 prices=map[calculate:2 web_fetch:2]
+2026/03/27 14:23:16.670536 [MCPDP Pre-flight] session=sess-0035-ef57cfde ADMITTED, reservation created
+2026/03/27 14:23:16.675663 [MCPDP Reserved] session=sess-0034-59ffe867 step=4 tool=mock_heavy tokens=500 lockedPrice=10
+2026/03/27 14:23:16.676864 [MCPDP Reserved] session=sess-0035-ef57cfde step=1 tool=calculate tokens=500 lockedPrice=2
+2026/03/27 14:23:16.682168 [MCPDP Reserved] session=sess-0035-ef57cfde step=2 tool=web_fetch tokens=500 lockedPrice=2
+2026/03/27 14:23:16.699288 [MCPDP Reserved] session=sess-0004-f6f6676b step=3 tool=calculate tokens=500 lockedPrice=0
+2026/03/27 14:23:16.705129 [MCPDP Reserved] session=sess-0004-f6f6676b step=4 tool=calculate tokens=500 lockedPrice=0
+2026/03/27 14:23:16.710475 [MCPDP Reserved] session=sess-0004-f6f6676b step=5 tool=web_fetch tokens=500 lockedPrice=0
+2026/03/27 14:23:16.770130 [MCPDP Pre-flight] session=sess-0036-51f48cd9 budget=500 totalCost=20 steps=6
+2026/03/27 14:23:16.770130 [MCPDP Budget Reserve] session=sess-0036-51f48cd9 locked totalCost=20 prices=map[calculate:2 mock_heavy:10 web_fetch:2]
+2026/03/27 14:23:16.770130 [MCPDP Pre-flight] session=sess-0036-51f48cd9 ADMITTED, reservation created
+2026/03/27 14:23:16.773364 [MCPDP Reserved] session=sess-0036-51f48cd9 step=1 tool=web_fetch tokens=500 lockedPrice=2
+2026/03/27 14:23:16.801188 [MCPDP Pre-flight] session=sess-0037-a0a2c5d1 budget=500 totalCost=38 steps=7
+2026/03/27 14:23:16.801188 [MCPDP Budget Reserve] session=sess-0037-a0a2c5d1 locked totalCost=38 prices=map[calculate:2 mock_heavy:10 web_fetch:2]
+2026/03/27 14:23:16.801188 [MCPDP Pre-flight] session=sess-0037-a0a2c5d1 ADMITTED, reservation created
+2026/03/27 14:23:16.802364 [MCPDP Pre-flight] session=sess-0038-27af7a2f budget=500 totalCost=14 steps=7
+2026/03/27 14:23:16.802364 [MCPDP Budget Reserve] session=sess-0038-27af7a2f locked totalCost=14 prices=map[calculate:2 web_fetch:2]
+2026/03/27 14:23:16.802364 [MCPDP Pre-flight] session=sess-0038-27af7a2f ADMITTED, reservation created
+2026/03/27 14:23:16.805013 [MCPDP Reserved] session=sess-0038-27af7a2f step=1 tool=web_fetch tokens=500 lockedPrice=2
+2026/03/27 14:23:16.837301 [MCPDP Reserved] session=sess-0035-ef57cfde step=3 tool=web_fetch tokens=500 lockedPrice=2
+2026/03/27 14:23:16.859751 [MCPDP Reserved] session=sess-0001-2dd8bc90 step=2 tool=web_fetch tokens=500 lockedPrice=0
+2026/03/27 14:23:16.860920 [MCPDP Pre-flight] session=sess-0039-75db5c97 budget=500 totalCost=72 steps=6
+2026/03/27 14:23:16.860920 [MCPDP Budget Reserve] session=sess-0039-75db5c97 locked totalCost=72 prices=map[calculate:4 mock_heavy:20]
+2026/03/27 14:23:16.860920 [MCPDP Pre-flight] session=sess-0039-75db5c97 ADMITTED, reservation created
+2026/03/27 14:23:16.866279 [MCPDP Reserved] session=sess-0004-f6f6676b step=6 tool=web_fetch tokens=500 lockedPrice=0
+2026/03/27 14:23:16.867372 [MCPDP Reserved] session=sess-0039-75db5c97 step=1 tool=calculate tokens=500 lockedPrice=4
+2026/03/27 14:23:16.871699 [MCPDP Reserved] session=sess-0039-75db5c97 step=2 tool=mock_heavy tokens=500 lockedPrice=20
+2026/03/27 14:23:16.908663 [MCPDP Pre-flight] session=sess-0040-4d92d151 budget=500 totalCost=78 steps=5
+2026/03/27 14:23:16.908663 [MCPDP Budget Reserve] session=sess-0040-4d92d151 locked totalCost=78 prices=map[calculate:6 mock_heavy:30 web_fetch:6]
+2026/03/27 14:23:16.908663 [MCPDP Pre-flight] session=sess-0040-4d92d151 ADMITTED, reservation created
+2026/03/27 14:23:16.912312 [MCPDP Pre-flight] session=sess-0041-e9823921 budget=500 totalCost=42 steps=3
+2026/03/27 14:23:16.912312 [MCPDP Budget Reserve] session=sess-0041-e9823921 locked totalCost=42 prices=map[calculate:6 mock_heavy:30]
+2026/03/27 14:23:16.912312 [MCPDP Pre-flight] session=sess-0041-e9823921 ADMITTED, reservation created
+2026/03/27 14:23:16.916988 [MCPDP Reserved] session=sess-0041-e9823921 step=1 tool=calculate tokens=500 lockedPrice=6
+2026/03/27 14:23:16.922423 [MCPDP Reserved] session=sess-0041-e9823921 step=2 tool=mock_heavy tokens=500 lockedPrice=30
+2026/03/27 14:23:16.927987 [MCPDP Reserved] session=sess-0036-51f48cd9 step=2 tool=web_fetch tokens=500 lockedPrice=2
+2026/03/27 14:23:16.954294 [MCPDP Pre-flight] session=sess-0042-368f930c budget=500 totalCost=80 steps=4
+2026/03/27 14:23:16.954294 [MCPDP Budget Reserve] session=sess-0042-368f930c locked totalCost=80 prices=map[calculate:10 mock_heavy:50 web_fetch:10]
+2026/03/27 14:23:16.954805 [MCPDP Pre-flight] session=sess-0042-368f930c ADMITTED, reservation created
+2026/03/27 14:23:16.954833 [MCPDP Pre-flight] session=sess-0043-bd7f4d64 budget=500 totalCost=30 steps=3
+2026/03/27 14:23:16.954833 [MCPDP Budget Reserve] session=sess-0043-bd7f4d64 locked totalCost=30 prices=map[calculate:10 web_fetch:10]
+2026/03/27 14:23:16.954833 [MCPDP Pre-flight] session=sess-0043-bd7f4d64 ADMITTED, reservation created
+2026/03/27 14:23:16.959345 [MCPDP Reserved] session=sess-0038-27af7a2f step=2 tool=web_fetch tokens=500 lockedPrice=2
+2026/03/27 14:23:16.959899 [MCPDP Reserved] session=sess-0043-bd7f4d64 step=1 tool=calculate tokens=500 lockedPrice=10
+2026/03/27 14:23:16.964242 [MCPDP Reserved] session=sess-0043-bd7f4d64 step=2 tool=web_fetch tokens=500 lockedPrice=10
+2026/03/27 14:23:16.993968 [MCPDP Reserved] session=sess-0035-ef57cfde step=4 tool=web_fetch tokens=500 lockedPrice=2
+2026/03/27 14:23:17.013440 [MCPDP Reserved] session=sess-0007-fe9be29f step=2 tool=web_fetch tokens=500 lockedPrice=0
+2026/03/27 14:23:17.015828 [MCPDP Reserved] session=sess-0006-0b24b4c9 step=3 tool=web_fetch tokens=500 lockedPrice=0
+2026/03/27 14:23:17.065711 [MCPDP Reserved] session=sess-0040-4d92d151 step=1 tool=mock_heavy tokens=500 lockedPrice=30
+2026/03/27 14:23:17.066410 [MCPDP Pre-flight] session=sess-0044-42cd80da budget=500 totalCost=196 steps=6
+2026/03/27 14:23:17.066410 [MCPDP Budget Reserve] session=sess-0044-42cd80da locked totalCost=196 prices=map[calculate:14 mock_heavy:70 web_fetch:14]
+2026/03/27 14:23:17.066410 [MCPDP Pre-flight] session=sess-0044-42cd80da ADMITTED, reservation created
+2026/03/27 14:23:17.067583 [MCPDP Pre-flight] session=sess-0045-bd8dfdbe budget=500 totalCost=98 steps=3
+2026/03/27 14:23:17.067583 [MCPDP Budget Reserve] session=sess-0045-bd8dfdbe locked totalCost=98 prices=map[calculate:14 mock_heavy:70 web_fetch:14]
+2026/03/27 14:23:17.067583 [MCPDP Pre-flight] session=sess-0045-bd8dfdbe ADMITTED, reservation created
+2026/03/27 14:23:17.073340 [MCPDP Reserved] session=sess-0044-42cd80da step=1 tool=mock_heavy tokens=500 lockedPrice=70
+2026/03/27 14:23:17.083255 [MCPDP Reserved] session=sess-0036-51f48cd9 step=3 tool=web_fetch tokens=500 lockedPrice=2
+2026/03/27 14:23:17.100071 [MCPDP Reserved] session=sess-0002-4e7c4b79 step=4 tool=web_fetch tokens=500 lockedPrice=0
+2026/03/27 14:23:17.114788 [MCPDP Reserved] session=sess-0038-27af7a2f step=3 tool=calculate tokens=500 lockedPrice=2
+2026/03/27 14:23:17.115999 [MCPDP Pre-flight] session=sess-0046-a8268e4e budget=500 totalCost=1350 steps=5
+2026/03/27 14:23:17.116065 [MCPDP Pre-flight] session=sess-0046-a8268e4e REJECTED (budget 500 < cost 1350)
+2026/03/27 14:23:17.120072 [MCPDP Reserved] session=sess-0038-27af7a2f step=4 tool=web_fetch tokens=500 lockedPrice=2
+2026/03/27 14:23:17.150454 [MCPDP Reserved] session=sess-0035-ef57cfde step=5 tool=web_fetch tokens=500 lockedPrice=2
+2026/03/27 14:23:17.150986 [MCPDP Pre-flight] session=sess-0047-bf0db49e budget=500 totalCost=1800 steps=4
+2026/03/27 14:23:17.150986 [MCPDP Pre-flight] session=sess-0047-bf0db49e REJECTED (budget 500 < cost 1800)
+2026/03/27 14:23:17.169003 [MCPDP Reserved] session=sess-0007-fe9be29f step=3 tool=web_fetch tokens=500 lockedPrice=0
+2026/03/27 14:23:17.170626 [MCPDP Pre-flight] session=sess-0048-c7fd1537 budget=500 totalCost=2100 steps=6
+2026/03/27 14:23:17.170626 [MCPDP Pre-flight] session=sess-0048-c7fd1537 REJECTED (budget 500 < cost 2100)
+2026/03/27 14:23:17.171681 [MCPDP Reserved] session=sess-0006-0b24b4c9 step=4 tool=mock_heavy tokens=500 lockedPrice=0
+2026/03/27 14:23:17.215973 [MCPDP Pre-flight] session=sess-0049-79e0aa9b budget=500 totalCost=1200 steps=4
+2026/03/27 14:23:17.215973 [MCPDP Pre-flight] session=sess-0049-79e0aa9b REJECTED (budget 500 < cost 1200)
+2026/03/27 14:23:17.216507 [MCPDP Pre-flight] session=sess-0050-efc4e131 budget=500 totalCost=2850 steps=7
+2026/03/27 14:23:17.216507 [MCPDP Pre-flight] session=sess-0050-efc4e131 REJECTED (budget 500 < cost 2850)
+2026/03/27 14:23:17.224577 [MCPDP Reserved] session=sess-0045-bd8dfdbe step=1 tool=mock_heavy tokens=500 lockedPrice=70
+2026/03/27 14:23:17.238701 [MCPDP Reserved] session=sess-0036-51f48cd9 step=4 tool=web_fetch tokens=500 lockedPrice=2
+2026/03/27 14:23:17.255560 [MCPDP Reserved] session=sess-0002-4e7c4b79 step=5 tool=mock_heavy tokens=500 lockedPrice=0
+2026/03/27 14:23:17.274561 [MCPDP Reserved] session=sess-0038-27af7a2f step=5 tool=calculate tokens=500 lockedPrice=2
+2026/03/27 14:23:17.279245 [MCPDP Reserved] session=sess-0038-27af7a2f step=6 tool=web_fetch tokens=500 lockedPrice=2
+2026/03/27 14:23:17.305053 [MCPDP Reserved] session=sess-0035-ef57cfde step=6 tool=web_fetch tokens=500 lockedPrice=2
+2026/03/27 14:23:17.323625 [MCPDP Reserved] session=sess-0007-fe9be29f step=4 tool=calculate tokens=500 lockedPrice=0
+2026/03/27 14:23:17.326724 [MCPDP Reserved] session=sess-0007-fe9be29f step=5 tool=calculate tokens=500 lockedPrice=0
+2026/03/27 14:23:17.394540 [MCPDP Reserved] session=sess-0036-51f48cd9 step=5 tool=mock_heavy tokens=500 lockedPrice=10
+2026/03/27 14:23:17.395104 [MCPDP Pre-flight] session=sess-0051-60bd50f5 budget=500 totalCost=2565 steps=7
+2026/03/27 14:23:17.395104 [MCPDP Pre-flight] session=sess-0051-60bd50f5 REJECTED (budget 500 < cost 2565)
+2026/03/27 14:23:17.460834 [MCPDP Pre-flight] session=sess-0052-2f561c76 budget=500 totalCost=2970 steps=6
+2026/03/27 14:23:17.460834 [MCPDP Pre-flight] session=sess-0052-2f561c76 REJECTED (budget 500 < cost 2970)
+2026/03/27 14:23:17.482180 [MCPDP Reserved] session=sess-0034-59ffe867 step=5 tool=calculate tokens=500 lockedPrice=2
+2026/03/27 14:23:17.487340 [MCPDP Reserved] session=sess-0034-59ffe867 step=6 tool=calculate tokens=500 lockedPrice=2
+2026/03/27 14:23:17.605846 [MCPDP Reserved] session=sess-0037-a0a2c5d1 step=1 tool=mock_heavy tokens=500 lockedPrice=10
+2026/03/27 14:23:17.606411 [MCPDP Pre-flight] session=sess-0053-f69eb73f budget=500 totalCost=1485 steps=3
+2026/03/27 14:23:17.606411 [MCPDP Pre-flight] session=sess-0053-f69eb73f REJECTED (budget 500 < cost 1485)
+2026/03/27 14:23:17.677376 [MCPDP Reserved] session=sess-0039-75db5c97 step=3 tool=mock_heavy tokens=500 lockedPrice=20
+2026/03/27 14:23:17.722057 [MCPDP Pre-flight] session=sess-0054-ff55c382 budget=500 totalCost=1200 steps=6
+2026/03/27 14:23:17.722057 [MCPDP Pre-flight] session=sess-0054-ff55c382 REJECTED (budget 500 < cost 1200)
+2026/03/27 14:23:17.784788 [MCPDP Pre-flight] session=sess-0055-e0dcea79 budget=500 totalCost=1440 steps=4
+2026/03/27 14:23:17.784788 [MCPDP Pre-flight] session=sess-0055-e0dcea79 REJECTED (budget 500 < cost 1440)
+2026/03/27 14:23:17.814322 [MCPDP Reserved] session=sess-0042-368f930c step=1 tool=calculate tokens=500 lockedPrice=10
+2026/03/27 14:23:17.820429 [MCPDP Reserved] session=sess-0042-368f930c step=2 tool=web_fetch tokens=500 lockedPrice=10
+2026/03/27 14:23:17.871886 [MCPDP Reserved] session=sess-0040-4d92d151 step=2 tool=mock_heavy tokens=500 lockedPrice=30
+2026/03/27 14:23:17.878887 [MCPDP Reserved] session=sess-0044-42cd80da step=2 tool=mock_heavy tokens=500 lockedPrice=70
+2026/03/27 14:23:17.925108 [MCPDP Pre-flight] session=sess-0056-c298c062 budget=500 totalCost=1575 steps=7
+2026/03/27 14:23:17.925108 [MCPDP Pre-flight] session=sess-0056-c298c062 REJECTED (budget 500 < cost 1575)
+2026/03/27 14:23:17.926108 [MCPDP Pre-flight] session=sess-0057-2cb9d541 budget=500 totalCost=735 steps=3
+2026/03/27 14:23:17.926108 [MCPDP Pre-flight] session=sess-0057-2cb9d541 REJECTED (budget 500 < cost 735)
+2026/03/27 14:23:17.927109 [MCPDP Pre-flight] session=sess-0058-0a6a2a24 budget=500 totalCost=1050 steps=6
+2026/03/27 14:23:17.927109 [MCPDP Pre-flight] session=sess-0058-0a6a2a24 REJECTED (budget 500 < cost 1050)
+2026/03/27 14:23:17.929107 [MCPDP Pre-flight] session=sess-0059-81b2c143 budget=500 totalCost=420 steps=4
+2026/03/27 14:23:17.929107 [MCPDP Budget Reserve] session=sess-0059-81b2c143 locked totalCost=420 prices=map[calculate:105 web_fetch:105]
+2026/03/27 14:23:17.929107 [MCPDP Pre-flight] session=sess-0059-81b2c143 ADMITTED, reservation created
+2026/03/27 14:23:17.956667 [MCPDP Pre-flight] session=sess-0060-2813ba86 budget=500 totalCost=1050 steps=6
+2026/03/27 14:23:17.956667 [MCPDP Pre-flight] session=sess-0060-2813ba86 REJECTED (budget 500 < cost 1050)
+2026/03/27 14:23:17.976669 [MCPDP Reserved] session=sess-0042-368f930c step=3 tool=calculate tokens=500 lockedPrice=10
+2026/03/27 14:23:17.977668 [MCPDP Pre-flight] session=sess-0061-c28384e6 budget=500 totalCost=945 steps=5
+2026/03/27 14:23:17.978666 [MCPDP Pre-flight] session=sess-0061-c28384e6 REJECTED (budget 500 < cost 945)
+2026/03/27 14:23:17.978666 [MCPDP Reserved] session=sess-0006-0b24b4c9 step=5 tool=web_fetch tokens=500 lockedPrice=0
+2026/03/27 14:23:17.984671 [MCPDP Pre-flight] session=sess-0062-b046e145 budget=500 totalCost=1575 steps=7
+2026/03/27 14:23:17.984671 [MCPDP Pre-flight] session=sess-0062-b046e145 REJECTED (budget 500 < cost 1575)
+2026/03/27 14:23:18.082234 [MCPDP Pre-flight] session=sess-0063-33df70a2 budget=500 totalCost=735 steps=7
+2026/03/27 14:23:18.082297 [MCPDP Pre-flight] session=sess-0063-33df70a2 REJECTED (budget 500 < cost 735)
+2026/03/27 14:23:18.084612 [MCPDP Reserved] session=sess-0059-81b2c143 step=1 tool=calculate tokens=500 lockedPrice=105
+2026/03/27 14:23:18.088145 [MCPDP Reserved] session=sess-0059-81b2c143 step=2 tool=web_fetch tokens=500 lockedPrice=105
+2026/03/27 14:23:18.113149 [MCPDP Pre-flight] session=sess-0064-1ef64ec9 budget=500 totalCost=420 steps=4
+2026/03/27 14:23:18.113149 [MCPDP Budget Reserve] session=sess-0064-1ef64ec9 locked totalCost=420 prices=map[calculate:105 web_fetch:105]
+2026/03/27 14:23:18.113149 [MCPDP Pre-flight] session=sess-0064-1ef64ec9 ADMITTED, reservation created
+2026/03/27 14:23:18.118238 [MCPDP Reserved] session=sess-0064-1ef64ec9 step=1 tool=calculate tokens=500 lockedPrice=105
+2026/03/27 14:23:18.123767 [MCPDP Reserved] session=sess-0064-1ef64ec9 step=2 tool=web_fetch tokens=500 lockedPrice=105
+2026/03/27 14:23:18.123767 [MCPDP Pre-flight] session=sess-0065-d06275ed budget=500 totalCost=1575 steps=7
+2026/03/27 14:23:18.123767 [MCPDP Pre-flight] session=sess-0065-d06275ed REJECTED (budget 500 < cost 1575)
+2026/03/27 14:23:18.135626 [MCPDP Reserved] session=sess-0006-0b24b4c9 step=6 tool=mock_heavy tokens=500 lockedPrice=0
+2026/03/27 14:23:18.190201 [MCPDP Pre-flight] session=sess-0066-be34d6cb budget=500 totalCost=840 steps=4
+2026/03/27 14:23:18.190201 [MCPDP Pre-flight] session=sess-0066-be34d6cb REJECTED (budget 500 < cost 840)
+2026/03/27 14:23:18.191279 [MCPDP Pre-flight] session=sess-0067-86b722b2 budget=500 totalCost=1260 steps=4
+2026/03/27 14:23:18.191279 [MCPDP Pre-flight] session=sess-0067-86b722b2 REJECTED (budget 500 < cost 1260)
+2026/03/27 14:23:18.242405 [MCPDP Reserved] session=sess-0059-81b2c143 step=3 tool=web_fetch tokens=500 lockedPrice=105
+2026/03/27 14:23:18.278756 [MCPDP Reserved] session=sess-0064-1ef64ec9 step=3 tool=web_fetch tokens=500 lockedPrice=105
+2026/03/27 14:23:18.280142 [MCPDP Pre-flight] session=sess-0068-69a8e011 budget=500 totalCost=720 steps=4
+2026/03/27 14:23:18.280142 [MCPDP Pre-flight] session=sess-0068-69a8e011 REJECTED (budget 500 < cost 720)
+2026/03/27 14:23:18.281237 [MCPDP Pre-flight] session=sess-0069-7a850717 budget=500 totalCost=630 steps=7
+2026/03/27 14:23:18.281237 [MCPDP Pre-flight] session=sess-0069-7a850717 REJECTED (budget 500 < cost 630)
+2026/03/27 14:23:18.283183 [MCPDP Reserved] session=sess-0045-bd8dfdbe step=2 tool=calculate tokens=500 lockedPrice=14
+2026/03/27 14:23:18.407641 [MCPDP Reserved] session=sess-0002-4e7c4b79 step=6 tool=mock_heavy tokens=500 lockedPrice=0
+2026/03/27 14:23:18.510993 [MCPDP Pre-flight] session=sess-0070-7f2cc09a budget=500 totalCost=18 steps=3
+2026/03/27 14:23:18.510993 [MCPDP Budget Reserve] session=sess-0070-7f2cc09a locked totalCost=18 prices=map[calculate:6 web_fetch:6]
+2026/03/27 14:23:18.510993 [MCPDP Pre-flight] session=sess-0070-7f2cc09a ADMITTED, reservation created
+2026/03/27 14:23:18.528763 [MCPDP Reserved] session=sess-0037-a0a2c5d1 step=2 tool=calculate tokens=500 lockedPrice=2
+2026/03/27 14:23:18.535061 [MCPDP Reserved] session=sess-0037-a0a2c5d1 step=3 tool=web_fetch tokens=500 lockedPrice=2
+2026/03/27 14:23:18.587787 [MCPDP Pre-flight] session=sess-0071-8398cce5 budget=500 totalCost=36 steps=5
+2026/03/27 14:23:18.587787 [MCPDP Budget Reserve] session=sess-0071-8398cce5 locked totalCost=36 prices=map[calculate:4 mock_heavy:20 web_fetch:4]
+2026/03/27 14:23:18.587787 [MCPDP Pre-flight] session=sess-0071-8398cce5 ADMITTED, reservation created
+2026/03/27 14:23:18.588767 [MCPDP Pre-flight] session=sess-0072-de9bb07a budget=500 totalCost=76 steps=7
+2026/03/27 14:23:18.588767 [MCPDP Budget Reserve] session=sess-0072-de9bb07a locked totalCost=76 prices=map[calculate:4 mock_heavy:20 web_fetch:4]
+2026/03/27 14:23:18.588767 [MCPDP Pre-flight] session=sess-0072-de9bb07a ADMITTED, reservation created
+2026/03/27 14:23:18.589857 [MCPDP Pre-flight] session=sess-0073-c4323cea budget=500 totalCost=40 steps=6
+2026/03/27 14:23:18.589943 [MCPDP Budget Reserve] session=sess-0073-c4323cea locked totalCost=40 prices=map[calculate:4 mock_heavy:20 web_fetch:4]
+2026/03/27 14:23:18.589996 [MCPDP Pre-flight] session=sess-0073-c4323cea ADMITTED, reservation created
+2026/03/27 14:23:18.595462 [MCPDP Reserved] session=sess-0071-8398cce5 step=1 tool=calculate tokens=500 lockedPrice=4
+2026/03/27 14:23:18.600939 [MCPDP Reserved] session=sess-0071-8398cce5 step=2 tool=mock_heavy tokens=500 lockedPrice=20
+2026/03/27 14:23:18.615451 [MCPDP Reserved] session=sess-0039-75db5c97 step=4 tool=mock_heavy tokens=500 lockedPrice=20
+2026/03/27 14:23:18.667479 [MCPDP Reserved] session=sess-0070-7f2cc09a step=1 tool=calculate tokens=500 lockedPrice=6
+2026/03/27 14:23:18.668026 [MCPDP Pre-flight] session=sess-0074-c1fdb734 budget=500 totalCost=56 steps=6
+2026/03/27 14:23:18.668026 [MCPDP Budget Reserve] session=sess-0074-c1fdb734 locked totalCost=56 prices=map[calculate:4 mock_heavy:20 web_fetch:4]
+2026/03/27 14:23:18.668026 [MCPDP Pre-flight] session=sess-0074-c1fdb734 ADMITTED, reservation created
+2026/03/27 14:23:18.673964 [MCPDP Reserved] session=sess-0070-7f2cc09a step=2 tool=calculate tokens=500 lockedPrice=6
+2026/03/27 14:23:18.677757 [MCPDP Reserved] session=sess-0040-4d92d151 step=3 tool=calculate tokens=500 lockedPrice=6
+2026/03/27 14:23:18.682782 [MCPDP Reserved] session=sess-0040-4d92d151 step=4 tool=web_fetch tokens=500 lockedPrice=6
+2026/03/27 14:23:18.684498 [MCPDP Reserved] session=sess-0044-42cd80da step=3 tool=calculate tokens=500 lockedPrice=14
+2026/03/27 14:23:18.689680 [MCPDP Reserved] session=sess-0044-42cd80da step=4 tool=calculate tokens=500 lockedPrice=14
+2026/03/27 14:23:18.690232 [MCPDP Reserved] session=sess-0037-a0a2c5d1 step=4 tool=web_fetch tokens=500 lockedPrice=2
+2026/03/27 14:23:18.695330 [MCPDP Reserved] session=sess-0044-42cd80da step=5 tool=web_fetch tokens=500 lockedPrice=14
+2026/03/27 14:23:18.740286 [MCPDP Pre-flight] session=sess-0075-65c6c648 budget=500 totalCost=32 steps=4
+2026/03/27 14:23:18.740286 [MCPDP Budget Reserve] session=sess-0075-65c6c648 locked totalCost=32 prices=map[calculate:4 mock_heavy:20 web_fetch:4]
+2026/03/27 14:23:18.740286 [MCPDP Pre-flight] session=sess-0075-65c6c648 ADMITTED, reservation created
+2026/03/27 14:23:18.745087 [MCPDP Reserved] session=sess-0075-65c6c648 step=1 tool=web_fetch tokens=500 lockedPrice=4
+2026/03/27 14:23:18.749181 [MCPDP Reserved] session=sess-0073-c4323cea step=1 tool=calculate tokens=500 lockedPrice=4
+2026/03/27 14:23:18.753931 [MCPDP Reserved] session=sess-0073-c4323cea step=2 tool=web_fetch tokens=500 lockedPrice=4
+2026/03/27 14:23:18.819029 [MCPDP Pre-flight] session=sess-0076-b95ed5b9 budget=500 totalCost=36 steps=5
+2026/03/27 14:23:18.819046 [MCPDP Budget Reserve] session=sess-0076-b95ed5b9 locked totalCost=36 prices=map[calculate:4 mock_heavy:20 web_fetch:4]
+2026/03/27 14:23:18.819046 [MCPDP Pre-flight] session=sess-0076-b95ed5b9 ADMITTED, reservation created
+2026/03/27 14:23:18.824604 [MCPDP Reserved] session=sess-0076-b95ed5b9 step=1 tool=mock_heavy tokens=500 lockedPrice=20
+2026/03/27 14:23:18.846983 [MCPDP Reserved] session=sess-0037-a0a2c5d1 step=5 tool=mock_heavy tokens=500 lockedPrice=10
+2026/03/27 14:23:18.894292 [MCPDP Pre-flight] session=sess-0077-6267926b budget=500 totalCost=30 steps=5
+2026/03/27 14:23:18.894292 [MCPDP Budget Reserve] session=sess-0077-6267926b locked totalCost=30 prices=map[calculate:6 web_fetch:6]
+2026/03/27 14:23:18.894292 [MCPDP Pre-flight] session=sess-0077-6267926b ADMITTED, reservation created
+2026/03/27 14:23:18.894847 [MCPDP Pre-flight] session=sess-0078-3407ba1b budget=500 totalCost=90 steps=7
+2026/03/27 14:23:18.894847 [MCPDP Budget Reserve] session=sess-0078-3407ba1b locked totalCost=90 prices=map[calculate:6 mock_heavy:30 web_fetch:6]
+2026/03/27 14:23:18.894847 [MCPDP Pre-flight] session=sess-0078-3407ba1b ADMITTED, reservation created
+2026/03/27 14:23:18.901240 [MCPDP Reserved] session=sess-0075-65c6c648 step=2 tool=mock_heavy tokens=500 lockedPrice=20
+2026/03/27 14:23:18.908927 [MCPDP Reserved] session=sess-0073-c4323cea step=3 tool=mock_heavy tokens=500 lockedPrice=20
+2026/03/27 14:23:18.909558 [MCPDP Pre-flight] session=sess-0079-c4b8c385 budget=500 totalCost=84 steps=6
+2026/03/27 14:23:18.909558 [MCPDP Budget Reserve] session=sess-0079-c4b8c385 locked totalCost=84 prices=map[calculate:6 mock_heavy:30 web_fetch:6]
+2026/03/27 14:23:18.909558 [MCPDP Pre-flight] session=sess-0079-c4b8c385 ADMITTED, reservation created
+2026/03/27 14:23:18.910621 [MCPDP Pre-flight] session=sess-0080-da6439b1 budget=500 totalCost=30 steps=5
+2026/03/27 14:23:18.910621 [MCPDP Budget Reserve] session=sess-0080-da6439b1 locked totalCost=30 prices=map[calculate:6 web_fetch:6]
+2026/03/27 14:23:18.910621 [MCPDP Pre-flight] session=sess-0080-da6439b1 ADMITTED, reservation created
+2026/03/27 14:23:19.018369 [MCPDP Pre-flight] session=sess-0081-9cae3678 budget=500 totalCost=170 steps=5
+2026/03/27 14:23:19.018369 [MCPDP Budget Reserve] session=sess-0081-9cae3678 locked totalCost=170 prices=map[mock_heavy:50 web_fetch:10]
+2026/03/27 14:23:19.018369 [MCPDP Pre-flight] session=sess-0081-9cae3678 ADMITTED, reservation created
+2026/03/27 14:23:19.050291 [MCPDP Reserved] session=sess-0077-6267926b step=1 tool=web_fetch tokens=500 lockedPrice=6
+2026/03/27 14:23:19.051384 [MCPDP Reserved] session=sess-0078-3407ba1b step=1 tool=mock_heavy tokens=500 lockedPrice=30
+2026/03/27 14:23:19.067347 [MCPDP Reserved] session=sess-0080-da6439b1 step=1 tool=calculate tokens=500 lockedPrice=6
+2026/03/27 14:23:19.068440 [MCPDP Pre-flight] session=sess-0082-f338fcce budget=500 totalCost=70 steps=3
+2026/03/27 14:23:19.068440 [MCPDP Budget Reserve] session=sess-0082-f338fcce locked totalCost=70 prices=map[calculate:10 mock_heavy:50 web_fetch:10]
+2026/03/27 14:23:19.068440 [MCPDP Pre-flight] session=sess-0082-f338fcce ADMITTED, reservation created
+2026/03/27 14:23:19.069621 [MCPDP Reserved] session=sess-0079-c4b8c385 step=1 tool=calculate tokens=500 lockedPrice=6
+2026/03/27 14:23:19.072880 [MCPDP Reserved] session=sess-0080-da6439b1 step=2 tool=calculate tokens=500 lockedPrice=6
+2026/03/27 14:23:19.076163 [MCPDP Reserved] session=sess-0079-c4b8c385 step=2 tool=mock_heavy tokens=500 lockedPrice=30
+2026/03/27 14:23:19.077575 [MCPDP Pre-flight] session=sess-0083-5f4bdcc1 budget=500 totalCost=156 steps=5
+2026/03/27 14:23:19.077575 [MCPDP Budget Reserve] session=sess-0083-5f4bdcc1 locked totalCost=156 prices=map[calculate:12 mock_heavy:60]
+2026/03/27 14:23:19.077575 [MCPDP Pre-flight] session=sess-0083-5f4bdcc1 ADMITTED, reservation created
+2026/03/27 14:23:19.078152 [MCPDP Reserved] session=sess-0080-da6439b1 step=3 tool=web_fetch tokens=500 lockedPrice=6
+2026/03/27 14:23:19.080800 [MCPDP Pre-flight] session=sess-0084-d3b091b5 budget=500 totalCost=180 steps=7
+2026/03/27 14:23:19.080818 [MCPDP Budget Reserve] session=sess-0084-d3b091b5 locked totalCost=180 prices=map[calculate:12 mock_heavy:60 web_fetch:12]
+2026/03/27 14:23:19.080818 [MCPDP Pre-flight] session=sess-0084-d3b091b5 ADMITTED, reservation created
+2026/03/27 14:23:19.114894 [MCPDP Pre-flight] session=sess-0085-34910659 budget=500 totalCost=4900 steps=3
+2026/03/27 14:23:19.114894 [MCPDP Pre-flight] session=sess-0085-34910659 REJECTED (budget 500 < cost 4900)
+2026/03/27 14:23:19.143067 [MCPDP Pre-flight] session=sess-0086-509dfa59 budget=500 totalCost=2100 steps=3
+2026/03/27 14:23:19.143067 [MCPDP Pre-flight] session=sess-0086-509dfa59 REJECTED (budget 500 < cost 2100)
+2026/03/27 14:23:19.206348 [MCPDP Reserved] session=sess-0077-6267926b step=2 tool=calculate tokens=500 lockedPrice=6
+2026/03/27 14:23:19.207424 [MCPDP Pre-flight] session=sess-0087-da0c31b4 budget=500 totalCost=4900 steps=3
+2026/03/27 14:23:19.207490 [MCPDP Pre-flight] session=sess-0087-da0c31b4 REJECTED (budget 500 < cost 4900)
+2026/03/27 14:23:19.211343 [MCPDP Reserved] session=sess-0077-6267926b step=3 tool=calculate tokens=500 lockedPrice=6
+2026/03/27 14:23:19.216234 [MCPDP Reserved] session=sess-0077-6267926b step=4 tool=web_fetch tokens=500 lockedPrice=6
+2026/03/27 14:23:19.224609 [MCPDP Reserved] session=sess-0082-f338fcce step=1 tool=mock_heavy tokens=500 lockedPrice=50
+2026/03/27 14:23:19.233597 [MCPDP Reserved] session=sess-0080-da6439b1 step=4 tool=web_fetch tokens=500 lockedPrice=6
+2026/03/27 14:23:19.265420 [MCPDP Pre-flight] session=sess-0088-ce640a60 budget=500 totalCost=9800 steps=6
+2026/03/27 14:23:19.265420 [MCPDP Pre-flight] session=sess-0088-ce640a60 REJECTED (budget 500 < cost 9800)
+2026/03/27 14:23:19.370593 [MCPDP Pre-flight] session=sess-0089-5b584141 budget=500 totalCost=2100 steps=3
+2026/03/27 14:23:19.370593 [MCPDP Pre-flight] session=sess-0089-5b584141 REJECTED (budget 500 < cost 2100)
+2026/03/27 14:23:19.387593 [MCPDP Pre-flight] session=sess-0090-1bfa40f9 budget=500 totalCost=2100 steps=3
+2026/03/27 14:23:19.387593 [MCPDP Pre-flight] session=sess-0090-1bfa40f9 REJECTED (budget 500 < cost 2100)
+2026/03/27 14:23:19.388594 [MCPDP Pre-flight] session=sess-0091-740b73f8 budget=500 totalCost=4900 steps=3
+2026/03/27 14:23:19.388594 [MCPDP Pre-flight] session=sess-0091-740b73f8 REJECTED (budget 500 < cost 4900)
+2026/03/27 14:23:19.395595 [MCPDP Reserved] session=sess-0072-de9bb07a step=1 tool=web_fetch tokens=500 lockedPrice=4
+2026/03/27 14:23:19.405594 [MCPDP Reserved] session=sess-0071-8398cce5 step=3 tool=web_fetch tokens=500 lockedPrice=4
+2026/03/27 14:23:19.420594 [MCPDP Reserved] session=sess-0039-75db5c97 step=5 tool=calculate tokens=500 lockedPrice=4
+2026/03/27 14:23:19.466060 [MCPDP Pre-flight] session=sess-0092-75f3fa61 budget=500 totalCost=10500 steps=7
+2026/03/27 14:23:19.466060 [MCPDP Pre-flight] session=sess-0092-75f3fa61 REJECTED (budget 500 < cost 10500)
+2026/03/27 14:23:19.475704 [MCPDP Reserved] session=sess-0074-c1fdb734 step=1 tool=web_fetch tokens=500 lockedPrice=4
+2026/03/27 14:23:19.545439 [MCPDP Pre-flight] session=sess-0093-2bd1f5de budget=500 totalCost=7700 steps=7
+2026/03/27 14:23:19.545439 [MCPDP Pre-flight] session=sess-0093-2bd1f5de REJECTED (budget 500 < cost 7700)
+2026/03/27 14:23:19.550605 [MCPDP Reserved] session=sess-0072-de9bb07a step=2 tool=mock_heavy tokens=500 lockedPrice=20
+2026/03/27 14:23:19.560616 [MCPDP Reserved] session=sess-0071-8398cce5 step=4 tool=calculate tokens=500 lockedPrice=4
+2026/03/27 14:23:19.606705 [MCPDP Pre-flight] session=sess-0094-42692c31 budget=500 totalCost=8400 steps=4
+2026/03/27 14:23:19.606705 [MCPDP Pre-flight] session=sess-0094-42692c31 REJECTED (budget 500 < cost 8400)
+2026/03/27 14:23:19.631374 [MCPDP Reserved] session=sess-0076-b95ed5b9 step=2 tool=web_fetch tokens=500 lockedPrice=4
+2026/03/27 14:23:19.632538 [MCPDP Reserved] session=sess-0074-c1fdb734 step=2 tool=web_fetch tokens=500 lockedPrice=4
+2026/03/27 14:23:19.653337 [MCPDP Reserved] session=sess-0037-a0a2c5d1 step=6 tool=calculate tokens=500 lockedPrice=2
+2026/03/27 14:23:19.654636 [MCPDP Pre-flight] session=sess-0095-402a0567 budget=500 totalCost=1350 steps=5
+2026/03/27 14:23:19.654636 [MCPDP Pre-flight] session=sess-0095-402a0567 REJECTED (budget 500 < cost 1350)
+2026/03/27 14:23:19.697840 [MCPDP Pre-flight] session=sess-0096-48fef152 budget=500 totalCost=1500 steps=6
+2026/03/27 14:23:19.697840 [MCPDP Pre-flight] session=sess-0096-48fef152 REJECTED (budget 500 < cost 1500)
+2026/03/27 14:23:19.742071 [MCPDP Reserved] session=sess-0075-65c6c648 step=3 tool=calculate tokens=500 lockedPrice=4
+2026/03/27 14:23:19.742602 [MCPDP Pre-flight] session=sess-0097-f0c613a3 budget=500 totalCost=1500 steps=6
+2026/03/27 14:23:19.742602 [MCPDP Pre-flight] session=sess-0097-f0c613a3 REJECTED (budget 500 < cost 1500)
+2026/03/27 14:23:19.774267 [MCPDP Pre-flight] session=sess-0098-fb918177 budget=500 totalCost=1500 steps=6
+2026/03/27 14:23:19.774267 [MCPDP Pre-flight] session=sess-0098-fb918177 REJECTED (budget 500 < cost 1500)
+2026/03/27 14:23:19.774267 [MCPDP Pre-flight] session=sess-0099-191b7bb2 budget=500 totalCost=3900 steps=6
+2026/03/27 14:23:19.775306 [MCPDP Pre-flight] session=sess-0099-191b7bb2 REJECTED (budget 500 < cost 3900)
+2026/03/27 14:23:19.776350 [MCPDP Pre-flight] session=sess-0100-c1d1d3d7 budget=500 totalCost=2100 steps=6
+2026/03/27 14:23:19.776350 [MCPDP Pre-flight] session=sess-0100-c1d1d3d7 REJECTED (budget 500 < cost 2100)
+2026/03/27 14:23:19.777372 [MCPDP Pre-flight] session=sess-0101-35ca4d58 budget=500 totalCost=1800 steps=4
+2026/03/27 14:23:19.777372 [MCPDP Pre-flight] session=sess-0101-35ca4d58 REJECTED (budget 500 < cost 1800)
+2026/03/27 14:23:19.789064 [MCPDP Reserved] session=sess-0076-b95ed5b9 step=3 tool=web_fetch tokens=500 lockedPrice=4
+2026/03/27 14:23:19.790220 [MCPDP Reserved] session=sess-0074-c1fdb734 step=3 tool=calculate tokens=500 lockedPrice=4
+2026/03/27 14:23:19.796292 [MCPDP Reserved] session=sess-0074-c1fdb734 step=4 tool=web_fetch tokens=500 lockedPrice=4
+2026/03/27 14:23:19.820505 [MCPDP Pre-flight] session=sess-0102-905e8840 budget=500 totalCost=1650 steps=7
+2026/03/27 14:23:19.820505 [MCPDP Pre-flight] session=sess-0102-905e8840 REJECTED (budget 500 < cost 1650)
+2026/03/27 14:23:19.850772 [MCPDP Pre-flight] session=sess-0103-8d0473da budget=500 totalCost=675 steps=5
+2026/03/27 14:23:19.850772 [MCPDP Pre-flight] session=sess-0103-8d0473da REJECTED (budget 500 < cost 675)
+2026/03/27 14:23:19.896211 [MCPDP Pre-flight] session=sess-0104-025af0ff budget=500 totalCost=1350 steps=6
+2026/03/27 14:23:19.896211 [MCPDP Pre-flight] session=sess-0104-025af0ff REJECTED (budget 500 < cost 1350)
+2026/03/27 14:23:19.945533 [MCPDP Reserved] session=sess-0076-b95ed5b9 step=4 tool=web_fetch tokens=500 lockedPrice=4
+2026/03/27 14:23:19.952288 [MCPDP Reserved] session=sess-0074-c1fdb734 step=5 tool=mock_heavy tokens=500 lockedPrice=20
+2026/03/27 14:23:20.013771 [MCPDP Reserved] session=sess-0073-c4323cea step=4 tool=web_fetch tokens=500 lockedPrice=4
+2026/03/27 14:23:20.014770 [MCPDP Pre-flight] session=sess-0105-4eeac477 budget=500 totalCost=1215 steps=5
+2026/03/27 14:23:20.014770 [MCPDP Pre-flight] session=sess-0105-4eeac477 REJECTED (budget 500 < cost 1215)
+2026/03/27 14:23:20.015772 [MCPDP Pre-flight] session=sess-0106-bb26e10f budget=500 totalCost=2025 steps=7
+2026/03/27 14:23:20.015772 [MCPDP Pre-flight] session=sess-0106-bb26e10f REJECTED (budget 500 < cost 2025)
+2026/03/27 14:23:20.048670 [MCPDP Pre-flight] session=sess-0107-69772c64 budget=500 totalCost=2280 steps=7
+2026/03/27 14:23:20.048670 [MCPDP Pre-flight] session=sess-0107-69772c64 REJECTED (budget 500 < cost 2280)
+2026/03/27 14:23:20.140587 [MCPDP Pre-flight] session=sess-0108-6a8614d0 budget=500 totalCost=360 steps=3
+2026/03/27 14:23:20.140587 [MCPDP Budget Reserve] session=sess-0108-6a8614d0 locked totalCost=360 prices=map[calculate:120]
+2026/03/27 14:23:20.140587 [MCPDP Pre-flight] session=sess-0108-6a8614d0 ADMITTED, reservation created
+2026/03/27 14:23:20.141763 [MCPDP Pre-flight] session=sess-0109-a01a781e budget=500 totalCost=1320 steps=7
+2026/03/27 14:23:20.141781 [MCPDP Pre-flight] session=sess-0109-a01a781e REJECTED (budget 500 < cost 1320)
+2026/03/27 14:23:20.142369 [MCPDP Pre-flight] session=sess-0110-d0d3ffad budget=500 totalCost=480 steps=4
+2026/03/27 14:23:20.142369 [MCPDP Budget Reserve] session=sess-0110-d0d3ffad locked totalCost=480 prices=map[calculate:120 web_fetch:120]
+2026/03/27 14:23:20.142369 [MCPDP Pre-flight] session=sess-0110-d0d3ffad ADMITTED, reservation created
+2026/03/27 14:23:20.145757 [MCPDP Reserved] session=sess-0108-6a8614d0 step=1 tool=calculate tokens=500 lockedPrice=120
+2026/03/27 14:23:20.150503 [MCPDP Reserved] session=sess-0108-6a8614d0 step=2 tool=calculate tokens=500 lockedPrice=120
+2026/03/27 14:23:20.155706 [MCPDP Pre-flight] session=sess-0111-98cd1e48 budget=500 totalCost=480 steps=4
+2026/03/27 14:23:20.155706 [MCPDP Budget Reserve] session=sess-0111-98cd1e48 locked totalCost=480 prices=map[calculate:120 web_fetch:120]
+2026/03/27 14:23:20.155706 [MCPDP Pre-flight] session=sess-0111-98cd1e48 ADMITTED, reservation created
+2026/03/27 14:23:20.156843 [MCPDP Pre-flight] session=sess-0112-f2d416df budget=500 totalCost=960 steps=4
+2026/03/27 14:23:20.156843 [MCPDP Pre-flight] session=sess-0112-f2d416df REJECTED (budget 500 < cost 960)
+2026/03/27 14:23:20.160896 [MCPDP Reserved] session=sess-0111-98cd1e48 step=1 tool=web_fetch tokens=500 lockedPrice=120
+2026/03/27 14:23:20.170322 [MCPDP Reserved] session=sess-0073-c4323cea step=5 tool=web_fetch tokens=500 lockedPrice=4
+2026/03/27 14:23:20.198055 [MCPDP Reserved] session=sess-0081-9cae3678 step=1 tool=web_fetch tokens=500 lockedPrice=10
+2026/03/27 14:23:20.207930 [MCPDP Reserved] session=sess-0078-3407ba1b step=2 tool=web_fetch tokens=500 lockedPrice=6
+2026/03/27 14:23:20.221837 [MCPDP Reserved] session=sess-0079-c4b8c385 step=3 tool=web_fetch tokens=500 lockedPrice=6
+2026/03/27 14:23:20.276493 [MCPDP Reserved] session=sess-0083-5f4bdcc1 step=1 tool=calculate tokens=500 lockedPrice=12
+2026/03/27 14:23:20.283315 [MCPDP Reserved] session=sess-0083-5f4bdcc1 step=2 tool=mock_heavy tokens=500 lockedPrice=60
+2026/03/27 14:23:20.283886 [MCPDP Pre-flight] session=sess-0113-86015aea budget=500 totalCost=1680 steps=6
+2026/03/27 14:23:20.283886 [MCPDP Pre-flight] session=sess-0113-86015aea REJECTED (budget 500 < cost 1680)
+2026/03/27 14:23:20.298365 [MCPDP Reserved] session=sess-0110-d0d3ffad step=1 tool=web_fetch tokens=500 lockedPrice=120
+2026/03/27 14:23:20.316066 [MCPDP Reserved] session=sess-0111-98cd1e48 step=2 tool=calculate tokens=500 lockedPrice=120
+2026/03/27 14:23:20.321381 [MCPDP Reserved] session=sess-0111-98cd1e48 step=3 tool=calculate tokens=500 lockedPrice=120
+2026/03/27 14:23:20.352294 [MCPDP Reserved] session=sess-0081-9cae3678 step=2 tool=mock_heavy tokens=500 lockedPrice=50
+2026/03/27 14:23:20.364777 [MCPDP Reserved] session=sess-0078-3407ba1b step=3 tool=web_fetch tokens=500 lockedPrice=6
+2026/03/27 14:23:20.365842 [MCPDP Pre-flight] session=sess-0114-87fb18ae budget=500 totalCost=1050 steps=6
+2026/03/27 14:23:20.365875 [MCPDP Pre-flight] session=sess-0114-87fb18ae REJECTED (budget 500 < cost 1050)
+2026/03/27 14:23:20.377868 [MCPDP Reserved] session=sess-0079-c4b8c385 step=4 tool=mock_heavy tokens=500 lockedPrice=30
+2026/03/27 14:23:20.415916 [MCPDP Pre-flight] session=sess-0115-8d90e1df budget=500 totalCost=1785 steps=5
+2026/03/27 14:23:20.415916 [MCPDP Pre-flight] session=sess-0115-8d90e1df REJECTED (budget 500 < cost 1785)
+2026/03/27 14:23:20.431898 [MCPDP Reserved] session=sess-0084-d3b091b5 step=1 tool=web_fetch tokens=500 lockedPrice=12
+2026/03/27 14:23:20.455196 [MCPDP Reserved] session=sess-0082-f338fcce step=2 tool=calculate tokens=500 lockedPrice=10
+2026/03/27 14:23:20.456338 [MCPDP Reserved] session=sess-0110-d0d3ffad step=2 tool=web_fetch tokens=500 lockedPrice=120
+2026/03/27 14:23:20.520699 [MCPDP Reserved] session=sess-0078-3407ba1b step=4 tool=mock_heavy tokens=500 lockedPrice=30
+2026/03/27 14:23:20.521252 [MCPDP Pre-flight] session=sess-0116-b2cf315a budget=500 totalCost=1995 steps=7
+2026/03/27 14:23:20.521252 [MCPDP Pre-flight] session=sess-0116-b2cf315a REJECTED (budget 500 < cost 1995)
+2026/03/27 14:23:20.544218 [MCPDP Reserved] session=sess-0072-de9bb07a step=3 tool=web_fetch tokens=500 lockedPrice=4
+2026/03/27 14:23:20.589430 [MCPDP Reserved] session=sess-0084-d3b091b5 step=2 tool=calculate tokens=500 lockedPrice=12
+2026/03/27 14:23:20.594859 [MCPDP Reserved] session=sess-0084-d3b091b5 step=3 tool=calculate tokens=500 lockedPrice=12
+2026/03/27 14:23:20.596053 [MCPDP Pre-flight] session=sess-0117-3960bd5a budget=500 totalCost=1260 steps=6
+2026/03/27 14:23:20.596053 [MCPDP Pre-flight] session=sess-0117-3960bd5a REJECTED (budget 500 < cost 1260)
+2026/03/27 14:23:20.596633 [MCPDP Pre-flight] session=sess-0118-c86e3083 budget=500 totalCost=810 steps=5
+2026/03/27 14:23:20.596633 [MCPDP Pre-flight] session=sess-0118-c86e3083 REJECTED (budget 500 < cost 810)
+2026/03/27 14:23:20.600164 [MCPDP Reserved] session=sess-0084-d3b091b5 step=4 tool=mock_heavy tokens=500 lockedPrice=60
+2026/03/27 14:23:20.611948 [MCPDP Reserved] session=sess-0110-d0d3ffad step=3 tool=calculate tokens=500 lockedPrice=120
+2026/03/27 14:23:20.701273 [MCPDP Reserved] session=sess-0072-de9bb07a step=4 tool=calculate tokens=500 lockedPrice=4
+2026/03/27 14:23:20.702274 [MCPDP Pre-flight] session=sess-0119-2fe71b86 budget=500 totalCost=720 steps=4
+2026/03/27 14:23:20.702274 [MCPDP Pre-flight] session=sess-0119-2fe71b86 REJECTED (budget 500 < cost 720)
+2026/03/27 14:23:20.707061 [MCPDP Reserved] session=sess-0072-de9bb07a step=5 tool=mock_heavy tokens=500 lockedPrice=20
+2026/03/27 14:23:20.752749 [MCPDP Pre-flight] session=sess-0120-5217ff91 budget=500 totalCost=1080 steps=4
+2026/03/27 14:23:20.752749 [MCPDP Pre-flight] session=sess-0120-5217ff91 REJECTED (budget 500 < cost 1080)
+2026/03/27 14:23:20.845361 [MCPDP Pre-flight] session=sess-0121-ed49bb26 budget=500 totalCost=750 steps=6
+2026/03/27 14:23:20.845361 [MCPDP Pre-flight] session=sess-0121-ed49bb26 REJECTED (budget 500 < cost 750)
+2026/03/27 14:23:20.968182 [MCPDP Pre-flight] session=sess-0122-b0c0ea5c budget=500 totalCost=675 steps=5
+2026/03/27 14:23:20.968182 [MCPDP Pre-flight] session=sess-0122-b0c0ea5c REJECTED (budget 500 < cost 675)
+2026/03/27 14:23:20.999023 [MCPDP Pre-flight] session=sess-0123-3cf5b629 budget=500 totalCost=1350 steps=6
+2026/03/27 14:23:20.999023 [MCPDP Pre-flight] session=sess-0123-3cf5b629 REJECTED (budget 500 < cost 1350)
+2026/03/27 14:23:21.000045 [MCPDP Pre-flight] session=sess-0124-3a7b2206 budget=500 totalCost=375 steps=5
+2026/03/27 14:23:21.000045 [MCPDP Budget Reserve] session=sess-0124-3a7b2206 locked totalCost=375 prices=map[calculate:75 web_fetch:75]
+2026/03/27 14:23:21.000117 [MCPDP Pre-flight] session=sess-0124-3a7b2206 ADMITTED, reservation created
+2026/03/27 14:23:21.001494 [MCPDP Pre-flight] session=sess-0125-807b1898 budget=500 totalCost=1275 steps=5
+2026/03/27 14:23:21.001574 [MCPDP Pre-flight] session=sess-0125-807b1898 REJECTED (budget 500 < cost 1275)
+2026/03/27 14:23:21.005952 [MCPDP Reserved] session=sess-0124-3a7b2206 step=1 tool=web_fetch tokens=500 lockedPrice=75
+2026/03/27 14:23:21.045627 [MCPDP Pre-flight] session=sess-0126-e0d98981 budget=500 totalCost=600 steps=4
+2026/03/27 14:23:21.045627 [MCPDP Pre-flight] session=sess-0126-e0d98981 REJECTED (budget 500 < cost 600)
+2026/03/27 14:23:21.089289 [MCPDP Reserved] session=sess-0083-5f4bdcc1 step=3 tool=calculate tokens=500 lockedPrice=12
+2026/03/27 14:23:21.094175 [MCPDP Reserved] session=sess-0083-5f4bdcc1 step=4 tool=calculate tokens=500 lockedPrice=12
+2026/03/27 14:23:21.151419 [MCPDP Pre-flight] session=sess-0127-3f14dd93 budget=500 totalCost=360 steps=6
+2026/03/27 14:23:21.151419 [MCPDP Budget Reserve] session=sess-0127-3f14dd93 locked totalCost=360 prices=map[calculate:60 web_fetch:60]
+2026/03/27 14:23:21.151419 [MCPDP Pre-flight] session=sess-0127-3f14dd93 ADMITTED, reservation created
+2026/03/27 14:23:21.158032 [MCPDP Reserved] session=sess-0081-9cae3678 step=3 tool=web_fetch tokens=500 lockedPrice=10
+2026/03/27 14:23:21.163487 [MCPDP Reserved] session=sess-0124-3a7b2206 step=2 tool=web_fetch tokens=500 lockedPrice=75
+2026/03/27 14:23:21.183528 [MCPDP Reserved] session=sess-0079-c4b8c385 step=5 tool=calculate tokens=500 lockedPrice=6
+2026/03/27 14:23:21.243009 [MCPDP Pre-flight] session=sess-0128-e8d3e8ac budget=500 totalCost=240 steps=4
+2026/03/27 14:23:21.243009 [MCPDP Budget Reserve] session=sess-0128-e8d3e8ac locked totalCost=240 prices=map[calculate:60 web_fetch:60]
+2026/03/27 14:23:21.243009 [MCPDP Pre-flight] session=sess-0128-e8d3e8ac ADMITTED, reservation created
+2026/03/27 14:23:21.244150 [MCPDP Pre-flight] session=sess-0129-d77ff447 budget=500 totalCost=420 steps=3
+2026/03/27 14:23:21.244150 [MCPDP Budget Reserve] session=sess-0129-d77ff447 locked totalCost=420 prices=map[mock_heavy:300 web_fetch:60]
+2026/03/27 14:23:21.244150 [MCPDP Pre-flight] session=sess-0129-d77ff447 ADMITTED, reservation created
+2026/03/27 14:23:21.248458 [MCPDP Reserved] session=sess-0128-e8d3e8ac step=1 tool=calculate tokens=500 lockedPrice=60
+2026/03/27 14:23:21.251880 [MCPDP Reserved] session=sess-0128-e8d3e8ac step=2 tool=web_fetch tokens=500 lockedPrice=60
+2026/03/27 14:23:21.288128 [MCPDP Pre-flight] session=sess-0130-e595d354 budget=500 totalCost=420 steps=3
+2026/03/27 14:23:21.288128 [MCPDP Budget Reserve] session=sess-0130-e595d354 locked totalCost=420 prices=map[mock_heavy:300 web_fetch:60]
+2026/03/27 14:23:21.288128 [MCPDP Pre-flight] session=sess-0130-e595d354 ADMITTED, reservation created
+2026/03/27 14:23:21.306298 [MCPDP Reserved] session=sess-0127-3f14dd93 step=1 tool=calculate tokens=500 lockedPrice=60
+2026/03/27 14:23:21.307342 [MCPDP Pre-flight] session=sess-0131-4cd383e4 budget=500 totalCost=420 steps=7
+2026/03/27 14:23:21.307342 [MCPDP Budget Reserve] session=sess-0131-4cd383e4 locked totalCost=420 prices=map[calculate:60 web_fetch:60]
+2026/03/27 14:23:21.307342 [MCPDP Pre-flight] session=sess-0131-4cd383e4 ADMITTED, reservation created
+2026/03/27 14:23:21.308429 [MCPDP Pre-flight] session=sess-0132-e62bf0ab budget=500 totalCost=780 steps=5
+2026/03/27 14:23:21.308429 [MCPDP Pre-flight] session=sess-0132-e62bf0ab REJECTED (budget 500 < cost 780)
+2026/03/27 14:23:21.308967 [MCPDP Pre-flight] session=sess-0133-13a91645 budget=500 totalCost=660 steps=7
+2026/03/27 14:23:21.308967 [MCPDP Pre-flight] session=sess-0133-13a91645 REJECTED (budget 500 < cost 660)
+2026/03/27 14:23:21.311166 [MCPDP Pre-flight] session=sess-0134-7582e6b0 budget=500 totalCost=540 steps=5
+2026/03/27 14:23:21.311166 [MCPDP Pre-flight] session=sess-0134-7582e6b0 REJECTED (budget 500 < cost 540)
+2026/03/27 14:23:21.312254 [MCPDP Reserved] session=sess-0127-3f14dd93 step=2 tool=web_fetch tokens=500 lockedPrice=60
+2026/03/27 14:23:21.313838 [MCPDP Reserved] session=sess-0081-9cae3678 step=4 tool=mock_heavy tokens=500 lockedPrice=50
+2026/03/27 14:23:21.314366 [MCPDP Reserved] session=sess-0131-4cd383e4 step=1 tool=calculate tokens=500 lockedPrice=60
+2026/03/27 14:23:21.318776 [MCPDP Reserved] session=sess-0124-3a7b2206 step=3 tool=calculate tokens=500 lockedPrice=75
+2026/03/27 14:23:21.319836 [MCPDP Reserved] session=sess-0131-4cd383e4 step=2 tool=calculate tokens=500 lockedPrice=60
+2026/03/27 14:23:21.322207 [MCPDP Reserved] session=sess-0124-3a7b2206 step=4 tool=web_fetch tokens=500 lockedPrice=75
+2026/03/27 14:23:21.324324 [MCPDP Reserved] session=sess-0131-4cd383e4 step=3 tool=calculate tokens=500 lockedPrice=60
+2026/03/27 14:23:21.327068 [MCPDP Reserved] session=sess-0078-3407ba1b step=5 tool=web_fetch tokens=500 lockedPrice=6
+2026/03/27 14:23:21.328718 [MCPDP Reserved] session=sess-0131-4cd383e4 step=4 tool=calculate tokens=500 lockedPrice=60
+2026/03/27 14:23:21.332893 [MCPDP Reserved] session=sess-0131-4cd383e4 step=5 tool=calculate tokens=500 lockedPrice=60
+2026/03/27 14:23:21.336116 [MCPDP Reserved] session=sess-0131-4cd383e4 step=6 tool=web_fetch tokens=500 lockedPrice=60
+2026/03/27 14:23:21.405931 [MCPDP Reserved] session=sess-0084-d3b091b5 step=5 tool=calculate tokens=500 lockedPrice=12
+2026/03/27 14:23:21.406914 [MCPDP Reserved] session=sess-0128-e8d3e8ac step=3 tool=calculate tokens=500 lockedPrice=60
+2026/03/27 14:23:21.410821 [MCPDP Reserved] session=sess-0084-d3b091b5 step=6 tool=calculate tokens=500 lockedPrice=12
+2026/03/27 14:23:21.467618 [MCPDP Reserved] session=sess-0127-3f14dd93 step=3 tool=calculate tokens=500 lockedPrice=60
+2026/03/27 14:23:21.468616 [MCPDP Pre-flight] session=sess-0135-399fac63 budget=500 totalCost=10 steps=5
+2026/03/27 14:23:21.468616 [MCPDP Budget Reserve] session=sess-0135-399fac63 locked totalCost=10 prices=map[calculate:2 web_fetch:2]
+2026/03/27 14:23:21.468616 [MCPDP Pre-flight] session=sess-0135-399fac63 ADMITTED, reservation created
+2026/03/27 14:23:21.473507 [MCPDP Reserved] session=sess-0127-3f14dd93 step=4 tool=calculate tokens=500 lockedPrice=60
+2026/03/27 14:23:21.479284 [MCPDP Reserved] session=sess-0127-3f14dd93 step=5 tool=calculate tokens=500 lockedPrice=60
+2026/03/27 14:23:21.481615 [MCPDP Reserved] session=sess-0078-3407ba1b step=6 tool=calculate tokens=500 lockedPrice=6
+2026/03/27 14:23:21.482823 [MCPDP Pre-flight] session=sess-0136-7b18d700 budget=500 totalCost=44 steps=6
+2026/03/27 14:23:21.482823 [MCPDP Budget Reserve] session=sess-0136-7b18d700 locked totalCost=44 prices=map[mock_heavy:10 web_fetch:2]
+2026/03/27 14:23:21.482823 [MCPDP Pre-flight] session=sess-0136-7b18d700 ADMITTED, reservation created
+2026/03/27 14:23:21.513604 [MCPDP Reserved] session=sess-0072-de9bb07a step=6 tool=web_fetch tokens=500 lockedPrice=4
+2026/03/27 14:23:21.514701 [MCPDP Pre-flight] session=sess-0137-c29c9614 budget=500 totalCost=22 steps=7
+2026/03/27 14:23:21.514737 [MCPDP Budget Reserve] session=sess-0137-c29c9614 locked totalCost=22 prices=map[calculate:2 mock_heavy:10 web_fetch:2]
+2026/03/27 14:23:21.514780 [MCPDP Pre-flight] session=sess-0137-c29c9614 ADMITTED, reservation created
+2026/03/27 14:23:21.578946 [MCPDP Pre-flight] session=sess-0138-d84ce53e budget=500 totalCost=14 steps=3
+2026/03/27 14:23:21.578946 [MCPDP Budget Reserve] session=sess-0138-d84ce53e locked totalCost=14 prices=map[mock_heavy:10 web_fetch:2]
+2026/03/27 14:23:21.578946 [MCPDP Pre-flight] session=sess-0138-d84ce53e ADMITTED, reservation created
+2026/03/27 14:23:21.609044 [MCPDP Pre-flight] session=sess-0139-34621f73 budget=500 totalCost=36 steps=6
+2026/03/27 14:23:21.609044 [MCPDP Budget Reserve] session=sess-0139-34621f73 locked totalCost=36 prices=map[calculate:2 mock_heavy:10 web_fetch:2]
+2026/03/27 14:23:21.609044 [MCPDP Pre-flight] session=sess-0139-34621f73 ADMITTED, reservation created
+2026/03/27 14:23:21.625767 [MCPDP Reserved] session=sess-0135-399fac63 step=1 tool=web_fetch tokens=500 lockedPrice=2
+2026/03/27 14:23:21.669887 [MCPDP Reserved] session=sess-0137-c29c9614 step=1 tool=calculate tokens=500 lockedPrice=2
+2026/03/27 14:23:21.673508 [MCPDP Reserved] session=sess-0137-c29c9614 step=2 tool=web_fetch tokens=500 lockedPrice=2
+2026/03/27 14:23:21.735519 [MCPDP Reserved] session=sess-0138-d84ce53e step=1 tool=mock_heavy tokens=500 lockedPrice=10
+2026/03/27 14:23:21.782329 [MCPDP Reserved] session=sess-0135-399fac63 step=2 tool=calculate tokens=500 lockedPrice=2
+2026/03/27 14:23:21.783394 [MCPDP Pre-flight] session=sess-0140-ca970747 budget=500 totalCost=18 steps=5
+2026/03/27 14:23:21.783394 [MCPDP Budget Reserve] session=sess-0140-ca970747 locked totalCost=18 prices=map[calculate:2 mock_heavy:10 web_fetch:2]
+2026/03/27 14:23:21.783904 [MCPDP Pre-flight] session=sess-0140-ca970747 ADMITTED, reservation created
+2026/03/27 14:23:21.788436 [MCPDP Reserved] session=sess-0135-399fac63 step=3 tool=calculate tokens=500 lockedPrice=2
+2026/03/27 14:23:21.793986 [MCPDP Reserved] session=sess-0135-399fac63 step=4 tool=web_fetch tokens=500 lockedPrice=2
+2026/03/27 14:23:21.829649 [MCPDP Reserved] session=sess-0137-c29c9614 step=3 tool=calculate tokens=500 lockedPrice=2
+2026/03/27 14:23:21.835259 [MCPDP Reserved] session=sess-0137-c29c9614 step=4 tool=calculate tokens=500 lockedPrice=2
+2026/03/27 14:23:21.839750 [MCPDP Reserved] session=sess-0137-c29c9614 step=5 tool=mock_heavy tokens=500 lockedPrice=10
+2026/03/27 14:23:21.940938 [MCPDP Reserved] session=sess-0140-ca970747 step=1 tool=calculate tokens=500 lockedPrice=2
+2026/03/27 14:23:21.941467 [MCPDP Pre-flight] session=sess-0141-9b86038f budget=500 totalCost=22 steps=7
+2026/03/27 14:23:21.942002 [MCPDP Budget Reserve] session=sess-0141-9b86038f locked totalCost=22 prices=map[calculate:2 mock_heavy:10 web_fetch:2]
+2026/03/27 14:23:21.942002 [MCPDP Pre-flight] session=sess-0141-9b86038f ADMITTED, reservation created
+2026/03/27 14:23:21.942551 [MCPDP Pre-flight] session=sess-0142-d2682584 budget=500 totalCost=38 steps=7
+2026/03/27 14:23:21.942551 [MCPDP Budget Reserve] session=sess-0142-d2682584 locked totalCost=38 prices=map[calculate:2 mock_heavy:10 web_fetch:2]
+2026/03/27 14:23:21.942551 [MCPDP Pre-flight] session=sess-0142-d2682584 ADMITTED, reservation created
+2026/03/27 14:23:21.946495 [MCPDP Reserved] session=sess-0140-ca970747 step=2 tool=web_fetch tokens=500 lockedPrice=2
+2026/03/27 14:23:21.948553 [MCPDP Reserved] session=sess-0141-9b86038f step=1 tool=web_fetch tokens=500 lockedPrice=2
+2026/03/27 14:23:21.952257 [MCPDP Reserved] session=sess-0142-d2682584 step=1 tool=web_fetch tokens=500 lockedPrice=2
+2026/03/27 14:23:21.974980 [MCPDP Pre-flight] session=sess-0143-74912550 budget=500 totalCost=12 steps=6
+2026/03/27 14:23:21.974980 [MCPDP Budget Reserve] session=sess-0143-74912550 locked totalCost=12 prices=map[calculate:2 web_fetch:2]
+2026/03/27 14:23:21.974980 [MCPDP Pre-flight] session=sess-0143-74912550 ADMITTED, reservation created
+2026/03/27 14:23:21.980978 [MCPDP Reserved] session=sess-0143-74912550 step=1 tool=calculate tokens=500 lockedPrice=2
+2026/03/27 14:23:21.985979 [MCPDP Reserved] session=sess-0143-74912550 step=2 tool=web_fetch tokens=500 lockedPrice=2
+2026/03/27 14:23:21.986979 [MCPDP Pre-flight] session=sess-0144-de2d091f budget=500 totalCost=20 steps=5
+2026/03/27 14:23:21.986979 [MCPDP Budget Reserve] session=sess-0144-de2d091f locked totalCost=20 prices=map[calculate:4 web_fetch:4]
+2026/03/27 14:23:21.986979 [MCPDP Pre-flight] session=sess-0144-de2d091f ADMITTED, reservation created
+2026/03/27 14:23:22.005496 [MCPDP Pre-flight] session=sess-0145-9f851782 budget=500 totalCost=24 steps=4
+2026/03/27 14:23:22.005496 [MCPDP Budget Reserve] session=sess-0145-9f851782 locked totalCost=24 prices=map[calculate:6 web_fetch:6]
+2026/03/27 14:23:22.005496 [MCPDP Pre-flight] session=sess-0145-9f851782 ADMITTED, reservation created
+2026/03/27 14:23:22.006495 [MCPDP Pre-flight] session=sess-0146-311fd557 budget=500 totalCost=78 steps=5
+2026/03/27 14:23:22.006495 [MCPDP Budget Reserve] session=sess-0146-311fd557 locked totalCost=78 prices=map[calculate:6 mock_heavy:30 web_fetch:6]
+2026/03/27 14:23:22.006495 [MCPDP Pre-flight] session=sess-0146-311fd557 ADMITTED, reservation created
+2026/03/27 14:23:22.050497 [MCPDP Reserved] session=sess-0129-d77ff447 step=1 tool=web_fetch tokens=500 lockedPrice=60
+2026/03/27 14:23:22.051498 [MCPDP Pre-flight] session=sess-0147-325b4f54 budget=500 totalCost=180 steps=6
+2026/03/27 14:23:22.051498 [MCPDP Budget Reserve] session=sess-0147-325b4f54 locked totalCost=180 prices=map[calculate:10 mock_heavy:50 web_fetch:10]
+2026/03/27 14:23:22.051498 [MCPDP Pre-flight] session=sess-0147-325b4f54 ADMITTED, reservation created
+2026/03/27 14:23:22.093516 [MCPDP Reserved] session=sess-0130-e595d354 step=1 tool=web_fetch tokens=500 lockedPrice=60
+2026/03/27 14:23:22.094608 [MCPDP Pre-flight] session=sess-0148-d068cca0 budget=500 totalCost=108 steps=5
+2026/03/27 14:23:22.094608 [MCPDP Budget Reserve] session=sess-0148-d068cca0 locked totalCost=108 prices=map[calculate:12 mock_heavy:60 web_fetch:12]
+2026/03/27 14:23:22.094608 [MCPDP Pre-flight] session=sess-0148-d068cca0 ADMITTED, reservation created
+2026/03/27 14:23:22.095157 [MCPDP Pre-flight] session=sess-0149-5c60acda budget=500 totalCost=60 steps=5
+2026/03/27 14:23:22.095157 [MCPDP Budget Reserve] session=sess-0149-5c60acda locked totalCost=60 prices=map[calculate:12]
+2026/03/27 14:23:22.095157 [MCPDP Pre-flight] session=sess-0149-5c60acda ADMITTED, reservation created
+2026/03/27 14:23:22.100546 [MCPDP Reserved] session=sess-0148-d068cca0 step=1 tool=calculate tokens=500 lockedPrice=12
+2026/03/27 14:23:22.101606 [MCPDP Reserved] session=sess-0149-5c60acda step=1 tool=calculate tokens=500 lockedPrice=12
+2026/03/27 14:23:22.103229 [MCPDP Reserved] session=sess-0140-ca970747 step=3 tool=calculate tokens=500 lockedPrice=2
+2026/03/27 14:23:22.105966 [MCPDP Reserved] session=sess-0148-d068cca0 step=2 tool=mock_heavy tokens=500 lockedPrice=60
+2026/03/27 14:23:22.106562 [MCPDP Reserved] session=sess-0141-9b86038f step=2 tool=mock_heavy tokens=500 lockedPrice=10
+2026/03/27 14:23:22.107644 [MCPDP Pre-flight] session=sess-0150-0574e569 budget=500 totalCost=56 steps=4
+2026/03/27 14:23:22.107644 [MCPDP Budget Reserve] session=sess-0150-0574e569 locked totalCost=56 prices=map[calculate:14 web_fetch:14]
+2026/03/27 14:23:22.108152 [MCPDP Pre-flight] session=sess-0150-0574e569 ADMITTED, reservation created
+2026/03/27 14:23:22.109231 [MCPDP Reserved] session=sess-0142-d2682584 step=2 tool=calculate tokens=500 lockedPrice=2
+2026/03/27 14:23:22.109803 [MCPDP Reserved] session=sess-0149-5c60acda step=2 tool=calculate tokens=500 lockedPrice=12
+2026/03/27 14:23:22.113768 [MCPDP Reserved] session=sess-0140-ca970747 step=4 tool=mock_heavy tokens=500 lockedPrice=10
+2026/03/27 14:23:22.116438 [MCPDP Reserved] session=sess-0150-0574e569 step=1 tool=web_fetch tokens=500 lockedPrice=14
+2026/03/27 14:23:22.118094 [MCPDP Reserved] session=sess-0142-d2682584 step=3 tool=web_fetch tokens=500 lockedPrice=2
+2026/03/27 14:23:22.118631 [MCPDP Reserved] session=sess-0149-5c60acda step=3 tool=calculate tokens=500 lockedPrice=12
+2026/03/27 14:23:22.124576 [MCPDP Reserved] session=sess-0149-5c60acda step=4 tool=calculate tokens=500 lockedPrice=12
+2026/03/27 14:23:22.142862 [MCPDP Reserved] session=sess-0143-74912550 step=3 tool=calculate tokens=500 lockedPrice=2
+2026/03/27 14:23:22.143939 [MCPDP Reserved] session=sess-0144-de2d091f step=1 tool=web_fetch tokens=500 lockedPrice=4
+2026/03/27 14:23:22.148986 [MCPDP Reserved] session=sess-0143-74912550 step=4 tool=calculate tokens=500 lockedPrice=2
+2026/03/27 14:23:22.153802 [MCPDP Reserved] session=sess-0143-74912550 step=5 tool=web_fetch tokens=500 lockedPrice=2
+2026/03/27 14:23:22.162097 [MCPDP Reserved] session=sess-0145-9f851782 step=1 tool=calculate tokens=500 lockedPrice=6
+2026/03/27 14:23:22.167199 [MCPDP Reserved] session=sess-0145-9f851782 step=2 tool=web_fetch tokens=500 lockedPrice=6
+2026/03/27 14:23:22.205752 [MCPDP Reserved] session=sess-0129-d77ff447 step=2 tool=web_fetch tokens=500 lockedPrice=60
+2026/03/27 14:23:22.206849 [MCPDP Reserved] session=sess-0147-325b4f54 step=1 tool=mock_heavy tokens=500 lockedPrice=50
+2026/03/27 14:23:22.234303 [MCPDP Pre-flight] session=sess-0151-09be0f8a budget=500 totalCost=1815 steps=3
+2026/03/27 14:23:22.234303 [MCPDP Pre-flight] session=sess-0151-09be0f8a REJECTED (budget 500 < cost 1815)
+2026/03/27 14:23:22.236046 [MCPDP Pre-flight] session=sess-0152-90f38f88 budget=500 totalCost=1320 steps=4
+2026/03/27 14:23:22.236079 [MCPDP Pre-flight] session=sess-0152-90f38f88 REJECTED (budget 500 < cost 1320)
+2026/03/27 14:23:22.239222 [MCPDP Pre-flight] session=sess-0153-60b852e2 budget=500 totalCost=2805 steps=5
+2026/03/27 14:23:22.239258 [MCPDP Pre-flight] session=sess-0153-60b852e2 REJECTED (budget 500 < cost 2805)
+2026/03/27 14:23:22.249997 [MCPDP Reserved] session=sess-0130-e595d354 step=2 tool=web_fetch tokens=500 lockedPrice=60
+2026/03/27 14:23:22.272860 [MCPDP Reserved] session=sess-0150-0574e569 step=2 tool=calculate tokens=500 lockedPrice=14
+2026/03/27 14:23:22.273957 [MCPDP Pre-flight] session=sess-0154-33e04136 budget=500 totalCost=1980 steps=4
+2026/03/27 14:23:22.274004 [MCPDP Pre-flight] session=sess-0154-33e04136 REJECTED (budget 500 < cost 1980)
+2026/03/27 14:23:22.274795 [MCPDP Reserved] session=sess-0142-d2682584 step=4 tool=mock_heavy tokens=500 lockedPrice=10
+2026/03/27 14:23:22.278187 [MCPDP Reserved] session=sess-0150-0574e569 step=3 tool=web_fetch tokens=500 lockedPrice=14
+2026/03/27 14:23:22.288189 [MCPDP Reserved] session=sess-0136-7b18d700 step=1 tool=mock_heavy tokens=500 lockedPrice=10
+2026/03/27 14:23:22.301697 [MCPDP Reserved] session=sess-0144-de2d091f step=2 tool=web_fetch tokens=500 lockedPrice=4
+2026/03/27 14:23:22.323080 [MCPDP Reserved] session=sess-0145-9f851782 step=3 tool=web_fetch tokens=500 lockedPrice=6
+2026/03/27 14:23:22.416101 [MCPDP Reserved] session=sess-0139-34621f73 step=1 tool=web_fetch tokens=500 lockedPrice=2
+2026/03/27 14:23:22.456826 [MCPDP Reserved] session=sess-0144-de2d091f step=3 tool=calculate tokens=500 lockedPrice=4
+2026/03/27 14:23:22.460229 [MCPDP Reserved] session=sess-0144-de2d091f step=4 tool=web_fetch tokens=500 lockedPrice=4
+2026/03/27 14:23:22.478559 [MCPDP Pre-flight] session=sess-0155-15a9e2c9 budget=500 totalCost=750 steps=5
+2026/03/27 14:23:22.478559 [MCPDP Pre-flight] session=sess-0155-15a9e2c9 REJECTED (budget 500 < cost 750)
+2026/03/27 14:23:22.479563 [MCPDP Pre-flight] session=sess-0156-b4bf3a6b budget=500 totalCost=1200 steps=4
+2026/03/27 14:23:22.479563 [MCPDP Pre-flight] session=sess-0156-b4bf3a6b REJECTED (budget 500 < cost 1200)
+2026/03/27 14:23:22.540129 [MCPDP Reserved] session=sess-0138-d84ce53e step=2 tool=web_fetch tokens=500 lockedPrice=2
+2026/03/27 14:23:22.541181 [MCPDP Pre-flight] session=sess-0157-4e07b54d budget=500 totalCost=1800 steps=4
+2026/03/27 14:23:22.541181 [MCPDP Pre-flight] session=sess-0157-4e07b54d REJECTED (budget 500 < cost 1800)
+2026/03/27 14:23:22.571788 [MCPDP Reserved] session=sess-0139-34621f73 step=2 tool=mock_heavy tokens=500 lockedPrice=10
+2026/03/27 14:23:22.617318 [MCPDP Pre-flight] session=sess-0158-590164b6 budget=500 totalCost=2400 steps=4
+2026/03/27 14:23:22.617318 [MCPDP Pre-flight] session=sess-0158-590164b6 REJECTED (budget 500 < cost 2400)
+2026/03/27 14:23:22.617913 [MCPDP Pre-flight] session=sess-0159-441b986a budget=500 totalCost=2100 steps=6
+2026/03/27 14:23:22.617913 [MCPDP Pre-flight] session=sess-0159-441b986a REJECTED (budget 500 < cost 2100)
+2026/03/27 14:23:22.646912 [MCPDP Reserved] session=sess-0137-c29c9614 step=6 tool=web_fetch tokens=500 lockedPrice=2
+2026/03/27 14:23:22.694146 [MCPDP Pre-flight] session=sess-0160-f8ebbbc3 budget=500 totalCost=7800 steps=5
+2026/03/27 14:23:22.694146 [MCPDP Pre-flight] session=sess-0160-f8ebbbc3 REJECTED (budget 500 < cost 7800)
+2026/03/27 14:23:22.723505 [MCPDP Pre-flight] session=sess-0161-a304e2ee budget=500 totalCost=6000 steps=6
+2026/03/27 14:23:22.723505 [MCPDP Pre-flight] session=sess-0161-a304e2ee REJECTED (budget 500 < cost 6000)
+2026/03/27 14:23:22.783864 [MCPDP Pre-flight] session=sess-0162-00a94e7a budget=500 totalCost=1800 steps=3
+2026/03/27 14:23:22.783864 [MCPDP Pre-flight] session=sess-0162-00a94e7a REJECTED (budget 500 < cost 1800)
+2026/03/27 14:23:22.812811 [MCPDP Reserved] session=sess-0146-311fd557 step=1 tool=web_fetch tokens=500 lockedPrice=6
+2026/03/27 14:23:22.844794 [MCPDP Pre-flight] session=sess-0163-ccdc7d71 budget=500 totalCost=9350 steps=5
+2026/03/27 14:23:22.844794 [MCPDP Pre-flight] session=sess-0163-ccdc7d71 REJECTED (budget 500 < cost 9350)
+2026/03/27 14:23:22.891966 [MCPDP Pre-flight] session=sess-0164-66c2b1d2 budget=500 totalCost=3850 steps=3
+2026/03/27 14:23:22.891966 [MCPDP Pre-flight] session=sess-0164-66c2b1d2 REJECTED (budget 500 < cost 3850)
+2026/03/27 14:23:22.892529 [MCPDP Pre-flight] session=sess-0165-4f61d3b2 budget=500 totalCost=6050 steps=3
+2026/03/27 14:23:22.892529 [MCPDP Pre-flight] session=sess-0165-4f61d3b2 REJECTED (budget 500 < cost 6050)
+2026/03/27 14:23:22.915606 [MCPDP Reserved] session=sess-0148-d068cca0 step=3 tool=web_fetch tokens=500 lockedPrice=12
+2026/03/27 14:23:22.916819 [MCPDP Reserved] session=sess-0141-9b86038f step=3 tool=web_fetch tokens=500 lockedPrice=2
+2026/03/27 14:23:22.970019 [MCPDP Reserved] session=sess-0146-311fd557 step=2 tool=calculate tokens=500 lockedPrice=6
+2026/03/27 14:23:22.971120 [MCPDP Pre-flight] session=sess-0166-9f7eb285 budget=500 totalCost=4400 steps=4
+2026/03/27 14:23:22.971120 [MCPDP Pre-flight] session=sess-0166-9f7eb285 REJECTED (budget 500 < cost 4400)
+2026/03/27 14:23:22.975914 [MCPDP Reserved] session=sess-0146-311fd557 step=3 tool=mock_heavy tokens=500 lockedPrice=30
+2026/03/27 14:23:23.000155 [MCPDP Pre-flight] session=sess-0167-db669f74 budget=500 totalCost=1500 steps=3
+2026/03/27 14:23:23.000155 [MCPDP Pre-flight] session=sess-0167-db669f74 REJECTED (budget 500 < cost 1500)
+2026/03/27 14:23:23.001153 [MCPDP Pre-flight] session=sess-0168-89977e9c budget=500 totalCost=7000 steps=6
+2026/03/27 14:23:23.001153 [MCPDP Pre-flight] session=sess-0168-89977e9c REJECTED (budget 500 < cost 7000)
+2026/03/27 14:23:23.003176 [MCPDP Pre-flight] session=sess-0169-176b028c budget=500 totalCost=8500 steps=5
+2026/03/27 14:23:23.003176 [MCPDP Pre-flight] session=sess-0169-176b028c REJECTED (budget 500 < cost 8500)
+2026/03/27 14:23:23.060614 [MCPDP Pre-flight] session=sess-0170-a3c6e667 budget=500 totalCost=4000 steps=4
+2026/03/27 14:23:23.060614 [MCPDP Pre-flight] session=sess-0170-a3c6e667 REJECTED (budget 500 < cost 4000)
+2026/03/27 14:23:23.071912 [MCPDP Reserved] session=sess-0148-d068cca0 step=4 tool=calculate tokens=500 lockedPrice=12
+2026/03/27 14:23:23.074328 [MCPDP Reserved] session=sess-0141-9b86038f step=4 tool=web_fetch tokens=500 lockedPrice=2
+2026/03/27 14:23:23.089242 [MCPDP Reserved] session=sess-0147-325b4f54 step=2 tool=web_fetch tokens=500 lockedPrice=10
+2026/03/27 14:23:23.137895 [MCPDP Pre-flight] session=sess-0171-bed502d7 budget=500 totalCost=1500 steps=3
+2026/03/27 14:23:23.137895 [MCPDP Pre-flight] session=sess-0171-bed502d7 REJECTED (budget 500 < cost 1500)
+2026/03/27 14:23:23.138970 [MCPDP Pre-flight] session=sess-0172-c95ca26a budget=500 totalCost=2500 steps=5
+2026/03/27 14:23:23.138970 [MCPDP Pre-flight] session=sess-0172-c95ca26a REJECTED (budget 500 < cost 2500)
+2026/03/27 14:23:23.184688 [MCPDP Pre-flight] session=sess-0173-c9dab5e7 budget=500 totalCost=1170 steps=5
+2026/03/27 14:23:23.184759 [MCPDP Pre-flight] session=sess-0173-c9dab5e7 REJECTED (budget 500 < cost 1170)
+2026/03/27 14:23:23.185934 [MCPDP Pre-flight] session=sess-0174-a13e4bff budget=500 totalCost=1260 steps=6
+2026/03/27 14:23:23.185934 [MCPDP Pre-flight] session=sess-0174-a13e4bff REJECTED (budget 500 < cost 1260)
+2026/03/27 14:23:23.216861 [MCPDP Reserved] session=sess-0142-d2682584 step=5 tool=mock_heavy tokens=500 lockedPrice=10
+2026/03/27 14:23:23.230695 [MCPDP Reserved] session=sess-0141-9b86038f step=5 tool=calculate tokens=500 lockedPrice=2
+2026/03/27 14:23:23.234665 [MCPDP Reserved] session=sess-0141-9b86038f step=6 tool=calculate tokens=500 lockedPrice=2
+2026/03/27 14:23:23.235333 [MCPDP Pre-flight] session=sess-0175-9fb53fc2 budget=500 totalCost=1710 steps=7
+2026/03/27 14:23:23.235333 [MCPDP Pre-flight] session=sess-0175-9fb53fc2 REJECTED (budget 500 < cost 1710)
+2026/03/27 14:23:23.236604 [MCPDP Pre-flight] session=sess-0176-938886a2 budget=500 totalCost=1710 steps=7
+2026/03/27 14:23:23.236604 [MCPDP Pre-flight] session=sess-0176-938886a2 REJECTED (budget 500 < cost 1710)
+2026/03/27 14:23:23.244806 [MCPDP Reserved] session=sess-0147-325b4f54 step=3 tool=mock_heavy tokens=500 lockedPrice=50
+2026/03/27 14:23:23.306730 [MCPDP Pre-flight] session=sess-0177-789a3d15 budget=500 totalCost=630 steps=3
+2026/03/27 14:23:23.307247 [MCPDP Pre-flight] session=sess-0177-789a3d15 REJECTED (budget 500 < cost 630)
+2026/03/27 14:23:23.336957 [MCPDP Pre-flight] session=sess-0178-eb915354 budget=500 totalCost=225 steps=3
+2026/03/27 14:23:23.336957 [MCPDP Budget Reserve] session=sess-0178-eb915354 locked totalCost=225 prices=map[calculate:75 web_fetch:75]
+2026/03/27 14:23:23.336957 [MCPDP Pre-flight] session=sess-0178-eb915354 ADMITTED, reservation created
+2026/03/27 14:23:23.343288 [MCPDP Reserved] session=sess-0136-7b18d700 step=2 tool=web_fetch tokens=500 lockedPrice=2
+2026/03/27 14:23:23.447096 [MCPDP Reserved] session=sess-0139-34621f73 step=3 tool=web_fetch tokens=500 lockedPrice=2
+2026/03/27 14:23:23.489426 [MCPDP Pre-flight] session=sess-0179-eafea161 budget=500 totalCost=525 steps=3
+2026/03/27 14:23:23.489426 [MCPDP Pre-flight] session=sess-0179-eafea161 REJECTED (budget 500 < cost 525)
+2026/03/27 14:23:23.489426 [MCPDP Pre-flight] session=sess-0180-cfc61833 budget=500 totalCost=225 steps=3
+2026/03/27 14:23:23.489426 [MCPDP Budget Reserve] session=sess-0180-cfc61833 locked totalCost=225 prices=map[calculate:75 web_fetch:75]
+2026/03/27 14:23:23.489426 [MCPDP Pre-flight] session=sess-0180-cfc61833 ADMITTED, reservation created
+2026/03/27 14:23:23.494263 [MCPDP Reserved] session=sess-0178-eb915354 step=1 tool=calculate tokens=500 lockedPrice=75
+2026/03/27 14:23:23.495719 [MCPDP Reserved] session=sess-0180-cfc61833 step=1 tool=web_fetch tokens=500 lockedPrice=75
+2026/03/27 14:23:23.499142 [MCPDP Reserved] session=sess-0136-7b18d700 step=3 tool=mock_heavy tokens=500 lockedPrice=10
+2026/03/27 14:23:23.499716 [MCPDP Pre-flight] session=sess-0181-d3f84e11 budget=500 totalCost=825 steps=3
+2026/03/27 14:23:23.499716 [MCPDP Pre-flight] session=sess-0181-d3f84e11 REJECTED (budget 500 < cost 825)
+2026/03/27 14:23:23.500243 [MCPDP Pre-flight] session=sess-0182-0f09cc5f budget=500 totalCost=975 steps=5
+2026/03/27 14:23:23.500243 [MCPDP Pre-flight] session=sess-0182-0f09cc5f REJECTED (budget 500 < cost 975)
+2026/03/27 14:23:23.500243 [MCPDP Reserved] session=sess-0178-eb915354 step=2 tool=calculate tokens=500 lockedPrice=75
+2026/03/27 14:23:23.602412 [MCPDP Reserved] session=sess-0139-34621f73 step=4 tool=calculate tokens=500 lockedPrice=2
+2026/03/27 14:23:23.607240 [MCPDP Reserved] session=sess-0139-34621f73 step=5 tool=mock_heavy tokens=500 lockedPrice=10
+2026/03/27 14:23:23.642303 [MCPDP Pre-flight] session=sess-0183-f94b1bf2 budget=500 totalCost=240 steps=4
+2026/03/27 14:23:23.642303 [MCPDP Budget Reserve] session=sess-0183-f94b1bf2 locked totalCost=240 prices=map[calculate:60 web_fetch:60]
+2026/03/27 14:23:23.642825 [MCPDP Pre-flight] session=sess-0183-f94b1bf2 ADMITTED, reservation created
+2026/03/27 14:23:23.652406 [MCPDP Reserved] session=sess-0180-cfc61833 step=2 tool=web_fetch tokens=500 lockedPrice=75
+2026/03/27 14:23:23.764890 [MCPDP Pre-flight] session=sess-0184-97bd5bf2 budget=500 totalCost=1020 steps=5
+2026/03/27 14:23:23.764890 [MCPDP Pre-flight] session=sess-0184-97bd5bf2 REJECTED (budget 500 < cost 1020)
+2026/03/27 14:23:23.766573 [MCPDP Pre-flight] session=sess-0185-e105b755 budget=500 totalCost=840 steps=6
+2026/03/27 14:23:23.766600 [MCPDP Pre-flight] session=sess-0185-e105b755 REJECTED (budget 500 < cost 840)
+2026/03/27 14:23:23.781974 [MCPDP Reserved] session=sess-0146-311fd557 step=4 tool=calculate tokens=500 lockedPrice=6
+2026/03/27 14:23:23.799445 [MCPDP Reserved] session=sess-0183-f94b1bf2 step=1 tool=web_fetch tokens=500 lockedPrice=60
+2026/03/27 14:23:23.841506 [MCPDP Pre-flight] session=sess-0186-0854792a budget=500 totalCost=16 steps=4
+2026/03/27 14:23:23.841506 [MCPDP Budget Reserve] session=sess-0186-0854792a locked totalCost=16 prices=map[calculate:2 mock_heavy:10 web_fetch:2]
+2026/03/27 14:23:23.841506 [MCPDP Pre-flight] session=sess-0186-0854792a ADMITTED, reservation created
+2026/03/27 14:23:23.918384 [MCPDP Pre-flight] session=sess-0187-fabc6886 budget=500 totalCost=0 steps=3
+2026/03/27 14:23:23.918384 [MCPDP Budget Reserve] session=sess-0187-fabc6886 locked totalCost=0 prices=map[mock_heavy:0 web_fetch:0]
+2026/03/27 14:23:23.918384 [MCPDP Pre-flight] session=sess-0187-fabc6886 ADMITTED, reservation created
+2026/03/27 14:23:23.955806 [MCPDP Reserved] session=sess-0183-f94b1bf2 step=2 tool=calculate tokens=500 lockedPrice=60
+2026/03/27 14:23:23.956451 [MCPDP Pre-flight] session=sess-0188-6b976be2 budget=500 totalCost=0 steps=3
+2026/03/27 14:23:23.956451 [MCPDP Budget Reserve] session=sess-0188-6b976be2 locked totalCost=0 prices=map[calculate:0 mock_heavy:0 web_fetch:0]
+2026/03/27 14:23:23.956451 [MCPDP Pre-flight] session=sess-0188-6b976be2 ADMITTED, reservation created
+2026/03/27 14:23:23.962130 [MCPDP Reserved] session=sess-0183-f94b1bf2 step=3 tool=calculate tokens=500 lockedPrice=60
+2026/03/27 14:23:23.995836 [MCPDP Pre-flight] session=sess-0189-6446e5da budget=500 totalCost=0 steps=7
+2026/03/27 14:23:23.996828 [MCPDP Budget Reserve] session=sess-0189-6446e5da locked totalCost=0 prices=map[calculate:0 mock_heavy:0]
+2026/03/27 14:23:23.996828 [MCPDP Pre-flight] session=sess-0189-6446e5da ADMITTED, reservation created
+2026/03/27 14:23:23.998010 [MCPDP Pre-flight] session=sess-0190-3c65bffb budget=500 totalCost=0 steps=3
+2026/03/27 14:23:23.998010 [MCPDP Budget Reserve] session=sess-0190-3c65bffb locked totalCost=0 prices=map[calculate:0 web_fetch:0]
+2026/03/27 14:23:23.998010 [MCPDP Pre-flight] session=sess-0190-3c65bffb ADMITTED, reservation created
+2026/03/27 14:23:23.999148 [MCPDP Pre-flight] session=sess-0191-b3853941 budget=500 totalCost=0 steps=4
+2026/03/27 14:23:23.999148 [MCPDP Budget Reserve] session=sess-0191-b3853941 locked totalCost=0 prices=map[web_fetch:0]
+2026/03/27 14:23:23.999148 [MCPDP Pre-flight] session=sess-0191-b3853941 ADMITTED, reservation created
+2026/03/27 14:23:24.000196 [MCPDP Reserved] session=sess-0186-0854792a step=1 tool=calculate tokens=500 lockedPrice=2
+2026/03/27 14:23:24.004246 [MCPDP Reserved] session=sess-0189-6446e5da step=1 tool=calculate tokens=500 lockedPrice=0
+2026/03/27 14:23:24.006023 [MCPDP Reserved] session=sess-0190-3c65bffb step=1 tool=web_fetch tokens=500 lockedPrice=0
+2026/03/27 14:23:24.009558 [MCPDP Reserved] session=sess-0186-0854792a step=2 tool=mock_heavy tokens=500 lockedPrice=10
+2026/03/27 14:23:24.011861 [MCPDP Reserved] session=sess-0189-6446e5da step=2 tool=calculate tokens=500 lockedPrice=0
+2026/03/27 14:23:24.016532 [MCPDP Reserved] session=sess-0189-6446e5da step=3 tool=mock_heavy tokens=500 lockedPrice=0
+2026/03/27 14:23:24.022475 [MCPDP Reserved] session=sess-0142-d2682584 step=6 tool=mock_heavy tokens=500 lockedPrice=10
+2026/03/27 14:23:24.050152 [MCPDP Reserved] session=sess-0147-325b4f54 step=4 tool=mock_heavy tokens=500 lockedPrice=50
+2026/03/27 14:23:24.113040 [MCPDP Reserved] session=sess-0188-6b976be2 step=1 tool=calculate tokens=500 lockedPrice=0
+2026/03/27 14:23:24.114027 [MCPDP Pre-flight] session=sess-0192-33056175 budget=500 totalCost=30 steps=7
+2026/03/27 14:23:24.114089 [MCPDP Budget Reserve] session=sess-0192-33056175 locked totalCost=30 prices=map[calculate:2 mock_heavy:10 web_fetch:2]
+2026/03/27 14:23:24.114089 [MCPDP Pre-flight] session=sess-0192-33056175 ADMITTED, reservation created
+2026/03/27 14:23:24.118891 [MCPDP Reserved] session=sess-0188-6b976be2 step=2 tool=mock_heavy tokens=500 lockedPrice=0
+2026/03/27 14:23:24.159607 [MCPDP Reserved] session=sess-0191-b3853941 step=1 tool=web_fetch tokens=500 lockedPrice=0
+2026/03/27 14:23:24.164912 [MCPDP Reserved] session=sess-0190-3c65bffb step=2 tool=calculate tokens=500 lockedPrice=0
+2026/03/27 14:23:24.225384 [MCPDP Pre-flight] session=sess-0193-c6fa8b67 budget=500 totalCost=24 steps=6
+2026/03/27 14:23:24.225384 [MCPDP Budget Reserve] session=sess-0193-c6fa8b67 locked totalCost=24 prices=map[calculate:4 web_fetch:4]
+2026/03/27 14:23:24.225384 [MCPDP Pre-flight] session=sess-0193-c6fa8b67 ADMITTED, reservation created
+2026/03/27 14:23:24.231831 [MCPDP Reserved] session=sess-0193-c6fa8b67 step=1 tool=calculate tokens=500 lockedPrice=4
+2026/03/27 14:23:24.236890 [MCPDP Reserved] session=sess-0193-c6fa8b67 step=2 tool=calculate tokens=500 lockedPrice=4
+2026/03/27 14:23:24.242082 [MCPDP Reserved] session=sess-0193-c6fa8b67 step=3 tool=web_fetch tokens=500 lockedPrice=4
+2026/03/27 14:23:24.286233 [MCPDP Pre-flight] session=sess-0194-c0c84adc budget=500 totalCost=1200 steps=3
+2026/03/27 14:23:24.286233 [MCPDP Pre-flight] session=sess-0194-c0c84adc REJECTED (budget 500 < cost 1200)
+2026/03/27 14:23:24.304374 [MCPDP Reserved] session=sess-0136-7b18d700 step=4 tool=web_fetch tokens=500 lockedPrice=2
+2026/03/27 14:23:24.305427 [MCPDP Pre-flight] session=sess-0195-6ae4a634 budget=500 totalCost=3200 steps=4
+2026/03/27 14:23:24.305427 [MCPDP Pre-flight] session=sess-0195-6ae4a634 REJECTED (budget 500 < cost 3200)
+2026/03/27 14:23:24.316671 [MCPDP Reserved] session=sess-0191-b3853941 step=2 tool=web_fetch tokens=500 lockedPrice=0
+2026/03/27 14:23:24.317303 [MCPDP Pre-flight] session=sess-0196-d98560ff budget=500 totalCost=6000 steps=7
+2026/03/27 14:23:24.317303 [MCPDP Pre-flight] session=sess-0196-d98560ff REJECTED (budget 500 < cost 6000)
+2026/03/27 14:23:24.393888 [MCPDP Pre-flight] session=sess-0197-df0b2657 budget=500 totalCost=2800 steps=3
+2026/03/27 14:23:24.393888 [MCPDP Pre-flight] session=sess-0197-df0b2657 REJECTED (budget 500 < cost 2800)
+2026/03/27 14:23:24.397782 [MCPDP Reserved] session=sess-0193-c6fa8b67 step=4 tool=calculate tokens=500 lockedPrice=4
+2026/03/27 14:23:24.402630 [MCPDP Reserved] session=sess-0193-c6fa8b67 step=5 tool=web_fetch tokens=500 lockedPrice=4
+2026/03/27 14:23:24.460151 [MCPDP Reserved] session=sess-0136-7b18d700 step=5 tool=mock_heavy tokens=500 lockedPrice=10
+2026/03/27 14:23:24.471809 [MCPDP Reserved] session=sess-0191-b3853941 step=3 tool=web_fetch tokens=500 lockedPrice=0
+2026/03/27 14:23:24.516799 [MCPDP Pre-flight] session=sess-0198-3d4c2dae budget=500 totalCost=2800 steps=3
+2026/03/27 14:23:24.516799 [MCPDP Pre-flight] session=sess-0198-3d4c2dae REJECTED (budget 500 < cost 2800)
+2026/03/27 14:23:24.629110 [MCPDP Pre-flight] session=sess-0199-681f62b2 budget=500 totalCost=2000 steps=5
+2026/03/27 14:23:24.629110 [MCPDP Pre-flight] session=sess-0199-681f62b2 REJECTED (budget 500 < cost 2000)
+2026/03/27 14:23:24.717803 [MCPDP Pre-flight] session=sess-0200-f7736827 budget=500 totalCost=2800 steps=3
+2026/03/27 14:23:24.718323 [MCPDP Pre-flight] session=sess-0200-f7736827 REJECTED (budget 500 < cost 2800)
+2026/03/27 14:23:24.723457 [MCPDP Reserved] session=sess-0187-fabc6886 step=1 tool=web_fetch tokens=500 lockedPrice=0
+2026/03/27 14:23:24.779609 [MCPDP Pre-flight] session=sess-0201-adc69ee9 budget=500 totalCost=6000 steps=7
+2026/03/27 14:23:24.780612 [MCPDP Pre-flight] session=sess-0201-adc69ee9 REJECTED (budget 500 < cost 6000)
+2026/03/27 14:23:24.781236 [MCPDP Pre-flight] session=sess-0202-85da38c1 budget=500 totalCost=1200 steps=3
+2026/03/27 14:23:24.781236 [MCPDP Pre-flight] session=sess-0202-85da38c1 REJECTED (budget 500 < cost 1200)
+2026/03/27 14:23:24.781913 [MCPDP Pre-flight] session=sess-0203-1d81a474 budget=500 totalCost=2400 steps=6
+2026/03/27 14:23:24.781913 [MCPDP Pre-flight] session=sess-0203-1d81a474 REJECTED (budget 500 < cost 2400)
+2026/03/27 14:23:24.815736 [MCPDP Reserved] session=sess-0186-0854792a step=3 tool=web_fetch tokens=500 lockedPrice=2
+2026/03/27 14:23:24.823325 [MCPDP Reserved] session=sess-0189-6446e5da step=4 tool=mock_heavy tokens=500 lockedPrice=0
+2026/03/27 14:23:24.856159 [MCPDP Reserved] session=sess-0147-325b4f54 step=5 tool=calculate tokens=500 lockedPrice=10
+2026/03/27 14:23:24.879947 [MCPDP Reserved] session=sess-0187-fabc6886 step=2 tool=mock_heavy tokens=500 lockedPrice=0
+2026/03/27 14:23:24.918901 [MCPDP Pre-flight] session=sess-0204-9a98f6c8 budget=500 totalCost=4550 steps=5
+2026/03/27 14:23:24.918901 [MCPDP Pre-flight] session=sess-0204-9a98f6c8 REJECTED (budget 500 < cost 4550)
+2026/03/27 14:23:24.921169 [MCPDP Reserved] session=sess-0192-33056175 step=1 tool=calculate tokens=500 lockedPrice=2
+2026/03/27 14:23:24.926347 [MCPDP Reserved] session=sess-0192-33056175 step=2 tool=calculate tokens=500 lockedPrice=2
+2026/03/27 14:23:24.931530 [MCPDP Reserved] session=sess-0192-33056175 step=3 tool=web_fetch tokens=500 lockedPrice=2
+2026/03/27 14:23:24.973480 [MCPDP Pre-flight] session=sess-0205-179dcd56 budget=500 totalCost=5250 steps=7
+2026/03/27 14:23:24.973480 [MCPDP Pre-flight] session=sess-0205-179dcd56 REJECTED (budget 500 < cost 5250)
+2026/03/27 14:23:24.974190 [MCPDP Pre-flight] session=sess-0206-7c3492fa budget=500 totalCost=5250 steps=7
+2026/03/27 14:23:24.974190 [MCPDP Pre-flight] session=sess-0206-7c3492fa REJECTED (budget 500 < cost 5250)
+2026/03/27 14:23:24.975905 [MCPDP Pre-flight] session=sess-0207-e1986055 budget=500 totalCost=2100 steps=6
+2026/03/27 14:23:24.975905 [MCPDP Pre-flight] session=sess-0207-e1986055 REJECTED (budget 500 < cost 2100)
+2026/03/27 14:23:25.039807 [MCPDP Pre-flight] session=sess-0208-e34b3f2b budget=500 totalCost=4900 steps=6
+2026/03/27 14:23:25.039807 [MCPDP Pre-flight] session=sess-0208-e34b3f2b REJECTED (budget 500 < cost 4900)
+2026/03/27 14:23:25.041216 [MCPDP Pre-flight] session=sess-0209-a1964473 budget=500 totalCost=5250 steps=7
+2026/03/27 14:23:25.041216 [MCPDP Pre-flight] session=sess-0209-a1964473 REJECTED (budget 500 < cost 5250)
+2026/03/27 14:23:25.042780 [MCPDP Pre-flight] session=sess-0210-f27fe802 budget=500 totalCost=5250 steps=7
+2026/03/27 14:23:25.042780 [MCPDP Pre-flight] session=sess-0210-f27fe802 REJECTED (budget 500 < cost 5250)
+2026/03/27 14:23:25.086821 [MCPDP Pre-flight] session=sess-0211-8aade1a2 budget=500 totalCost=2450 steps=7
+2026/03/27 14:23:25.086821 [MCPDP Pre-flight] session=sess-0211-8aade1a2 REJECTED (budget 500 < cost 2450)
+2026/03/27 14:23:25.087920 [MCPDP Reserved] session=sess-0192-33056175 step=4 tool=mock_heavy tokens=500 lockedPrice=10
+2026/03/27 14:23:25.163756 [MCPDP Pre-flight] session=sess-0212-73d3fc4a budget=500 totalCost=135 steps=3
+2026/03/27 14:23:25.163756 [MCPDP Budget Reserve] session=sess-0212-73d3fc4a locked totalCost=135 prices=map[web_fetch:45]
+2026/03/27 14:23:25.163756 [MCPDP Pre-flight] session=sess-0212-73d3fc4a ADMITTED, reservation created
+2026/03/27 14:23:25.225159 [MCPDP Pre-flight] session=sess-0213-5cffeef6 budget=500 totalCost=630 steps=6
+2026/03/27 14:23:25.225159 [MCPDP Pre-flight] session=sess-0213-5cffeef6 REJECTED (budget 500 < cost 630)
+2026/03/27 14:23:25.226294 [MCPDP Pre-flight] session=sess-0214-34c42032 budget=500 totalCost=360 steps=4
+2026/03/27 14:23:25.226294 [MCPDP Budget Reserve] session=sess-0214-34c42032 locked totalCost=360 prices=map[calculate:45 mock_heavy:225 web_fetch:45]
+2026/03/27 14:23:25.226294 [MCPDP Pre-flight] session=sess-0214-34c42032 ADMITTED, reservation created
+2026/03/27 14:23:25.231798 [MCPDP Reserved] session=sess-0214-34c42032 step=1 tool=web_fetch tokens=500 lockedPrice=45
+2026/03/27 14:23:25.266902 [MCPDP Pre-flight] session=sess-0215-cf6095b0 budget=500 totalCost=765 steps=5
+2026/03/27 14:23:25.266902 [MCPDP Pre-flight] session=sess-0215-cf6095b0 REJECTED (budget 500 < cost 765)
+2026/03/27 14:23:25.268055 [MCPDP Pre-flight] session=sess-0216-011ff179 budget=500 totalCost=495 steps=3
+2026/03/27 14:23:25.268055 [MCPDP Budget Reserve] session=sess-0216-011ff179 locked totalCost=495 prices=map[calculate:45 mock_heavy:225]
+2026/03/27 14:23:25.268055 [MCPDP Pre-flight] session=sess-0216-011ff179 ADMITTED, reservation created
+2026/03/27 14:23:25.271511 [MCPDP Reserved] session=sess-0216-011ff179 step=1 tool=mock_heavy tokens=500 lockedPrice=225
+2026/03/27 14:23:25.301139 [MCPDP Pre-flight] session=sess-0217-7cc7fc3b budget=500 totalCost=990 steps=6
+2026/03/27 14:23:25.301139 [MCPDP Pre-flight] session=sess-0217-7cc7fc3b REJECTED (budget 500 < cost 990)
+2026/03/27 14:23:25.320131 [MCPDP Reserved] session=sess-0212-73d3fc4a step=1 tool=web_fetch tokens=500 lockedPrice=45
+2026/03/27 14:23:25.378523 [MCPDP Pre-flight] session=sess-0218-ecd7e714 budget=500 totalCost=360 steps=4
+2026/03/27 14:23:25.378523 [MCPDP Budget Reserve] session=sess-0218-ecd7e714 locked totalCost=360 prices=map[calculate:45 mock_heavy:225]
+2026/03/27 14:23:25.378523 [MCPDP Pre-flight] session=sess-0218-ecd7e714 ADMITTED, reservation created
+2026/03/27 14:23:25.383110 [MCPDP Reserved] session=sess-0218-ecd7e714 step=1 tool=calculate tokens=500 lockedPrice=45
+2026/03/27 14:23:25.386858 [MCPDP Reserved] session=sess-0214-34c42032 step=2 tool=mock_heavy tokens=500 lockedPrice=225
+2026/03/27 14:23:25.388071 [MCPDP Reserved] session=sess-0218-ecd7e714 step=2 tool=mock_heavy tokens=500 lockedPrice=225
+2026/03/27 14:23:25.438657 [MCPDP Pre-flight] session=sess-0219-68dcb61b budget=500 totalCost=180 steps=4
+2026/03/27 14:23:25.438657 [MCPDP Budget Reserve] session=sess-0219-68dcb61b locked totalCost=180 prices=map[calculate:45 web_fetch:45]
+2026/03/27 14:23:25.438657 [MCPDP Pre-flight] session=sess-0219-68dcb61b ADMITTED, reservation created
+2026/03/27 14:23:25.444401 [MCPDP Reserved] session=sess-0219-68dcb61b step=1 tool=web_fetch tokens=500 lockedPrice=45
+2026/03/27 14:23:25.476954 [MCPDP Reserved] session=sess-0212-73d3fc4a step=2 tool=web_fetch tokens=500 lockedPrice=45
+2026/03/27 14:23:25.545987 [MCPDP Pre-flight] session=sess-0220-85927107 budget=500 totalCost=675 steps=7
+2026/03/27 14:23:25.546742 [MCPDP Pre-flight] session=sess-0220-85927107 REJECTED (budget 500 < cost 675)
+2026/03/27 14:23:25.600464 [MCPDP Reserved] session=sess-0219-68dcb61b step=2 tool=calculate tokens=500 lockedPrice=45
+2026/03/27 14:23:25.602066 [MCPDP Pre-flight] session=sess-0221-59d20a70 budget=500 totalCost=675 steps=7
+2026/03/27 14:23:25.602066 [MCPDP Pre-flight] session=sess-0221-59d20a70 REJECTED (budget 500 < cost 675)
+2026/03/27 14:23:25.606691 [MCPDP Reserved] session=sess-0219-68dcb61b step=3 tool=calculate tokens=500 lockedPrice=45
+2026/03/27 14:23:25.631659 [MCPDP Reserved] session=sess-0189-6446e5da step=5 tool=mock_heavy tokens=500 lockedPrice=0
+2026/03/27 14:23:25.632349 [MCPDP Pre-flight] session=sess-0222-5d366f7b budget=500 totalCost=855 steps=7
+2026/03/27 14:23:25.632349 [MCPDP Pre-flight] session=sess-0222-5d366f7b REJECTED (budget 500 < cost 855)
+2026/03/27 14:23:25.633678 [MCPDP Pre-flight] session=sess-0223-cb81c59a budget=500 totalCost=810 steps=6
+2026/03/27 14:23:25.634200 [MCPDP Pre-flight] session=sess-0223-cb81c59a REJECTED (budget 500 < cost 810)
+2026/03/27 14:23:25.668716 [MCPDP Pre-flight] session=sess-0224-35128220 budget=500 totalCost=630 steps=6
+2026/03/27 14:23:25.668716 [MCPDP Pre-flight] session=sess-0224-35128220 REJECTED (budget 500 < cost 630)
+2026/03/27 14:23:25.669799 [MCPDP Pre-flight] session=sess-0225-9e0061f1 budget=500 totalCost=360 steps=4
+2026/03/27 14:23:25.669829 [MCPDP Budget Reserve] session=sess-0225-9e0061f1 locked totalCost=360 prices=map[mock_heavy:225 web_fetch:45]
+2026/03/27 14:23:25.669829 [MCPDP Pre-flight] session=sess-0225-9e0061f1 ADMITTED, reservation created
+2026/03/27 14:23:25.670951 [MCPDP Pre-flight] session=sess-0226-ff0820d6 budget=500 totalCost=315 steps=3
+2026/03/27 14:23:25.670951 [MCPDP Budget Reserve] session=sess-0226-ff0820d6 locked totalCost=315 prices=map[calculate:45 mock_heavy:225 web_fetch:45]
+2026/03/27 14:23:25.670951 [MCPDP Pre-flight] session=sess-0226-ff0820d6 ADMITTED, reservation created
+2026/03/27 14:23:25.676132 [MCPDP Reserved] session=sess-0226-ff0820d6 step=1 tool=web_fetch tokens=500 lockedPrice=45
+2026/03/27 14:23:25.825285 [MCPDP Reserved] session=sess-0225-9e0061f1 step=1 tool=web_fetch tokens=500 lockedPrice=45
+2026/03/27 14:23:25.831687 [MCPDP Reserved] session=sess-0226-ff0820d6 step=2 tool=mock_heavy tokens=500 lockedPrice=225
+2026/03/27 14:23:25.865269 [MCPDP Pre-flight] session=sess-0227-40896dfd budget=500 totalCost=4750 steps=7
+2026/03/27 14:23:25.865269 [MCPDP Pre-flight] session=sess-0227-40896dfd REJECTED (budget 500 < cost 4750)
+2026/03/27 14:23:25.895291 [MCPDP Reserved] session=sess-0192-33056175 step=5 tool=calculate tokens=500 lockedPrice=2
+2026/03/27 14:23:25.895291 [MCPDP Pre-flight] session=sess-0228-2c166a6a budget=500 totalCost=4500 steps=6
+2026/03/27 14:23:25.895291 [MCPDP Pre-flight] session=sess-0228-2c166a6a REJECTED (budget 500 < cost 4500)
+2026/03/27 14:23:25.900793 [MCPDP Reserved] session=sess-0192-33056175 step=6 tool=web_fetch tokens=500 lockedPrice=2
+2026/03/27 14:23:25.981055 [MCPDP Reserved] session=sess-0225-9e0061f1 step=2 tool=mock_heavy tokens=500 lockedPrice=225
+2026/03/27 14:23:26.018771 [MCPDP Pre-flight] session=sess-0229-5ade475e budget=500 totalCost=1750 steps=3
+2026/03/27 14:23:26.018771 [MCPDP Pre-flight] session=sess-0229-5ade475e REJECTED (budget 500 < cost 1750)
+2026/03/27 14:23:26.077157 [MCPDP Reserved] session=sess-0216-011ff179 step=2 tool=mock_heavy tokens=500 lockedPrice=225
+2026/03/27 14:23:26.078266 [MCPDP Pre-flight] session=sess-0230-bbdc01e7 budget=500 totalCost=3250 steps=5
+2026/03/27 14:23:26.078352 [MCPDP Pre-flight] session=sess-0230-bbdc01e7 REJECTED (budget 500 < cost 3250)
+2026/03/27 14:23:26.172322 [MCPDP Pre-flight] session=sess-0231-57778890 budget=500 totalCost=3750 steps=7
+2026/03/27 14:23:26.172322 [MCPDP Pre-flight] session=sess-0231-57778890 REJECTED (budget 500 < cost 3750)
+2026/03/27 14:23:26.192318 [MCPDP Reserved] session=sess-0214-34c42032 step=3 tool=web_fetch tokens=500 lockedPrice=45
+2026/03/27 14:23:26.193422 [MCPDP Reserved] session=sess-0218-ecd7e714 step=3 tool=calculate tokens=500 lockedPrice=45
+2026/03/27 14:23:26.232757 [MCPDP Pre-flight] session=sess-0232-403ce832 budget=500 totalCost=3250 steps=5
+2026/03/27 14:23:26.232757 [MCPDP Pre-flight] session=sess-0232-403ce832 REJECTED (budget 500 < cost 3250)
+2026/03/27 14:23:26.279467 [MCPDP Pre-flight] session=sess-0233-fb6e9d34 budget=500 totalCost=3750 steps=7
+2026/03/27 14:23:26.279467 [MCPDP Pre-flight] session=sess-0233-fb6e9d34 REJECTED (budget 500 < cost 3750)
+2026/03/27 14:23:26.324111 [MCPDP Pre-flight] session=sess-0234-c3e8b7de budget=500 totalCost=4500 steps=6
+2026/03/27 14:23:26.324111 [MCPDP Pre-flight] session=sess-0234-c3e8b7de REJECTED (budget 500 < cost 4500)
+2026/03/27 14:23:26.325222 [MCPDP Pre-flight] session=sess-0235-879568cc budget=500 totalCost=5750 steps=7
+2026/03/27 14:23:26.325222 [MCPDP Pre-flight] session=sess-0235-879568cc REJECTED (budget 500 < cost 5750)
+2026/03/27 14:23:26.384996 [MCPDP Pre-flight] session=sess-0236-6ae6884e budget=500 totalCost=3960 steps=6
+2026/03/27 14:23:26.384996 [MCPDP Pre-flight] session=sess-0236-6ae6884e REJECTED (budget 500 < cost 3960)
+2026/03/27 14:23:26.415673 [MCPDP Pre-flight] session=sess-0237-40119cc3 budget=500 totalCost=1330 steps=3
+2026/03/27 14:23:26.415673 [MCPDP Pre-flight] session=sess-0237-40119cc3 REJECTED (budget 500 < cost 1330)
+2026/03/27 14:23:26.416852 [MCPDP Pre-flight] session=sess-0238-53c6c6d6 budget=500 totalCost=2470 steps=5
+2026/03/27 14:23:26.416893 [MCPDP Pre-flight] session=sess-0238-53c6c6d6 REJECTED (budget 500 < cost 2470)
+2026/03/27 14:23:26.437983 [MCPDP Reserved] session=sess-0189-6446e5da step=6 tool=mock_heavy tokens=500 lockedPrice=0
+2026/03/27 14:23:26.460948 [MCPDP Pre-flight] session=sess-0239-0280b7e4 budget=500 totalCost=2100 steps=6
+2026/03/27 14:23:26.460948 [MCPDP Pre-flight] session=sess-0239-0280b7e4 REJECTED (budget 500 < cost 2100)
+2026/03/27 14:23:26.461948 [MCPDP Pre-flight] session=sess-0240-614954b9 budget=500 totalCost=450 steps=3
+2026/03/27 14:23:26.461948 [MCPDP Budget Reserve] session=sess-0240-614954b9 locked totalCost=450 prices=map[calculate:150 web_fetch:150]
+2026/03/27 14:23:26.461948 [MCPDP Pre-flight] session=sess-0240-614954b9 ADMITTED, reservation created
+2026/03/27 14:23:26.467951 [MCPDP Reserved] session=sess-0240-614954b9 step=1 tool=web_fetch tokens=500 lockedPrice=150
+2026/03/27 14:23:26.598192 [MCPDP Pre-flight] session=sess-0241-46dbb0f0 budget=500 totalCost=90 steps=5
+2026/03/27 14:23:26.598192 [MCPDP Budget Reserve] session=sess-0241-46dbb0f0 locked totalCost=90 prices=map[calculate:10 mock_heavy:50 web_fetch:10]
+2026/03/27 14:23:26.598192 [MCPDP Pre-flight] session=sess-0241-46dbb0f0 ADMITTED, reservation created
+2026/03/27 14:23:26.624427 [MCPDP Reserved] session=sess-0240-614954b9 step=2 tool=web_fetch tokens=500 lockedPrice=150
+2026/03/27 14:23:26.755696 [MCPDP Reserved] session=sess-0241-46dbb0f0 step=1 tool=mock_heavy tokens=500 lockedPrice=50
+2026/03/27 14:23:26.756277 [MCPDP Pre-flight] session=sess-0242-cdc0db04 budget=500 totalCost=0 steps=7
+2026/03/27 14:23:26.756277 [MCPDP Budget Reserve] session=sess-0242-cdc0db04 locked totalCost=0 prices=map[calculate:0 mock_heavy:0 web_fetch:0]
+2026/03/27 14:23:26.756813 [MCPDP Pre-flight] session=sess-0242-cdc0db04 ADMITTED, reservation created
+2026/03/27 14:23:26.787711 [MCPDP Reserved] session=sess-0225-9e0061f1 step=3 tool=web_fetch tokens=500 lockedPrice=45
+2026/03/27 14:23:26.882826 [MCPDP Pre-flight] session=sess-0243-9bbccb1d budget=500 totalCost=0 steps=4
+2026/03/27 14:23:26.882861 [MCPDP Budget Reserve] session=sess-0243-9bbccb1d locked totalCost=0 prices=map[calculate:0 mock_heavy:0 web_fetch:0]
+2026/03/27 14:23:26.882861 [MCPDP Pre-flight] session=sess-0243-9bbccb1d ADMITTED, reservation created
+2026/03/27 14:23:26.913550 [MCPDP Reserved] session=sess-0242-cdc0db04 step=1 tool=mock_heavy tokens=500 lockedPrice=0
+2026/03/27 14:23:26.914627 [MCPDP Pre-flight] session=sess-0244-43ef2908 budget=500 totalCost=0 steps=7
+2026/03/27 14:23:26.914627 [MCPDP Budget Reserve] session=sess-0244-43ef2908 locked totalCost=0 prices=map[calculate:0 web_fetch:0]
+2026/03/27 14:23:26.914627 [MCPDP Pre-flight] session=sess-0244-43ef2908 ADMITTED, reservation created
+2026/03/27 14:23:26.915726 [MCPDP Pre-flight] session=sess-0245-a3c9ebef budget=500 totalCost=0 steps=3
+2026/03/27 14:23:26.915726 [MCPDP Budget Reserve] session=sess-0245-a3c9ebef locked totalCost=0 prices=map[mock_heavy:0]
+2026/03/27 14:23:26.915726 [MCPDP Pre-flight] session=sess-0245-a3c9ebef ADMITTED, reservation created
+2026/03/27 14:23:27.057618 [MCPDP Pre-flight] session=sess-0246-8c29a068 budget=500 totalCost=0 steps=5
+2026/03/27 14:23:27.057618 [MCPDP Budget Reserve] session=sess-0246-8c29a068 locked totalCost=0 prices=map[calculate:0 mock_heavy:0 web_fetch:0]
+2026/03/27 14:23:27.057618 [MCPDP Pre-flight] session=sess-0246-8c29a068 ADMITTED, reservation created
+2026/03/27 14:23:27.072579 [MCPDP Reserved] session=sess-0244-43ef2908 step=1 tool=calculate tokens=500 lockedPrice=0
+2026/03/27 14:23:27.073121 [MCPDP Pre-flight] session=sess-0247-7beb8af2 budget=500 totalCost=0 steps=6
+2026/03/27 14:23:27.073121 [MCPDP Budget Reserve] session=sess-0247-7beb8af2 locked totalCost=0 prices=map[calculate:0 web_fetch:0]
+2026/03/27 14:23:27.073121 [MCPDP Pre-flight] session=sess-0247-7beb8af2 ADMITTED, reservation created
+2026/03/27 14:23:27.078005 [MCPDP Reserved] session=sess-0244-43ef2908 step=2 tool=web_fetch tokens=500 lockedPrice=0
+2026/03/27 14:23:27.214143 [MCPDP Reserved] session=sess-0246-8c29a068 step=1 tool=mock_heavy tokens=500 lockedPrice=0
+2026/03/27 14:23:27.230477 [MCPDP Reserved] session=sess-0247-7beb8af2 step=1 tool=calculate tokens=500 lockedPrice=0
+2026/03/27 14:23:27.231582 [MCPDP Pre-flight] session=sess-0248-f1e134ff budget=500 totalCost=0 steps=7
+2026/03/27 14:23:27.231582 [MCPDP Budget Reserve] session=sess-0248-f1e134ff locked totalCost=0 prices=map[calculate:0 mock_heavy:0 web_fetch:0]
+2026/03/27 14:23:27.231582 [MCPDP Pre-flight] session=sess-0248-f1e134ff ADMITTED, reservation created
+2026/03/27 14:23:27.234846 [MCPDP Reserved] session=sess-0244-43ef2908 step=3 tool=calculate tokens=500 lockedPrice=0
+2026/03/27 14:23:27.236501 [MCPDP Reserved] session=sess-0247-7beb8af2 step=2 tool=web_fetch tokens=500 lockedPrice=0
+2026/03/27 14:23:27.239333 [MCPDP Reserved] session=sess-0244-43ef2908 step=4 tool=calculate tokens=500 lockedPrice=0
+2026/03/27 14:23:27.245200 [MCPDP Reserved] session=sess-0244-43ef2908 step=5 tool=web_fetch tokens=500 lockedPrice=0
+2026/03/27 14:23:27.388753 [MCPDP Reserved] session=sess-0248-f1e134ff step=1 tool=web_fetch tokens=500 lockedPrice=0
+2026/03/27 14:23:27.388753 [MCPDP Pre-flight] session=sess-0249-befed4ac budget=500 totalCost=1750 steps=3
+2026/03/27 14:23:27.389834 [MCPDP Pre-flight] session=sess-0249-befed4ac REJECTED (budget 500 < cost 1750)
+2026/03/27 14:23:27.393357 [MCPDP Reserved] session=sess-0247-7beb8af2 step=3 tool=web_fetch tokens=500 lockedPrice=0
+2026/03/27 14:23:27.400689 [MCPDP Reserved] session=sess-0244-43ef2908 step=6 tool=calculate tokens=500 lockedPrice=0
+2026/03/27 14:23:27.500570 [MCPDP Pre-flight] session=sess-0250-eda187e1 budget=500 totalCost=1750 steps=3
+2026/03/27 14:23:27.500570 [MCPDP Pre-flight] session=sess-0250-eda187e1 REJECTED (budget 500 < cost 1750)
+2026/03/27 14:23:27.530970 [MCPDP Pre-flight] session=sess-0251-d7d7aa12 budget=500 totalCost=750 steps=3
+2026/03/27 14:23:27.530970 [MCPDP Pre-flight] session=sess-0251-d7d7aa12 REJECTED (budget 500 < cost 750)
+2026/03/27 14:23:27.545885 [MCPDP Reserved] session=sess-0248-f1e134ff step=2 tool=mock_heavy tokens=500 lockedPrice=0
+2026/03/27 14:23:27.546577 [MCPDP Pre-flight] session=sess-0252-b475d334 budget=500 totalCost=4500 steps=6
+2026/03/27 14:23:27.546577 [MCPDP Pre-flight] session=sess-0252-b475d334 REJECTED (budget 500 < cost 4500)
+2026/03/27 14:23:27.548899 [MCPDP Reserved] session=sess-0247-7beb8af2 step=4 tool=calculate tokens=500 lockedPrice=0
+2026/03/27 14:23:27.554722 [MCPDP Reserved] session=sess-0247-7beb8af2 step=5 tool=web_fetch tokens=500 lockedPrice=0
+2026/03/27 14:23:27.560834 [MCPDP Reserved] session=sess-0241-46dbb0f0 step=2 tool=calculate tokens=500 lockedPrice=10
+2026/03/27 14:23:27.566872 [MCPDP Reserved] session=sess-0241-46dbb0f0 step=3 tool=web_fetch tokens=500 lockedPrice=10
+2026/03/27 14:23:27.654245 [MCPDP Pre-flight] session=sess-0253-3c3b7357 budget=500 totalCost=1750 steps=3
+2026/03/27 14:23:27.654245 [MCPDP Pre-flight] session=sess-0253-3c3b7357 REJECTED (budget 500 < cost 1750)
+2026/03/27 14:23:27.684813 [MCPDP Pre-flight] session=sess-0254-7941ce70 budget=500 totalCost=2750 steps=7
+2026/03/27 14:23:27.684813 [MCPDP Pre-flight] session=sess-0254-7941ce70 REJECTED (budget 500 < cost 2750)
+2026/03/27 14:23:27.685384 [MCPDP Pre-flight] session=sess-0255-375b54b7 budget=500 totalCost=2750 steps=3
+2026/03/27 14:23:27.685909 [MCPDP Pre-flight] session=sess-0255-375b54b7 REJECTED (budget 500 < cost 2750)
+2026/03/27 14:23:27.687117 [MCPDP Reserved] session=sess-0243-9bbccb1d step=1 tool=calculate tokens=500 lockedPrice=0
+2026/03/27 14:23:27.692961 [MCPDP Reserved] session=sess-0243-9bbccb1d step=2 tool=web_fetch tokens=500 lockedPrice=0
+2026/03/27 14:23:27.720305 [MCPDP Reserved] session=sess-0242-cdc0db04 step=2 tool=calculate tokens=500 lockedPrice=0
+2026/03/27 14:23:27.721612 [MCPDP Pre-flight] session=sess-0256-55ddcbfe budget=500 totalCost=3750 steps=7
+2026/03/27 14:23:27.721612 [MCPDP Pre-flight] session=sess-0256-55ddcbfe REJECTED (budget 500 < cost 3750)
+2026/03/27 14:23:27.722944 [MCPDP Reserved] session=sess-0241-46dbb0f0 step=4 tool=web_fetch tokens=500 lockedPrice=10
+2026/03/27 14:23:27.724591 [MCPDP Reserved] session=sess-0245-a3c9ebef step=1 tool=mock_heavy tokens=500 lockedPrice=0
+2026/03/27 14:23:27.725157 [MCPDP Reserved] session=sess-0242-cdc0db04 step=3 tool=mock_heavy tokens=500 lockedPrice=0
+2026/03/27 14:23:27.849015 [MCPDP Reserved] session=sess-0243-9bbccb1d step=3 tool=calculate tokens=500 lockedPrice=0
+2026/03/27 14:23:27.850012 [MCPDP Pre-flight] session=sess-0257-66f16911 budget=500 totalCost=2880 steps=6
+2026/03/27 14:23:27.850012 [MCPDP Pre-flight] session=sess-0257-66f16911 REJECTED (budget 500 < cost 2880)
+2026/03/27 14:23:27.913457 [MCPDP Pre-flight] session=sess-0258-92b79fd3 budget=500 totalCost=600 steps=6
+2026/03/27 14:23:27.913457 [MCPDP Pre-flight] session=sess-0258-92b79fd3 REJECTED (budget 500 < cost 600)
+2026/03/27 14:23:27.959522 [MCPDP Pre-flight] session=sess-0259-b12c0fb2 budget=500 totalCost=550 steps=3
+2026/03/27 14:23:27.959522 [MCPDP Pre-flight] session=sess-0259-b12c0fb2 REJECTED (budget 500 < cost 550)
+2026/03/27 14:23:27.960667 [MCPDP Pre-flight] session=sess-0260-c576b62d budget=500 totalCost=800 steps=4
+2026/03/27 14:23:27.960667 [MCPDP Pre-flight] session=sess-0260-c576b62d REJECTED (budget 500 < cost 800)
+2026/03/27 14:23:28.020746 [MCPDP Pre-flight] session=sess-0261-bc27d83b budget=500 totalCost=0 steps=3
+2026/03/27 14:23:28.020746 [MCPDP Budget Reserve] session=sess-0261-bc27d83b locked totalCost=0 prices=map[calculate:0 mock_heavy:0 web_fetch:0]
+2026/03/27 14:23:28.020746 [MCPDP Pre-flight] session=sess-0261-bc27d83b ADMITTED, reservation created
+2026/03/27 14:23:28.021979 [MCPDP Reserved] session=sess-0246-8c29a068 step=2 tool=calculate tokens=500 lockedPrice=0
+2026/03/27 14:23:28.027672 [MCPDP Reserved] session=sess-0246-8c29a068 step=3 tool=web_fetch tokens=500 lockedPrice=0
+2026/03/27 14:23:28.184190 [MCPDP Reserved] session=sess-0246-8c29a068 step=4 tool=web_fetch tokens=500 lockedPrice=0
+2026/03/27 14:23:28.267139 [MCPDP Pre-flight] session=sess-0262-96dd2b11 budget=500 totalCost=0 steps=7
+2026/03/27 14:23:28.267139 [MCPDP Budget Reserve] session=sess-0262-96dd2b11 locked totalCost=0 prices=map[calculate:0 mock_heavy:0 web_fetch:0]
+2026/03/27 14:23:28.267139 [MCPDP Pre-flight] session=sess-0262-96dd2b11 ADMITTED, reservation created
+2026/03/27 14:23:28.268272 [MCPDP Pre-flight] session=sess-0263-1b91c7fb budget=500 totalCost=0 steps=6
+2026/03/27 14:23:28.268272 [MCPDP Budget Reserve] session=sess-0263-1b91c7fb locked totalCost=0 prices=map[calculate:0 mock_heavy:0 web_fetch:0]
+2026/03/27 14:23:28.268272 [MCPDP Pre-flight] session=sess-0263-1b91c7fb ADMITTED, reservation created
+2026/03/27 14:23:28.312817 [MCPDP Pre-flight] session=sess-0264-2225e32d budget=500 totalCost=0 steps=5
+2026/03/27 14:23:28.312817 [MCPDP Budget Reserve] session=sess-0264-2225e32d locked totalCost=0 prices=map[calculate:0 mock_heavy:0 web_fetch:0]
+2026/03/27 14:23:28.312817 [MCPDP Pre-flight] session=sess-0264-2225e32d ADMITTED, reservation created
+2026/03/27 14:23:28.351918 [MCPDP Reserved] session=sess-0248-f1e134ff step=3 tool=web_fetch tokens=500 lockedPrice=0
+2026/03/27 14:23:28.421571 [MCPDP Reserved] session=sess-0262-96dd2b11 step=1 tool=mock_heavy tokens=500 lockedPrice=0
+2026/03/27 14:23:28.422702 [MCPDP Pre-flight] session=sess-0265-78728d1f budget=500 totalCost=0 steps=6
+2026/03/27 14:23:28.422702 [MCPDP Budget Reserve] session=sess-0265-78728d1f locked totalCost=0 prices=map[calculate:0 mock_heavy:0 web_fetch:0]
+2026/03/27 14:23:28.422702 [MCPDP Pre-flight] session=sess-0265-78728d1f ADMITTED, reservation created
+2026/03/27 14:23:28.428286 [MCPDP Reserved] session=sess-0265-78728d1f step=1 tool=mock_heavy tokens=500 lockedPrice=0
+2026/03/27 14:23:28.469168 [MCPDP Reserved] session=sess-0264-2225e32d step=1 tool=calculate tokens=500 lockedPrice=0
+2026/03/27 14:23:28.473243 [MCPDP Reserved] session=sess-0264-2225e32d step=2 tool=calculate tokens=500 lockedPrice=0
+2026/03/27 14:23:28.477821 [MCPDP Reserved] session=sess-0264-2225e32d step=3 tool=mock_heavy tokens=500 lockedPrice=0
+2026/03/27 14:23:28.509580 [MCPDP Reserved] session=sess-0248-f1e134ff step=4 tool=calculate tokens=500 lockedPrice=0
+2026/03/27 14:23:28.510653 [MCPDP Pre-flight] session=sess-0266-6a368b69 budget=500 totalCost=0 steps=7
+2026/03/27 14:23:28.510735 [MCPDP Budget Reserve] session=sess-0266-6a368b69 locked totalCost=0 prices=map[calculate:0 mock_heavy:0]
+2026/03/27 14:23:28.510765 [MCPDP Pre-flight] session=sess-0266-6a368b69 ADMITTED, reservation created
+2026/03/27 14:23:28.515173 [MCPDP Reserved] session=sess-0248-f1e134ff step=5 tool=mock_heavy tokens=500 lockedPrice=0
+2026/03/27 14:23:28.516284 [MCPDP Reserved] session=sess-0266-6a368b69 step=1 tool=mock_heavy tokens=500 lockedPrice=0
+2026/03/27 14:23:28.530465 [MCPDP Reserved] session=sess-0245-a3c9ebef step=2 tool=mock_heavy tokens=500 lockedPrice=0
+2026/03/27 14:23:28.531566 [MCPDP Reserved] session=sess-0242-cdc0db04 step=4 tool=mock_heavy tokens=500 lockedPrice=0
+2026/03/27 14:23:28.571190 [MCPDP Pre-flight] session=sess-0267-983c00a4 budget=500 totalCost=0 steps=4
+2026/03/27 14:23:28.571190 [MCPDP Budget Reserve] session=sess-0267-983c00a4 locked totalCost=0 prices=map[mock_heavy:0 web_fetch:0]
+2026/03/27 14:23:28.571190 [MCPDP Pre-flight] session=sess-0267-983c00a4 ADMITTED, reservation created
+2026/03/27 14:23:28.634650 [MCPDP Pre-flight] session=sess-0268-ac2d2ce4 budget=500 totalCost=22 steps=3
+2026/03/27 14:23:28.634711 [MCPDP Budget Reserve] session=sess-0268-ac2d2ce4 locked totalCost=22 prices=map[calculate:2 mock_heavy:10]
+2026/03/27 14:23:28.634711 [MCPDP Pre-flight] session=sess-0268-ac2d2ce4 ADMITTED, reservation created
+2026/03/27 14:23:28.666090 [MCPDP Pre-flight] session=sess-0269-b752fbaf budget=500 totalCost=3600 steps=5
+2026/03/27 14:23:28.666090 [MCPDP Pre-flight] session=sess-0269-b752fbaf REJECTED (budget 500 < cost 3600)
+2026/03/27 14:23:28.696357 [MCPDP Pre-flight] session=sess-0270-c53b4982 budget=500 totalCost=3600 steps=5
+2026/03/27 14:23:28.696357 [MCPDP Pre-flight] session=sess-0270-c53b4982 REJECTED (budget 500 < cost 3600)
+2026/03/27 14:23:28.726894 [MCPDP Reserved] session=sess-0267-983c00a4 step=1 tool=mock_heavy tokens=500 lockedPrice=0
+2026/03/27 14:23:28.788713 [MCPDP Pre-flight] session=sess-0271-3ae67cc8 budget=500 totalCost=3600 steps=5
+2026/03/27 14:23:28.789234 [MCPDP Pre-flight] session=sess-0271-3ae67cc8 REJECTED (budget 500 < cost 3600)
+2026/03/27 14:23:28.827622 [MCPDP Reserved] session=sess-0261-bc27d83b step=1 tool=web_fetch tokens=500 lockedPrice=0
+2026/03/27 14:23:28.880350 [MCPDP Pre-flight] session=sess-0272-42910f53 budget=500 totalCost=3600 steps=5
+2026/03/27 14:23:28.880350 [MCPDP Pre-flight] session=sess-0272-42910f53 REJECTED (budget 500 < cost 3600)
+2026/03/27 14:23:28.984284 [MCPDP Reserved] session=sess-0261-bc27d83b step=2 tool=calculate tokens=500 lockedPrice=0
+2026/03/27 14:23:28.986139 [MCPDP Pre-flight] session=sess-0273-5fb1f083 budget=500 totalCost=2400 steps=6
+2026/03/27 14:23:28.986365 [MCPDP Pre-flight] session=sess-0273-5fb1f083 REJECTED (budget 500 < cost 2400)
+2026/03/27 14:23:29.073599 [MCPDP Reserved] session=sess-0263-1b91c7fb step=1 tool=web_fetch tokens=500 lockedPrice=0
+2026/03/27 14:23:29.125115 [MCPDP Pre-flight] session=sess-0274-2cdd63e8 budget=500 totalCost=4400 steps=7
+2026/03/27 14:23:29.125115 [MCPDP Pre-flight] session=sess-0274-2cdd63e8 REJECTED (budget 500 < cost 4400)
+2026/03/27 14:23:29.170398 [MCPDP Pre-flight] session=sess-0275-5a276ee1 budget=500 totalCost=7600 steps=7
+2026/03/27 14:23:29.170398 [MCPDP Pre-flight] session=sess-0275-5a276ee1 REJECTED (budget 500 < cost 7600)
+2026/03/27 14:23:29.217169 [MCPDP Pre-flight] session=sess-0276-6b968048 budget=500 totalCost=7600 steps=7
+2026/03/27 14:23:29.217684 [MCPDP Pre-flight] session=sess-0276-6b968048 REJECTED (budget 500 < cost 7600)
+2026/03/27 14:23:29.227544 [MCPDP Reserved] session=sess-0262-96dd2b11 step=2 tool=mock_heavy tokens=500 lockedPrice=0
+2026/03/27 14:23:29.228788 [MCPDP Reserved] session=sess-0263-1b91c7fb step=2 tool=mock_heavy tokens=500 lockedPrice=0
+2026/03/27 14:23:29.234509 [MCPDP Reserved] session=sess-0265-78728d1f step=2 tool=web_fetch tokens=500 lockedPrice=0
+2026/03/27 14:23:29.282592 [MCPDP Reserved] session=sess-0264-2225e32d step=4 tool=web_fetch tokens=500 lockedPrice=0
+2026/03/27 14:23:29.308588 [MCPDP Pre-flight] session=sess-0277-3ee29c04 budget=500 totalCost=3200 steps=4
+2026/03/27 14:23:29.308588 [MCPDP Pre-flight] session=sess-0277-3ee29c04 REJECTED (budget 500 < cost 3200)
+2026/03/27 14:23:29.321879 [MCPDP Reserved] session=sess-0248-f1e134ff step=6 tool=calculate tokens=500 lockedPrice=0
+2026/03/27 14:23:29.330934 [MCPDP Reserved] session=sess-0266-6a368b69 step=2 tool=calculate tokens=500 lockedPrice=0
+2026/03/27 14:23:29.337431 [MCPDP Reserved] session=sess-0266-6a368b69 step=3 tool=mock_heavy tokens=500 lockedPrice=0
+2026/03/27 14:23:29.369836 [MCPDP Pre-flight] session=sess-0278-18ab5b43 budget=500 totalCost=1200 steps=3
+2026/03/27 14:23:29.369836 [MCPDP Pre-flight] session=sess-0278-18ab5b43 REJECTED (budget 500 < cost 1200)
+2026/03/27 14:23:29.390979 [MCPDP Reserved] session=sess-0265-78728d1f step=3 tool=web_fetch tokens=500 lockedPrice=0
+2026/03/27 14:23:29.430292 [MCPDP Pre-flight] session=sess-0279-5077d0b2 budget=500 totalCost=2800 steps=3
+2026/03/27 14:23:29.430292 [MCPDP Pre-flight] session=sess-0279-5077d0b2 REJECTED (budget 500 < cost 2800)
+2026/03/27 14:23:29.508406 [MCPDP Pre-flight] session=sess-0280-7378f7df budget=500 totalCost=2800 steps=7
+2026/03/27 14:23:29.508406 [MCPDP Pre-flight] session=sess-0280-7378f7df REJECTED (budget 500 < cost 2800)
+2026/03/27 14:23:29.547511 [MCPDP Reserved] session=sess-0265-78728d1f step=4 tool=calculate tokens=500 lockedPrice=0
+2026/03/27 14:23:29.553652 [MCPDP Reserved] session=sess-0265-78728d1f step=5 tool=mock_heavy tokens=500 lockedPrice=0
+2026/03/27 14:23:29.629194 [MCPDP Reserved] session=sess-0242-cdc0db04 step=5 tool=calculate tokens=500 lockedPrice=0
+2026/03/27 14:23:29.630289 [MCPDP Pre-flight] session=sess-0281-be71d952 budget=500 totalCost=6300 steps=6
+2026/03/27 14:23:29.630289 [MCPDP Pre-flight] session=sess-0281-be71d952 REJECTED (budget 500 < cost 6300)
+2026/03/27 14:23:29.634935 [MCPDP Reserved] session=sess-0242-cdc0db04 step=6 tool=calculate tokens=500 lockedPrice=0
+2026/03/27 14:23:29.640303 [MCPDP Pre-flight] session=sess-0282-50dbcb9c budget=500 totalCost=8050 steps=7
+2026/03/27 14:23:29.640303 [MCPDP Pre-flight] session=sess-0282-50dbcb9c REJECTED (budget 500 < cost 8050)
+2026/03/27 14:23:29.676666 [MCPDP Pre-flight] session=sess-0283-2fb935a9 budget=500 totalCost=1050 steps=3
+2026/03/27 14:23:29.676666 [MCPDP Pre-flight] session=sess-0283-2fb935a9 REJECTED (budget 500 < cost 1050)
+2026/03/27 14:23:29.677263 [MCPDP Pre-flight] session=sess-0284-d3599b6b budget=500 totalCost=6650 steps=7
+2026/03/27 14:23:29.677263 [MCPDP Pre-flight] session=sess-0284-d3599b6b REJECTED (budget 500 < cost 6650)
+2026/03/27 14:23:29.738432 [MCPDP Pre-flight] session=sess-0285-dab91cae budget=500 totalCost=4900 steps=6
+2026/03/27 14:23:29.738456 [MCPDP Pre-flight] session=sess-0285-dab91cae REJECTED (budget 500 < cost 4900)
+2026/03/27 14:23:29.738988 [MCPDP Pre-flight] session=sess-0286-59904907 budget=500 totalCost=4200 steps=4
+2026/03/27 14:23:29.738988 [MCPDP Pre-flight] session=sess-0286-59904907 REJECTED (budget 500 < cost 4200)
+2026/03/27 14:23:29.783869 [MCPDP Pre-flight] session=sess-0287-ba3806cc budget=500 totalCost=4550 steps=5
+2026/03/27 14:23:29.783869 [MCPDP Pre-flight] session=sess-0287-ba3806cc REJECTED (budget 500 < cost 4550)
+2026/03/27 14:23:29.829928 [MCPDP Pre-flight] session=sess-0288-12a5e273 budget=500 totalCost=4550 steps=5
+2026/03/27 14:23:29.830033 [MCPDP Pre-flight] session=sess-0288-12a5e273 REJECTED (budget 500 < cost 4550)
+2026/03/27 14:23:29.859904 [MCPDP Pre-flight] session=sess-0289-6b049c30 budget=500 totalCost=6300 steps=6
+2026/03/27 14:23:29.859904 [MCPDP Pre-flight] session=sess-0289-6b049c30 REJECTED (budget 500 < cost 6300)
+2026/03/27 14:23:29.874295 [MCPDP Reserved] session=sess-0268-ac2d2ce4 step=1 tool=mock_heavy tokens=500 lockedPrice=10
+2026/03/27 14:23:29.919589 [MCPDP Pre-flight] session=sess-0290-56795f78 budget=500 totalCost=6900 steps=7
+2026/03/27 14:23:29.919589 [MCPDP Pre-flight] session=sess-0290-56795f78 REJECTED (budget 500 < cost 6900)
+2026/03/27 14:23:29.921209 [MCPDP Pre-flight] session=sess-0291-acf91f44 budget=500 totalCost=6900 steps=7
+2026/03/27 14:23:29.921209 [MCPDP Pre-flight] session=sess-0291-acf91f44 REJECTED (budget 500 < cost 6900)
+2026/03/27 14:23:29.922903 [MCPDP Pre-flight] session=sess-0292-b784f8df budget=500 totalCost=2700 steps=5
+2026/03/27 14:23:29.922934 [MCPDP Pre-flight] session=sess-0292-b784f8df REJECTED (budget 500 < cost 2700)
+2026/03/27 14:23:30.012622 [MCPDP Pre-flight] session=sess-0293-47abde65 budget=500 totalCost=4200 steps=6
+2026/03/27 14:23:30.012622 [MCPDP Pre-flight] session=sess-0293-47abde65 REJECTED (budget 500 < cost 4200)
+2026/03/27 14:23:30.013182 [MCPDP Pre-flight] session=sess-0294-c26f4d74 budget=500 totalCost=1800 steps=6
+2026/03/27 14:23:30.013182 [MCPDP Pre-flight] session=sess-0294-c26f4d74 REJECTED (budget 500 < cost 1800)
+2026/03/27 14:23:30.014862 [MCPDP Pre-flight] session=sess-0295-ba0bd272 budget=500 totalCost=2400 steps=4
+2026/03/27 14:23:30.014862 [MCPDP Pre-flight] session=sess-0295-ba0bd272 REJECTED (budget 500 < cost 2400)
+2026/03/27 14:23:30.028758 [MCPDP Reserved] session=sess-0267-983c00a4 step=2 tool=web_fetch tokens=500 lockedPrice=0
+2026/03/27 14:23:30.035018 [MCPDP Reserved] session=sess-0262-96dd2b11 step=3 tool=calculate tokens=500 lockedPrice=0
+2026/03/27 14:23:30.040788 [MCPDP Reserved] session=sess-0262-96dd2b11 step=4 tool=web_fetch tokens=500 lockedPrice=0
+2026/03/27 14:23:30.074297 [MCPDP Pre-flight] session=sess-0296-40bff602 budget=500 totalCost=6600 steps=6
+2026/03/27 14:23:30.074297 [MCPDP Pre-flight] session=sess-0296-40bff602 REJECTED (budget 500 < cost 6600)
+2026/03/27 14:23:30.083748 [MCPDP Reserved] session=sess-0263-1b91c7fb step=3 tool=calculate tokens=500 lockedPrice=0
+2026/03/27 14:23:30.088942 [MCPDP Reserved] session=sess-0263-1b91c7fb step=4 tool=web_fetch tokens=500 lockedPrice=0
+2026/03/27 14:23:30.142710 [MCPDP Reserved] session=sess-0266-6a368b69 step=4 tool=calculate tokens=500 lockedPrice=0
+2026/03/27 14:23:30.143793 [MCPDP Pre-flight] session=sess-0297-cc7e9290 budget=500 totalCost=3300 steps=7
+2026/03/27 14:23:30.143793 [MCPDP Pre-flight] session=sess-0297-cc7e9290 REJECTED (budget 500 < cost 3300)
+2026/03/27 14:23:30.144881 [MCPDP Pre-flight] session=sess-0298-113db912 budget=500 totalCost=2400 steps=4
+2026/03/27 14:23:30.144881 [MCPDP Pre-flight] session=sess-0298-113db912 REJECTED (budget 500 < cost 2400)
+2026/03/27 14:23:30.148463 [MCPDP Reserved] session=sess-0266-6a368b69 step=5 tool=mock_heavy tokens=500 lockedPrice=0
+2026/03/27 14:23:30.185049 [MCPDP Reserved] session=sess-0267-983c00a4 step=3 tool=web_fetch tokens=500 lockedPrice=0
+2026/03/27 14:23:30.185597 [MCPDP Pre-flight] session=sess-0299-49152c21 budget=500 totalCost=1500 steps=5
+2026/03/27 14:23:30.185597 [MCPDP Pre-flight] session=sess-0299-49152c21 REJECTED (budget 500 < cost 1500)
+2026/03/27 14:23:30.197256 [MCPDP Reserved] session=sess-0262-96dd2b11 step=5 tool=web_fetch tokens=500 lockedPrice=0
+2026/03/27 14:23:30.244085 [MCPDP Reserved] session=sess-0263-1b91c7fb step=5 tool=calculate tokens=500 lockedPrice=0
+2026/03/27 14:23:30.351835 [MCPDP Reserved] session=sess-0262-96dd2b11 step=6 tool=web_fetch tokens=500 lockedPrice=0
+2026/03/27 14:23:30.680948 [MCPDP Reserved] session=sess-0268-ac2d2ce4 step=2 tool=calculate tokens=500 lockedPrice=2
+2026/03/27 14:23:30.954597 [MCPDP Reserved] session=sess-0266-6a368b69 step=6 tool=calculate tokens=500 lockedPrice=0

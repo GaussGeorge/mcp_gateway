@@ -1,0 +1,42 @@
+[DAG发压机] CPU 亲和性: cores=[0, 1]
+[DAG发压机] 目标: http://127.0.0.1:9099
+[DAG发压机] 总会话: 200  (P&S=200, ReAct=0)
+[DAG发压机] 总步骤: 1008
+[DAG发压机] 预算: 500
+[DAG发压机] 重载比: 30%
+[DAG发压机] 并发: 100
+[DAG发压机] 种子: 42
+
+============================================================
+  DAG 会话发压机 — 统计摘要
+============================================================
+  总会话数:        200
+  ├─ SUCCESS:      41  (20.5%)
+  ├─ REJECTED@S0:  59  (29.5%)
+  ├─ CASCADE_FAIL: 100  (50.0%)
+  └─ PENDING:      0
+
+  [Plan-and-Solve]  total=200  success=41  rejected@s0=59  cascade=100
+  [ReAct]           total=0  success=0  rejected@s0=0  cascade=0
+
+  ── Goodput 指标 ──
+  Raw Goodput (单步累加):       409.0
+  Effective Goodput (全链路):    180.0
+  Raw Goodput/s:                73.78
+  Effective Goodput/s:          32.47
+
+  ── 步骤级统计 ──
+  总步骤数:          564
+  步骤成功数:        405  (71.8%)
+  会话吞吐量:        36.1 sessions/s
+
+  ── 延迟 (ms) ──
+  P50:   155.6
+  P95:   2013.2
+  P99:   2021.6
+  Mean:  608.0
+============================================================
+
+[DAG发压机] 步骤级数据: D:\mcp-governance-main\scripts\..\results\tune\dagor_trial27.csv
+[DAG发压机] 会话级数据: D:\mcp-governance-main\scripts\..\results\tune\dagor_trial27_sessions.csv
+[DAG发压机] 总记录: 564 步 / 200 会话

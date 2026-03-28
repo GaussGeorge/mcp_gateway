@@ -34,6 +34,15 @@ def register(registry: ToolRegistry):
             },
             "required": ["code"]
         },
+        output_schema={
+            "type": "object",
+            "properties": {
+                "exit_code": {"type": "integer"},
+                "execution_time_s": {"type": "number"},
+                "stdout": {"type": "string"},
+                "stderr": {"type": "string"}
+            }
+        },
         handler=execute
     ))
 

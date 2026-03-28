@@ -72,6 +72,14 @@ def register(registry: ToolRegistry):
             },
             "required": ["url"]
         },
+        output_schema={
+            "type": "object",
+            "properties": {
+                "url": {"type": "string"},
+                "content_length": {"type": "integer"},
+                "text": {"type": "string"}
+            }
+        },
         handler=execute
     ))
 
