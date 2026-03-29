@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""可视化 Exp1_Core 和 Exp4_Ablation 实验结果"""
+"""可视化 Exp1~Exp5 及 Exp7 实验结果"""
 import csv
 import os
 import numpy as np
@@ -42,7 +42,8 @@ COLORS = {
     "dagor": "#17becf",
     "sbac": "#bcbd22",
     "plangate_full": "#2ca02c",
-    "plangate_no_lock": "#d62728",
+    "wo_budgetlock": "#e377c2",
+    "wo_sessioncap": "#d62728",
 }
 LABELS = {
     "ng": "No-Gov",
@@ -51,9 +52,23 @@ LABELS = {
     "dagor": "DAGOR-MCP",
     "sbac": "SBAC-MCP",
     "plangate_full": "PlanGate-Full",
-    "plangate_no_lock": "PlanGate-NoLock",
+    "wo_budgetlock": "w/o BudgetLock",
+    "wo_sessioncap": "w/o SessionCap",
 }
-EXP1_GATEWAYS = ["ng", "srl", "rajomon", "dagor", "sbac", "plangate_full", "plangate_no_lock"]
+EXP1_GATEWAYS = ["ng", "srl", "rajomon", "dagor", "sbac", "plangate_full"]
+EXP_SWEEP_GATEWAYS = EXP1_GATEWAYS   # Exp2/3/5 共用
+
+
+def load_sweep_summary(path):
+    """加载扫参实验 CSV → {gateway: {sweep_val: [rows]}}"""
+    data = {}
+    with open(path, "r", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            gw = row["gateway"]
+            sv = row.get("sweep_val", "")
+            data.setdefault(gw, {}).setdefault(sv, []).append(row)
+    return data
 
 
 def plot_exp1_session_breakdown(data):
@@ -62,17 +77,20 @@ def plot_exp1_session_breakdown(data):
     labels = [LABELS[g] for g in gateways]
 
     success_m = [stats(data[g], "success")[0] for g in gateways]
+    success_s = [stats(data[g], "success")[1] for g in gateways]
     rej_m = [stats(data[g], "rejected_s0")[0] for g in gateways]
+    rej_s = [stats(data[g], "rejected_s0")[1] for g in gateways]
     cascade_m = [stats(data[g], "cascade_failed")[0] for g in gateways]
+    cascade_s = [stats(data[g], "cascade_failed")[1] for g in gateways]
 
     fig, ax = plt.subplots(figsize=(10, 6))
     x = np.arange(len(gateways))
     w = 0.5
 
-    bars1 = ax.bar(x, success_m, w, label="SUCCESS", color="#2ca02c", alpha=0.85)
-    bars2 = ax.bar(x, rej_m, w, bottom=success_m, label="REJECTED@S0", color="#1f77b4", alpha=0.85)
+    bars1 = ax.bar(x, success_m, w, yerr=success_s, label="SUCCESS", color="#2ca02c", alpha=0.85, capsize=3, error_kw={"elinewidth": 1})
+    bars2 = ax.bar(x, rej_m, w, yerr=rej_s, bottom=success_m, label="REJECTED@S0", color="#1f77b4", alpha=0.85, capsize=3, error_kw={"elinewidth": 1})
     bottoms = [s + r for s, r in zip(success_m, rej_m)]
-    bars3 = ax.bar(x, cascade_m, w, bottom=bottoms, label="CASCADE_FAIL", color="#d62728", alpha=0.85)
+    bars3 = ax.bar(x, cascade_m, w, yerr=cascade_s, bottom=bottoms, label="CASCADE_FAIL", color="#d62728", alpha=0.85, capsize=3, error_kw={"elinewidth": 1})
 
     ax.set_xlabel("Gateway", fontsize=13)
     ax.set_ylabel("Sessions (avg of 5 runs)", fontsize=13)
@@ -139,17 +157,20 @@ def plot_exp1_latency(data):
     gateways = EXP1_GATEWAYS
     labels = [LABELS[g] for g in gateways]
 
-    p50 = [stats(data[g], "p50_ms")[0] for g in gateways]
-    p95 = [stats(data[g], "p95_ms")[0] for g in gateways]
-    p99 = [stats(data[g], "p99_ms")[0] for g in gateways]
+    p50_m = [stats(data[g], "p50_ms")[0] for g in gateways]
+    p50_s = [stats(data[g], "p50_ms")[1] for g in gateways]
+    p95_m = [stats(data[g], "p95_ms")[0] for g in gateways]
+    p95_s = [stats(data[g], "p95_ms")[1] for g in gateways]
+    p99_m = [stats(data[g], "p99_ms")[0] for g in gateways]
+    p99_s = [stats(data[g], "p99_ms")[1] for g in gateways]
 
     fig, ax = plt.subplots(figsize=(10, 6))
     x = np.arange(len(gateways))
     w = 0.25
 
-    ax.bar(x - w, p50, w, label="P50", color="#42a5f5", alpha=0.85)
-    ax.bar(x, p95, w, label="P95", color="#ffa726", alpha=0.85)
-    ax.bar(x + w, p99, w, label="P99", color="#ef5350", alpha=0.85)
+    ax.bar(x - w, p50_m, w, yerr=p50_s, label="P50", color="#42a5f5", alpha=0.85, capsize=3)
+    ax.bar(x, p95_m, w, yerr=p95_s, label="P95", color="#ffa726", alpha=0.85, capsize=3)
+    ax.bar(x + w, p99_m, w, yerr=p99_s, label="P99", color="#ef5350", alpha=0.85, capsize=3)
 
     ax.set_xlabel("Gateway", fontsize=13)
     ax.set_ylabel("Latency (ms)", fontsize=13)
@@ -167,57 +188,64 @@ def plot_exp1_latency(data):
 
 
 def plot_exp4_ablation(data4):
-    """Exp4: 消融实验 — Full vs NoLock 多维对比"""
-    fig, axes = plt.subplots(1, 3, figsize=(15, 5.5))
+    """Exp4: 严格单变量消融实验 — 4 组对比"""
+    gw_order = ["plangate_full", "wo_budgetlock", "wo_sessioncap", "rajomon"]
+    gw_list = [g for g in gw_order if g in data4]
+    if len(gw_list) < 2:
+        print("  [WARN] Exp4 数据不足, 跳过消融图")
+        return
 
-    gw_list = ["plangate_full", "plangate_no_lock"]
-    labels = [LABELS[g] for g in gw_list]
-    colors = [COLORS[g] for g in gw_list]
+    labels = [LABELS.get(g, g) for g in gw_list]
+    colors = [COLORS.get(g, "#888888") for g in gw_list]
+
+    fig, axes = plt.subplots(1, 3, figsize=(18, 6))
+    x = np.arange(len(gw_list))
+    w = 0.5
 
     # --- Panel 1: Effective Goodput/s ---
     ax = axes[0]
     eff_m = [stats(data4[g], "effective_goodput_s")[0] for g in gw_list]
     eff_s = [stats(data4[g], "effective_goodput_s")[1] for g in gw_list]
-    bars = ax.bar(labels, eff_m, yerr=eff_s, color=colors, alpha=0.85, capsize=5, width=0.5)
+    ax.bar(x, eff_m, w, yerr=eff_s, color=colors, alpha=0.85, capsize=4)
     ax.set_ylabel("Effective Goodput/s", fontsize=12)
-    ax.set_title("Effective Goodput/s", fontsize=13, fontweight="bold")
+    ax.set_title("(a) Effective Goodput/s", fontsize=13, fontweight="bold")
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels, fontsize=10, rotation=15, ha="right")
     ax.grid(axis="y", alpha=0.3)
-    # 标注差距
-    gap = (1 - eff_m[1] / eff_m[0]) * 100 if eff_m[0] > 0 else 0
-    ax.text(0.5, max(eff_m) * 1.08, f"↓{gap:.1f}%", ha="center", fontsize=12, color="#d62728", fontweight="bold",
-            transform=ax.get_xaxis_transform())
+    for i, (m, s) in enumerate(zip(eff_m, eff_s)):
+        ax.text(i, m + s + 1, f"{m:.1f}", ha="center", fontsize=9, fontweight="bold")
 
-    # --- Panel 2: CASCADE_FAIL ---
+    # --- Panel 2: Cascade Failures ---
     ax = axes[1]
     cas_m = [stats(data4[g], "cascade_failed")[0] for g in gw_list]
     cas_s = [stats(data4[g], "cascade_failed")[1] for g in gw_list]
-    bars = ax.bar(labels, cas_m, yerr=cas_s, color=colors, alpha=0.85, capsize=5, width=0.5)
-    ax.set_ylabel("CASCADE_FAIL (avg)", fontsize=12)
-    ax.set_title("Cascade Failures", fontsize=13, fontweight="bold")
+    ax.bar(x, cas_m, w, yerr=cas_s, color=colors, alpha=0.85, capsize=4)
+    ax.set_ylabel("Cascade Failures (avg)", fontsize=12)
+    ax.set_title("(b) Cascade Failures", fontsize=13, fontweight="bold")
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels, fontsize=10, rotation=15, ha="right")
     ax.grid(axis="y", alpha=0.3)
     for i, (m, s) in enumerate(zip(cas_m, cas_s)):
-        ax.text(i, m + s + 1, f"{m:.1f}", ha="center", fontsize=11, fontweight="bold")
+        ax.text(i, m + s + 1, f"{m:.1f}", ha="center", fontsize=9, fontweight="bold")
 
-    # --- Panel 3: 会话结果分布 ---
+    # --- Panel 3: Goodput Drop % from Full ---
     ax = axes[2]
-    for i, g in enumerate(gw_list):
-        s_m = stats(data4[g], "success")[0]
-        r_m = stats(data4[g], "rejected_s0")[0]
-        c_m = stats(data4[g], "cascade_failed")[0]
-        total = s_m + r_m + c_m
-        if total > 0:
-            ax.barh(i, s_m / total * 100, color="#2ca02c", alpha=0.85, height=0.4)
-            ax.barh(i, r_m / total * 100, left=s_m / total * 100, color="#1f77b4", alpha=0.85, height=0.4)
-            ax.barh(i, c_m / total * 100, left=(s_m + r_m) / total * 100, color="#d62728", alpha=0.85, height=0.4)
-    ax.set_yticks(range(len(gw_list)))
-    ax.set_yticklabels(labels, fontsize=11)
-    ax.set_xlabel("Percentage (%)", fontsize=12)
-    ax.set_title("Session Outcome %", fontsize=13, fontweight="bold")
-    ax.set_xlim(0, 105)
-    ax.legend(["SUCCESS", "REJECTED@S0", "CASCADE_FAIL"], fontsize=9, loc="lower right")
-    ax.grid(axis="x", alpha=0.3)
+    full_eff = eff_m[0] if eff_m[0] > 0 else 1
+    drops = [(1 - m / full_eff) * 100 for m in eff_m]
+    bar_colors = ["#2ca02c" if d <= 0 else "#d62728" for d in drops]
+    ax.bar(x, drops, w, color=bar_colors, alpha=0.85)
+    ax.set_ylabel("Goodput Drop from Full (%)", fontsize=12)
+    ax.set_title("(c) Individual Module Contribution", fontsize=13, fontweight="bold")
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels, fontsize=10, rotation=15, ha="right")
+    ax.grid(axis="y", alpha=0.3)
+    ax.axhline(y=0, color="black", linewidth=0.5)
+    for i, d in enumerate(drops):
+        ypos = d + 1.5 if d >= 0 else d - 3
+        ax.text(i, ypos, f"{d:.1f}%", ha="center", fontsize=9, fontweight="bold")
 
-    fig.suptitle("Exp4_Ablation: PlanGate-Full vs PlanGate-NoLock", fontsize=15, fontweight="bold", y=1.02)
+    fig.suptitle("Exp4: Strict Single-Variable Ablation Study",
+                 fontsize=15, fontweight="bold", y=1.02)
     plt.tight_layout()
     path = os.path.join(OUT_DIR, "exp4_ablation.png")
     fig.savefig(path, dpi=150, bbox_inches="tight")
@@ -281,20 +309,256 @@ def plot_exp1_radar(data):
     print(f"  Saved: {path}")
 
 
+# ===== Sweep 系列通用绘图 =====
+
+def _plot_sweep_line(data_sweep, metric, xlabel, ylabel, title, fname,
+                     gateways=None, sort_x=True):
+    """通用扫参折线图: x=sweep_val, y=metric, 每条线一个 gateway"""
+    gateways = gateways or EXP_SWEEP_GATEWAYS
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    for gw in gateways:
+        if gw not in data_sweep:
+            continue
+        sv_dict = data_sweep[gw]
+        xvals, ymeans, ystds = [], [], []
+        keys = sorted(sv_dict.keys(), key=lambda v: float(v)) if sort_x else list(sv_dict.keys())
+        for sv in keys:
+            rows = sv_dict[sv]
+            m, s = stats(rows, metric)
+            xvals.append(float(sv))
+            ymeans.append(m)
+            ystds.append(s)
+        ax.errorbar(xvals, ymeans, yerr=ystds, marker="o", linewidth=2,
+                     capsize=4, label=LABELS.get(gw, gw), color=COLORS.get(gw, None), alpha=0.85)
+
+    ax.set_xlabel(xlabel, fontsize=13)
+    ax.set_ylabel(ylabel, fontsize=13)
+    ax.set_title(title, fontsize=14, fontweight="bold")
+    ax.legend(fontsize=10)
+    ax.grid(alpha=0.3)
+    plt.tight_layout()
+    path = os.path.join(OUT_DIR, fname)
+    fig.savefig(path, dpi=150)
+    plt.close(fig)
+    print(f"  Saved: {path}")
+
+
+def plot_exp2_heavy_ratio(data_sweep):
+    """Exp2: 重载比例 → Effective Goodput/s"""
+    _plot_sweep_line(data_sweep, "effective_goodput_s",
+                     "Heavy-tool Ratio", "Effective Goodput/s",
+                     "Exp2: Heavy Ratio vs Effective Goodput/s",
+                     "exp2_heavy_ratio_effgps.png")
+    _plot_sweep_line(data_sweep, "cascade_failed",
+                     "Heavy-tool Ratio", "Cascade Failures (avg)",
+                     "Exp2: Heavy Ratio vs Cascade Failures",
+                     "exp2_heavy_ratio_cascade.png")
+
+
+def plot_exp3_mixed_mode(data_sweep):
+    """Exp3: PS/ReAct 混合比例 → Effective Goodput/s"""
+    _plot_sweep_line(data_sweep, "effective_goodput_s",
+                     "Plan-and-Solve Ratio", "Effective Goodput/s",
+                     "Exp3: PS Ratio vs Effective Goodput/s",
+                     "exp3_mixed_mode_effgps.png")
+    _plot_sweep_line(data_sweep, "cascade_failed",
+                     "Plan-and-Solve Ratio", "Cascade Failures (avg)",
+                     "Exp3: PS Ratio vs Cascade Failures",
+                     "exp3_mixed_mode_cascade.png")
+
+
+def plot_exp5_scale_conc(data_sweep):
+    """Exp5: 并发扩展 → Effective Goodput/s"""
+    _plot_sweep_line(data_sweep, "effective_goodput_s",
+                     "Concurrency", "Effective Goodput/s",
+                     "Exp5: Concurrency vs Effective Goodput/s",
+                     "exp5_scale_conc_effgps.png")
+    _plot_sweep_line(data_sweep, "cascade_failed",
+                     "Concurrency", "Cascade Failures (avg)",
+                     "Exp5: Concurrency vs Cascade Failures",
+                     "exp5_scale_conc_cascade.png")
+
+
+def plot_exp7_client_reject(data_sweep):
+    """Exp7: Hard Reject — price_ttl 扫参 (折线+柱状)"""
+    gw = "plangate_full"
+    if gw not in data_sweep:
+        print("  [WARN] Exp7 无 plangate_full 数据, 跳过")
+        return
+
+    sv_dict = data_sweep[gw]
+    ttl_vals, eff_means, eff_stds = [], [], []
+    cas_means, cas_stds = [], []
+    succ_means = []
+    for sv in sorted(sv_dict.keys(), key=lambda v: float(v)):
+        rows = sv_dict[sv]
+        ttl_vals.append(float(sv))
+        em, es = stats(rows, "effective_goodput_s")
+        eff_means.append(em); eff_stds.append(es)
+        cm, cs = stats(rows, "cascade_failed")
+        cas_means.append(cm); cas_stds.append(cs)
+        sm, _ = stats(rows, "success")
+        succ_means.append(sm)
+
+    fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+
+    # Panel 1: Effective Goodput/s vs TTL
+    ax = axes[0]
+    ax.errorbar(ttl_vals, eff_means, yerr=eff_stds, marker="o", linewidth=2,
+                capsize=4, color="#2ca02c", alpha=0.85)
+    ax.set_xlabel("Price Cache TTL (s)", fontsize=12)
+    ax.set_ylabel("Effective Goodput/s", fontsize=12)
+    ax.set_title("(a) Effective Goodput/s", fontsize=13, fontweight="bold")
+    ax.grid(alpha=0.3)
+    for x, m in zip(ttl_vals, eff_means):
+        ax.annotate(f"{m:.1f}", (x, m), textcoords="offset points",
+                    xytext=(0, 10), ha="center", fontsize=9, fontweight="bold")
+
+    # Panel 2: Cascade Failures vs TTL
+    ax = axes[1]
+    ax.errorbar(ttl_vals, cas_means, yerr=cas_stds, marker="s", linewidth=2,
+                capsize=4, color="#d62728", alpha=0.85)
+    ax.set_xlabel("Price Cache TTL (s)", fontsize=12)
+    ax.set_ylabel("Cascade Failures", fontsize=12)
+    ax.set_title("(b) Cascade Failures", fontsize=13, fontweight="bold")
+    ax.grid(alpha=0.3)
+
+    # Panel 3: Success Sessions vs TTL
+    ax = axes[2]
+    succ_stds = []
+    for sv in sorted(sv_dict.keys(), key=lambda v: float(v)):
+        _, ss = stats(sv_dict[sv], "success")
+        succ_stds.append(ss)
+    ax.bar(range(len(ttl_vals)), succ_means, yerr=succ_stds, color="#1f77b4", alpha=0.85, capsize=4)
+    ax.set_xticks(range(len(ttl_vals)))
+    ax.set_xticklabels([f"{t:.1f}s" for t in ttl_vals], fontsize=10)
+    ax.set_xlabel("Price Cache TTL (s)", fontsize=12)
+    ax.set_ylabel("Successful Sessions", fontsize=12)
+    ax.set_title("(c) Successful Sessions", fontsize=13, fontweight="bold")
+    ax.grid(axis="y", alpha=0.3)
+    for i, (m, s) in enumerate(zip(succ_means, succ_stds)):
+        ax.text(i, m + s + 2, f"{m:.0f}", ha="center", fontsize=9, fontweight="bold")
+
+    fig.suptitle("Exp7: Client Hard Reject — Price TTL Sweep (PlanGate-Full)",
+                 fontsize=14, fontweight="bold", y=1.02)
+    plt.tight_layout()
+    path = os.path.join(OUT_DIR, "exp7_client_reject.png")
+    fig.savefig(path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    print(f"  Saved: {path}")
+
+
+def plot_e2e_latency_bars(data, gateways, title, fname):
+    """E2E 会话端到端延迟柱状图"""
+    gw_list = [g for g in gateways if g in data]
+    if not gw_list:
+        print(f"  [WARN] E2E 数据不足, 跳过 {fname}")
+        return
+
+    labels = [LABELS.get(g, g) for g in gw_list]
+    e2e_p50_m = [stats(data[g], "e2e_p50_ms")[0] for g in gw_list]
+    e2e_p50_s = [stats(data[g], "e2e_p50_ms")[1] for g in gw_list]
+    e2e_p95_m = [stats(data[g], "e2e_p95_ms")[0] for g in gw_list]
+    e2e_p95_s = [stats(data[g], "e2e_p95_ms")[1] for g in gw_list]
+    e2e_p99_m = [stats(data[g], "e2e_p99_ms")[0] for g in gw_list]
+    e2e_p99_s = [stats(data[g], "e2e_p99_ms")[1] for g in gw_list]
+
+    # 跳过全零数据
+    if max(e2e_p50_m) == 0 and max(e2e_p95_m) == 0:
+        print(f"  [WARN] E2E 数据全零, 跳过 {fname}")
+        return
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    x = np.arange(len(gw_list))
+    w = 0.25
+
+    ax.bar(x - w, e2e_p50_m, w, yerr=e2e_p50_s, label="E2E P50", color="#42a5f5", alpha=0.85, capsize=3)
+    ax.bar(x, e2e_p95_m, w, yerr=e2e_p95_s, label="E2E P95", color="#ffa726", alpha=0.85, capsize=3)
+    ax.bar(x + w, e2e_p99_m, w, yerr=e2e_p99_s, label="E2E P99", color="#ef5350", alpha=0.85, capsize=3)
+
+    ax.set_xlabel("Gateway", fontsize=13)
+    ax.set_ylabel("Session E2E Latency (ms)", fontsize=13)
+    ax.set_title(title, fontsize=14, fontweight="bold")
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels, fontsize=11)
+    ax.legend(fontsize=11)
+    ax.grid(axis="y", alpha=0.3)
+
+    plt.tight_layout()
+    path = os.path.join(OUT_DIR, fname)
+    fig.savefig(path, dpi=150)
+    plt.close(fig)
+    print(f"  Saved: {path}")
+
+
+def plot_exp5_e2e_sweep(data_sweep):
+    """Exp5: 并发扩展 — E2E 端到端延迟折线"""
+    _plot_sweep_line(data_sweep, "e2e_p50_ms",
+                     "Concurrency", "Session E2E P50 (ms)",
+                     "Exp5: Concurrency vs Session E2E P50 Latency",
+                     "exp5_scale_conc_e2e.png")
+
+
 def main():
     exp1_path = os.path.join(RESULTS_DIR, "exp1_core", "exp1_core_summary.csv")
     exp4_path = os.path.join(RESULTS_DIR, "exp4_ablation", "exp4_ablation_summary.csv")
+    exp2_path = os.path.join(RESULTS_DIR, "exp2_heavyratio", "exp2_heavyratio_summary.csv")
+    exp3_path = os.path.join(RESULTS_DIR, "exp3_mixedmode", "exp3_mixedmode_summary.csv")
+    exp5_path = os.path.join(RESULTS_DIR, "exp5_scaleconc", "exp5_scaleconc_summary.csv")
+    exp7_path = os.path.join(RESULTS_DIR, "exp7_clientreject", "exp7_clientreject_summary.csv")
 
     print("加载数据...")
-    data1 = load_summary(exp1_path)
-    data4 = load_summary(exp4_path)
 
-    print("生成图表...")
-    plot_exp1_session_breakdown(data1)
-    plot_exp1_goodput(data1)
-    plot_exp1_latency(data1)
-    plot_exp1_radar(data1)
-    plot_exp4_ablation(data4)
+    if os.path.exists(exp1_path):
+        data1 = load_summary(exp1_path)
+        print("生成 Exp1 图表...")
+        plot_exp1_session_breakdown(data1)
+        plot_exp1_goodput(data1)
+        plot_exp1_latency(data1)
+        plot_exp1_radar(data1)
+        plot_e2e_latency_bars(data1, EXP1_GATEWAYS,
+                              "Exp1_Core: Session E2E Latency (Successful Sessions Only)",
+                              "exp1_e2e_latency.png")
+    else:
+        print(f"  [SKIP] Exp1 数据不存在: {exp1_path}")
+
+    if os.path.exists(exp4_path):
+        data4 = load_summary(exp4_path)
+        print("生成 Exp4 图表...")
+        plot_exp4_ablation(data4)
+    else:
+        print(f"  [SKIP] Exp4 数据不存在: {exp4_path}")
+
+    if os.path.exists(exp2_path):
+        data2 = load_sweep_summary(exp2_path)
+        print("生成 Exp2 图表...")
+        plot_exp2_heavy_ratio(data2)
+    else:
+        print(f"  [SKIP] Exp2 数据不存在: {exp2_path}")
+
+    if os.path.exists(exp3_path):
+        data3 = load_sweep_summary(exp3_path)
+        print("生成 Exp3 图表...")
+        plot_exp3_mixed_mode(data3)
+    else:
+        print(f"  [SKIP] Exp3 数据不存在: {exp3_path}")
+
+    if os.path.exists(exp5_path):
+        data5 = load_sweep_summary(exp5_path)
+        print("生成 Exp5 图表...")
+        plot_exp5_scale_conc(data5)
+        plot_exp5_e2e_sweep(data5)
+    else:
+        print(f"  [SKIP] Exp5 数据不存在: {exp5_path}")
+
+    if os.path.exists(exp7_path):
+        data7 = load_sweep_summary(exp7_path)
+        print("生成 Exp7 图表...")
+        plot_exp7_client_reject(data7)
+    else:
+        print(f"  [SKIP] Exp7 数据不存在: {exp7_path}")
+
     print(f"\n所有图表已保存至: {OUT_DIR}")
 
 

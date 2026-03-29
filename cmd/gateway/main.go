@@ -24,6 +24,7 @@ import (
 
 	mcpgov "mcp-governance"
 	"mcp-governance/baseline"
+	"mcp-governance/plangate"
 )
 
 // proxyOverloadDetector 代理级过载检测器
@@ -131,9 +132,23 @@ func main() {
 	case "dp-noregime":
 		handler = setupDPNoRegime(tools, *backendURL)
 	case "mcpdp":
-		handler = setupMCPDP(tools, *backendURL, *plangatePriceStep, *plangateMaxSessions)
-	case "mcpdp-nolock":
-		handler = setupMCPDPNoLock(tools, *backendURL, *plangatePriceStep)
+		handler = setupMCPDPVariant(tools, *backendURL, mcpdpVariant{
+			name: "plangate-full", priceStep: *plangatePriceStep,
+			maxConcurrentSessions: *plangateMaxSessions,
+			disableBudgetLock: false,
+		})
+	case "mcpdp-no-budgetlock":
+		handler = setupMCPDPVariant(tools, *backendURL, mcpdpVariant{
+			name: "plangate-wo-budgetlock", priceStep: *plangatePriceStep,
+			maxConcurrentSessions: *plangateMaxSessions,
+			disableBudgetLock: true,
+		})
+	case "mcpdp-no-sessioncap":
+		handler = setupMCPDPVariant(tools, *backendURL, mcpdpVariant{
+			name: "plangate-wo-sessioncap", priceStep: *plangatePriceStep,
+			maxConcurrentSessions: 0,
+			disableBudgetLock: false,
+		})
 	case "rajomon":
 		handler = setupRajomon(tools, *backendURL, *rajomonPriceStep)
 	case "dagor":
@@ -141,7 +156,7 @@ func main() {
 	case "sbac":
 		handler = setupSBAC(tools, *backendURL, *sbacMaxSessions)
 	default:
-		log.Fatalf("未知模式: %s (可选: ng, srl, dp, dp-noregime, mcpdp, mcpdp-nolock, rajomon, dagor, sbac)", *mode)
+		log.Fatalf("未知模式: %s (可选: ng, srl, dp, dp-noregime, mcpdp, mcpdp-no-budgetlock, mcpdp-no-sessioncap, rajomon, dagor, sbac)", *mode)
 	}
 
 	addr := fmt.Sprintf("%s:%d", *host, *port)
@@ -405,22 +420,18 @@ func setupDPNoRegime(tools []mcpgov.MCPTool, backendURL string) http.Handler {
 	return server
 }
 
-func setupMCPDP(tools []mcpgov.MCPTool, backendURL string, priceStep int64, maxConcurrentSessions int) http.Handler {
+// mcpdpVariant 配置 PlanGate 网关变体（用于严格单变量消融实验）
+type mcpdpVariant struct {
+	name                  string
+	priceStep             int64
+	maxConcurrentSessions int  // 有效并发会话上限 (0=不限制)
+	disableBudgetLock     bool // 是否禁用预算锁
+}
+
+func setupMCPDPVariant(tools []mcpgov.MCPTool, backendURL string, v mcpdpVariant) http.Handler {
 	callMap := make(map[string][]string)
 	for _, tool := range tools {
 		callMap[tool.Name] = []string{}
-	}
-
-	// DetectorMaxConc 设置为超过 sessionCap 的值，确保在会话并发控制下价格保持低位
-	// 这样 Pre-flight Atomic Admission 的预算检查不会误拒合理会话
-	detectorMaxConc := int64(maxConcurrentSessions + 10)
-	if detectorMaxConc < 20 {
-		detectorMaxConc = 20
-	}
-	profileOverride := map[string]interface{}{
-		"DetectorMaxConc":   detectorMaxConc,
-		"DetectorPriceStep": int64(2),  // 低涨价步长，避免价格过激
-		"DetectorDecayStep": int64(10), // 快速衰减，价格迅速回归 0
 	}
 
 	opts := map[string]interface{}{
@@ -428,8 +439,8 @@ func setupMCPDP(tools []mcpgov.MCPTool, backendURL string, priceStep int64, maxC
 		"rateLimiting":          false,
 		"loadShedding":          true,
 		"pinpointQueuing":       false,
-		"latencyThreshold":      50 * time.Millisecond, // 降敏：50ms 而非 500µs
-		"priceStep":             priceStep,
+		"latencyThreshold":      50 * time.Millisecond,
+		"priceStep":             v.priceStep,
 		"priceStrategy":         "expdecay",
 		"priceDecayStep":        int64(1),
 		"priceSensitivity":      int64(10000),
@@ -447,18 +458,20 @@ func setupMCPDP(tools []mcpgov.MCPTool, backendURL string, priceStep int64, maxC
 		"regimeVarianceHigh":    4.0,
 		"regimeSpikeThreshold":  2.0,
 		"profileSwitchCooldown": 500 * time.Millisecond,
-		"burstyProfile":         profileOverride,
-		"periodicProfile":       profileOverride,
-		"steadyProfile":         profileOverride,
 		"toolWeights": map[string]int64{
 			"mock_heavy": 5,
 		},
 	}
 
-	gov := mcpgov.NewMCPGovernor("mcpdp-gateway", callMap, opts)
-	server := mcpgov.NewMCPDPServer("mcpdp-gateway", gov, 60*time.Second, maxConcurrentSessions)
+	gov := mcpgov.NewMCPGovernor(v.name, callMap, opts)
 
-	// 创建代理级过载检测器
+	var server *plangate.MCPDPServer
+	if v.disableBudgetLock {
+		server = plangate.NewMCPDPServerNoLock(v.name, gov, 60*time.Second, v.maxConcurrentSessions)
+	} else {
+		server = plangate.NewMCPDPServer(v.name, gov, 60*time.Second, v.maxConcurrentSessions)
+	}
+
 	detector := &proxyOverloadDetector{
 		gov:      gov,
 		interval: 10 * time.Millisecond,
@@ -467,7 +480,7 @@ func setupMCPDP(tools []mcpgov.MCPTool, backendURL string, priceStep int64, maxC
 
 	for _, tool := range tools {
 		server.RegisterTool(tool, makeProxyHandler(backendURL, tool.Name, detector))
-		log.Printf("  [MCPDP] 注册工具: %s", tool.Name)
+		log.Printf("  [%s] 注册工具: %s", v.name, tool.Name)
 	}
 	return server
 }
@@ -475,60 +488,6 @@ func setupMCPDP(tools []mcpgov.MCPTool, backendURL string, priceStep int64, maxC
 func init() {
 	log.SetFlags(log.Ldate | log.Ltime | log.Lmicroseconds)
 	log.SetOutput(os.Stdout)
-}
-
-// setupMCPDPNoLock 消融变体：相同 priceStep，但无预算锁、无并发会话上限
-// 用于与 plangate_full 对比，展示预算锁+并发控制的价值
-func setupMCPDPNoLock(tools []mcpgov.MCPTool, backendURL string, priceStep int64) http.Handler {
-	callMap := make(map[string][]string)
-	for _, tool := range tools {
-		callMap[tool.Name] = []string{}
-	}
-
-	opts := map[string]interface{}{
-		"initprice":             int64(0),
-		"rateLimiting":          false,
-		"loadShedding":          true,
-		"pinpointQueuing":       false,
-		"latencyThreshold":      50 * time.Millisecond, // 与 Full 保持一致
-		"priceStep":             priceStep,
-		"priceStrategy":         "expdecay",
-		"priceDecayStep":        int64(1),
-		"priceSensitivity":      int64(10000),
-		"maxToken":              int64(20),
-		"smoothingWindow":       5,
-		"integralThreshold":     0.5,
-		"priceUpdateRate":       5 * time.Millisecond,
-		"tokenUpdateRate":       100 * time.Millisecond,
-		"tokenUpdateStep":       int64(1),
-		"tokenRefillDist":       "fixed",
-		"priceAggregation":      "maximal",
-		"enableAdaptiveProfile": true,
-		"regimeWindow":          100,
-		"regimeVarianceLow":     1.0,
-		"regimeVarianceHigh":    4.0,
-		"regimeSpikeThreshold":  2.0,
-		"profileSwitchCooldown": 500 * time.Millisecond,
-		"toolWeights": map[string]int64{
-			"mock_heavy": 5,
-		},
-	}
-
-	gov := mcpgov.NewMCPGovernor("mcpdp-nolock-gateway", callMap, opts)
-	// maxConcurrentSessions=0: 消融实验展示无并发控制时的级联失败
-	server := mcpgov.NewMCPDPServerNoLock("mcpdp-nolock-gateway", gov, 60*time.Second, 0)
-
-	detector := &proxyOverloadDetector{
-		gov:      gov,
-		interval: 10 * time.Millisecond,
-	}
-	go detector.run()
-
-	for _, tool := range tools {
-		server.RegisterTool(tool, makeProxyHandler(backendURL, tool.Name, detector))
-		log.Printf("  [MCPDP-NoLock] 注册工具: %s", tool.Name)
-	}
-	return server
 }
 
 func setupRajomon(tools []mcpgov.MCPTool, backendURL string, priceStep int64) http.Handler {

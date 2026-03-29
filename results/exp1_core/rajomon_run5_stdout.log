@@ -1,4 +1,3 @@
-[DAG发压机] CPU 亲和性: cores=[0, 1]
 [DAG发压机] 客户端价格预测: ON (TTL=1.0s, Shadow Mode)
 [DAG发压机] 目标: http://127.0.0.1:9115
 [DAG发压机] 总会话: 500  (P&S=500, ReAct=0)
@@ -13,37 +12,43 @@
 ============================================================
   总会话数:        500
   ├─ SUCCESS:      2  (0.4%)
-  ├─ REJECTED@S0:  433  (86.6%)
-  ├─ CASCADE_FAIL: 65  (13.0%)
+  ├─ REJECTED@S0:  440  (88.0%)
+  ├─ CASCADE_FAIL: 58  (11.6%)
   └─ PENDING:      0
 
-  [Plan-and-Solve]  total=500  success=2  rejected@s0=433  cascade=65
+  [Plan-and-Solve]  total=500  success=2  rejected@s0=440  cascade=58
   [ReAct]           total=0  success=0  rejected@s0=0  cascade=0
 
   ── Goodput 指标 ──
-  Raw Goodput (单步累加):       181.0
+  Raw Goodput (单步累加):       186.0
   Effective Goodput (全链路):    14.0
-  Raw Goodput/s:                19.17
-  Effective Goodput/s:          1.48
+  Raw Goodput/s:                17.54
+  Effective Goodput/s:          1.32
 
   ── 步骤级统计 ──
-  总步骤数:          595
-  步骤成功数:        97  (16.3%)
-  会话吞吐量:        52.9 sessions/s
+  总步骤数:          584
+  步骤成功数:        86  (14.7%)
+  会话吞吐量:        47.1 sessions/s
 
   ── 延迟 (ms) ──
-  P50:   9.0
-  P95:   1472.0
-  P99:   1990.9
-  Mean:  531.2
+  P50:   2.3
+  P95:   1376.9
+  P99:   2001.0
+  Mean:  434.1
+
+  ── 会话端到端延迟 (ms, 仅成功会话) ──
+  E2E_P50:   1901.4
+  E2E_P95:   1901.4
+  E2E_P99:   1901.4
+  E2E_Mean:  1442.0
 
   ── 客户端预测准入 (Shadow Mode) ──
-  总检查次数:        595
-  Shadow 拒绝次数:   71  (11.9%)
-  Shadow→网关命中:   71  (命中率=100.0%)
-  Client_Saved_Requests: 71  (若启用 Hard Reject 可节省的请求)
+  总检查次数:        584
+  Client 拒绝次数:   76  (13.0%)
+  Client→网关命中:   76  (命中率=100.0%)
+  Client_Saved_Requests: 76
 ============================================================
 
-[DAG发压机] 步骤级数据: D:\mcp-governance-main\scripts\..\results\exp1_core\rajomon_run5.csv
-[DAG发压机] 会话级数据: D:\mcp-governance-main\scripts\..\results\exp1_core\rajomon_run5_sessions.csv
-[DAG发压机] 总记录: 595 步 / 500 会话
+[DAG发压机] 步骤级数据: /mnt/d/mcp-governance-main/scripts/../results/exp1_core/rajomon_run5.csv
+[DAG发压机] 会话级数据: /mnt/d/mcp-governance-main/scripts/../results/exp1_core/rajomon_run5_sessions.csv
+[DAG发压机] 总记录: 584 步 / 500 会话

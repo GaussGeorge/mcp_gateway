@@ -1,0 +1,54 @@
+[DAG发压机] 客户端价格预测: ON (TTL=0.1s, Hard Reject)
+[DAG发压机] 目标: http://127.0.0.1:9102
+[DAG发压机] 总会话: 500  (P&S=500, ReAct=0)
+[DAG发压机] 总步骤: 2535
+[DAG发压机] 预算: 500
+[DAG发压机] 重载比: 30%
+[DAG发压机] 并发: 200
+[DAG发压机] 种子: 42
+
+============================================================
+  DAG 会话发压机 — 统计摘要
+============================================================
+  总会话数:        500
+  ├─ SUCCESS:      106  (21.2%)
+  ├─ REJECTED@S0:  394  (78.8%)
+  ├─ CASCADE_FAIL: 0  (0.0%)
+  └─ PENDING:      0
+
+  [Plan-and-Solve]  total=500  success=106  rejected@s0=394  cascade=0
+  [ReAct]           total=0  success=0  rejected@s0=0  cascade=0
+
+  ── Goodput 指标 ──
+  Raw Goodput (单步累加):       826.0
+  Effective Goodput (全链路):    826.0
+  Raw Goodput/s:                63.38
+  Effective Goodput/s:          63.38
+
+  ── 步骤级统计 ──
+  总步骤数:          880
+  步骤成功数:        486  (55.2%)
+  会话吞吐量:        38.4 sessions/s
+
+  ── 延迟 (ms) ──
+  P50:   6.4
+  P95:   813.7
+  P99:   1114.6
+  Mean:  148.6
+
+  ── 会话端到端延迟 (ms, 仅成功会话) ──
+  E2E_P50:   976.6
+  E2E_P95:   3406.1
+  E2E_P99:   3744.1
+  E2E_Mean:  1224.6
+
+  ── 客户端预测准入 (Hard Reject) ──
+  总检查次数:        880
+  Client 拒绝次数:   46  (5.2%)
+  Client→网关命中:   46  (命中率=100.0%)
+  Client_Saved_Requests: 46
+============================================================
+
+[DAG发压机] 步骤级数据: /mnt/d/mcp-governance-main/scripts/../results/exp7_clientreject/plangate_full_price_ttl0.1_run2.csv
+[DAG发压机] 会话级数据: /mnt/d/mcp-governance-main/scripts/../results/exp7_clientreject/plangate_full_price_ttl0.1_run2_sessions.csv
+[DAG发压机] 总记录: 880 步 / 500 会话

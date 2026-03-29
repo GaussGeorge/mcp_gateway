@@ -1,4 +1,3 @@
-[DAG发压机] CPU 亲和性: cores=[0, 1]
 [DAG发压机] 客户端价格预测: ON (TTL=1.0s, Shadow Mode)
 [DAG发压机] 目标: http://127.0.0.1:9107
 [DAG发压机] 总会话: 500  (P&S=500, ReAct=0)
@@ -12,38 +11,44 @@
   DAG 会话发压机 — 统计摘要
 ============================================================
   总会话数:        500
-  ├─ SUCCESS:      33  (6.6%)
-  ├─ REJECTED@S0:  380  (76.0%)
-  ├─ CASCADE_FAIL: 87  (17.4%)
+  ├─ SUCCESS:      45  (9.0%)
+  ├─ REJECTED@S0:  352  (70.4%)
+  ├─ CASCADE_FAIL: 103  (20.6%)
   └─ PENDING:      0
 
-  [Plan-and-Solve]  total=500  success=33  rejected@s0=380  cascade=87
+  [Plan-and-Solve]  total=500  success=45  rejected@s0=352  cascade=103
   [ReAct]           total=0  success=0  rejected@s0=0  cascade=0
 
   ── Goodput 指标 ──
-  Raw Goodput (单步累加):       750.0
-  Effective Goodput (全链路):    383.0
-  Raw Goodput/s:                54.45
-  Effective Goodput/s:          27.80
+  Raw Goodput (单步累加):       797.0
+  Effective Goodput (全链路):    432.0
+  Raw Goodput/s:                53.53
+  Effective Goodput/s:          29.01
 
   ── 步骤级统计 ──
-  总步骤数:          781
-  步骤成功数:        314  (40.2%)
-  会话吞吐量:        36.3 sessions/s
+  总步骤数:          828
+  步骤成功数:        373  (45.0%)
+  会话吞吐量:        33.6 sessions/s
 
   ── 延迟 (ms) ──
-  P50:   1010.0
-  P95:   1903.6
-  P99:   1949.9
-  Mean:  727.0
+  P50:   1005.8
+  P95:   1902.1
+  P99:   1943.7
+  Mean:  770.3
+
+  ── 会话端到端延迟 (ms, 仅成功会话) ──
+  E2E_P50:   4276.0
+  E2E_P95:   7698.8
+  E2E_P99:   9679.8
+  E2E_Mean:  4711.6
 
   ── 客户端预测准入 (Shadow Mode) ──
-  总检查次数:        781
-  Shadow 拒绝次数:   0  (0.0%)
-  Shadow→网关命中:   0  (命中率=N/A)
-  Client_Saved_Requests: 0  (若启用 Hard Reject 可节省的请求)
+  总检查次数:        828
+  Client 拒绝次数:   0  (0.0%)
+  Client→网关命中:   0  (命中率=N/A)
+  Client_Saved_Requests: 0
 ============================================================
 
-[DAG发压机] 步骤级数据: D:\mcp-governance-main\scripts\..\results\exp1_core\srl_run2.csv
-[DAG发压机] 会话级数据: D:\mcp-governance-main\scripts\..\results\exp1_core\srl_run2_sessions.csv
-[DAG发压机] 总记录: 781 步 / 500 会话
+[DAG发压机] 步骤级数据: /mnt/d/mcp-governance-main/scripts/../results/exp1_core/srl_run2.csv
+[DAG发压机] 会话级数据: /mnt/d/mcp-governance-main/scripts/../results/exp1_core/srl_run2_sessions.csv
+[DAG发压机] 总记录: 828 步 / 500 会话

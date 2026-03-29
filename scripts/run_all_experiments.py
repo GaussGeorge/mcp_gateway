@@ -2,14 +2,14 @@
 """
 run_all_experiments.py — 无人值守自动化跑批脚本
 
-5 组实验 × 5 个网关 × N=5 次重复 = 最多 125 个实验实例
+5 组实验 × 6 个网关 × N=5 次重复 = 最多 125 个实验实例
 每次循环: 启动 Go 网关 → 运行 DAG 发压机 → 收集 CSV → 终止网关
 
 实验配置：
   Exp1_Core:        Step 脉冲突发，ps_ratio=1.0，核心性能对比
   Exp2_HeavyRatio:  重量工具占比扫参 [0.1, 0.3, 0.5, 0.7]
   Exp3_MixedMode:   混合模式 P&S+ReAct, ps_ratio=[0.3, 0.5, 0.7, 1.0]
-  Exp4_Ablation:    消融实验 plangate_full vs plangate_no_lock
+  Exp4_Ablation:    消融实验 Full vs w/o-BudgetLock vs w/o-SessionCap vs Rajomon
   Exp5_ScaleConc:   并发扩展测试 concurrency=[10, 20, 40, 60]
 
 用法：
@@ -51,6 +51,18 @@ def update_backend_url(url: str):
     global BACKEND_URL
     BACKEND_URL = url
 GATEWAY_HOST = "127.0.0.1"
+
+# ====== taskset CPU 绑核配置 (Linux only) ======
+CPU_BACKEND = None   # e.g. "8-15"
+CPU_GATEWAY = None   # e.g. "4-7"
+CPU_LOADGEN = None   # e.g. "0-3"
+
+
+def _taskset_prefix(cpu_spec: str) -> list:
+    """如果指定了 CPU 核心且运行在 Linux 上，返回 taskset 前缀"""
+    if cpu_spec and sys.platform != "win32":
+        return ["taskset", "-c", cpu_spec]
+    return []
 BASE_PORT = 9100  # 实验专用端口段起始
 STARTUP_WAIT = 4  # 网关启动等待秒数
 DEFAULT_REPEATS = 5
@@ -112,17 +124,31 @@ def get_gateways(experiment_name: str) -> List[GatewayConfig]:
                 "--plangate-price-step", str(pg["price_step"]),
                 "--plangate-max-sessions", str(pg["max_sessions"]),
             ]),
-            GatewayConfig("plangate_no_lock", "mcpdp-nolock", [
+            GatewayConfig("wo_budgetlock", "mcpdp-no-budgetlock", [
                 "--plangate-price-step", str(pg["price_step"]),
+                "--plangate-max-sessions", str(pg["max_sessions"]),
+            ]),
+            GatewayConfig("wo_sessioncap", "mcpdp-no-sessioncap", [
+                "--plangate-price-step", str(pg["price_step"]),
+                "--plangate-max-sessions", str(pg["max_sessions"]),
+            ]),
+            GatewayConfig("rajomon", "rajomon", [
+                "--rajomon-price-step", str(rj["price_step"]),
             ]),
         ]
 
-    # 其余实验: 全部 7 个网关
-    return common + [
-        GatewayConfig("plangate_no_lock", "mcpdp-nolock", [
-            "--plangate-price-step", str(pg["price_step"]),
-        ]),
-    ]
+    if experiment_name == "Exp7_ClientReject":
+        # Exp7: 对比 PlanGate (Shadow) vs PlanGate (Hard Reject)
+        # 两者都使用相同网关, hard_reject 在发压机侧控制
+        return [
+            GatewayConfig("plangate_full", "mcpdp", [
+                "--plangate-price-step", str(pg["price_step"]),
+                "--plangate-max-sessions", str(pg["max_sessions"]),
+            ]),
+        ]
+
+    # 其余实验: 全部 6 个网关 (NG, SRL, Rajomon, DAGOR, SBAC, PlanGate-Full)
+    return common
 
 
 # ====== 实验定义 ======
@@ -142,6 +168,7 @@ class ExperimentConfig:
     min_steps: int = 3
     max_steps: int = 7
     step_timeout: float = 2.0  # 单步超时秒数（短超时是造成系统真实过载的关键）
+    hard_reject: bool = False   # 客户端 Hard Reject 模式
     # 扫参维度 (key → list of values)
     sweep: Optional[Dict[str, list]] = None
 
@@ -170,11 +197,11 @@ EXPERIMENTS = {
         description="混合模式 P&S + ReAct 比例扫参",
         sessions=200,
         duration=60,
-        sweep={"ps_ratio": [0.3, 0.5, 0.7, 1.0]},
+        sweep={"ps_ratio": [0.0, 0.3, 0.5, 0.7, 1.0]},
     ),
     "Exp4_Ablation": ExperimentConfig(
         name="Exp4_Ablation",
-        description="消融实验: plangate_full vs plangate_no_lock",
+        description="严格单变量消融实验: Full vs w/o-BudgetLock vs w/o-SessionCap vs Rajomon(SOTA)",
         sessions=500,
         ps_ratio=1.0,
         duration=60,
@@ -190,6 +217,18 @@ EXPERIMENTS = {
         duration=60,
         sweep={"concurrency": [10, 20, 40, 60]},
     ),
+    "Exp7_ClientReject": ExperimentConfig(
+        name="Exp7_ClientReject",
+        description="客户端 Hard Reject — price_ttl 扫参验证最优缓存时效",
+        sessions=500,
+        ps_ratio=1.0,
+        duration=60,
+        arrival_rate=50.0,
+        heavy_ratio=0.3,
+        concurrency=200,
+        hard_reject=True,
+        sweep={"price_ttl": [0.1, 0.2, 0.5, 1.0, 2.0]},
+    ),
 }
 
 
@@ -198,6 +237,14 @@ EXPERIMENTS = {
 def build_gateway():
     """预编译网关二进制文件（避免每次 go run 重新编译）"""
     global GATEWAY_BINARY
+    # 如果已通过 --gateway-binary 指定了预编译二进制, 则跳过编译
+    if GATEWAY_BINARY is not None:
+        if os.path.isfile(GATEWAY_BINARY):
+            print(f"  使用预编译网关: {GATEWAY_BINARY}")
+            return
+        else:
+            raise RuntimeError(f"指定的网关二进制不存在: {GATEWAY_BINARY}")
+
     bin_name = "gateway.exe" if sys.platform == "win32" else "gateway"
     bin_path = os.path.join(ROOT_DIR, bin_name)
 
@@ -228,13 +275,14 @@ def start_backend(max_workers: int = BACKEND_MAX_WORKERS):
     global BACKEND_PROC
     stop_backend()  # 先终止旧实例
 
-    cmd = [
+    base_cmd = [
         sys.executable, SERVER_PY,
         "--port", "8080",
         "--max-workers", str(max_workers),
         "--queue-timeout", "1.0",
         "--congestion-factor", "0.5",
     ]
+    cmd = _taskset_prefix(CPU_BACKEND) + base_cmd
     env = os.environ.copy()
     env["PYTHONIOENCODING"] = "utf-8"
     log_path = os.path.join(RESULTS_DIR, "_backend.log")
@@ -281,13 +329,14 @@ def start_gateway(gw: GatewayConfig, port: int) -> subprocess.Popen:
     if GATEWAY_BINARY is None:
         build_gateway()
 
-    cmd = [
+    base_cmd = [
         GATEWAY_BINARY,
         "--mode", gw.mode,
         "--port", str(port),
         "--backend", BACKEND_URL,
         "--host", GATEWAY_HOST,
     ] + gw.extra_args
+    cmd = _taskset_prefix(CPU_GATEWAY) + base_cmd
 
     print(f"    启动网关: {gw.name} (mode={gw.mode}, port={port})")
     # 网关日志写入文件，避免 PIPE 缓冲区满导致网关阻塞
@@ -382,11 +431,12 @@ def run_load_generator(target_url: str, exp: ExperimentConfig,
         "min_steps": exp.min_steps,
         "max_steps": exp.max_steps,
         "step_timeout": exp.step_timeout,
+        "hard_reject": exp.hard_reject,
     }
     if overrides:
         params.update(overrides)
 
-    cmd = [
+    base_cmd = [
         sys.executable, DAG_LOAD_GEN,
         "--target", target_url,
         "--sessions", str(params["sessions"]),
@@ -399,9 +449,12 @@ def run_load_generator(target_url: str, exp: ExperimentConfig,
         "--min-steps", str(params["min_steps"]),
         "--max-steps", str(params["max_steps"]),
         "--step-timeout", str(params["step_timeout"]),
-        "--price-ttl", "1.0",
+        "--price-ttl", str(params.get("price_ttl", 1.0)),
         "--output", output_csv,
     ]
+    if params.get("hard_reject"):
+        base_cmd.append("--hard-reject")
+    cmd = _taskset_prefix(CPU_LOADGEN) + base_cmd
 
     print(f"    发压: sessions={params['sessions']} ps_ratio={params['ps_ratio']} "
           f"heavy={params['heavy_ratio']} conc={params['concurrency']} dur={params['duration']}s")
@@ -496,19 +549,34 @@ def parse_stdout_stats(stdout: str) -> dict:
                 stats["effective_goodput_s"] = float(line.split(":")[-1].strip())
             except ValueError:
                 pass
-        elif "P50:" in line:
+        elif "P50:" in line and "E2E" not in line:
             try:
                 stats["p50_ms"] = float(line.split(":")[-1].strip())
             except ValueError:
                 pass
-        elif "P95:" in line:
+        elif "P95:" in line and "E2E" not in line:
             try:
                 stats["p95_ms"] = float(line.split(":")[-1].strip())
             except ValueError:
                 pass
-        elif "P99:" in line:
+        elif "P99:" in line and "E2E" not in line:
             try:
                 stats["p99_ms"] = float(line.split(":")[-1].strip())
+            except ValueError:
+                pass
+        elif "E2E_P50:" in line:
+            try:
+                stats["e2e_p50_ms"] = float(line.split(":")[-1].strip())
+            except ValueError:
+                pass
+        elif "E2E_P95:" in line:
+            try:
+                stats["e2e_p95_ms"] = float(line.split(":")[-1].strip())
+            except ValueError:
+                pass
+        elif "E2E_P99:" in line:
+            try:
+                stats["e2e_p99_ms"] = float(line.split(":")[-1].strip())
             except ValueError:
                 pass
     return stats
@@ -627,6 +695,7 @@ def save_experiment_summary(exp_name: str, exp_dir: str, results: list):
         "raw_goodput", "effective_goodput",
         "raw_goodput_s", "effective_goodput_s",
         "p50_ms", "p95_ms", "p99_ms",
+        "e2e_p50_ms", "e2e_p95_ms", "e2e_p99_ms",
         "csv", "error",
     ]
 
@@ -659,10 +728,28 @@ def main():
                         help="指定多个实验 (空格分隔)")
     parser.add_argument("--backend-max-workers", type=int, default=BACKEND_MAX_WORKERS,
                         help=f"后端全局并发 worker 数，0=外部自行启动 (default: {BACKEND_MAX_WORKERS})")
+    parser.add_argument("--gateway-binary", type=str, default=None,
+                        help="预编译网关二进制路径 (跳过 go build)")
+    parser.add_argument("--cpu-backend", type=str, default=None,
+                        help="后端 CPU 核心 (taskset -c, 如 8-15)")
+    parser.add_argument("--cpu-gateway", type=str, default=None,
+                        help="网关 CPU 核心 (taskset -c, 如 4-7)")
+    parser.add_argument("--cpu-loadgen", type=str, default=None,
+                        help="发压机 CPU 核心 (taskset -c, 如 0-3)")
     args = parser.parse_args()
 
     # 更新后端地址
     update_backend_url(args.backend)
+
+    # 设置预编译网关路径
+    global GATEWAY_BINARY, CPU_BACKEND, CPU_GATEWAY, CPU_LOADGEN
+    if args.gateway_binary:
+        GATEWAY_BINARY = args.gateway_binary
+
+    # 设置 taskset CPU 绑核
+    CPU_BACKEND = args.cpu_backend
+    CPU_GATEWAY = args.cpu_gateway
+    CPU_LOADGEN = args.cpu_loadgen
 
     # 确定要运行的实验列表
     if args.exp_list:
@@ -699,6 +786,10 @@ def main():
     if args.dry_run:
         print(f"  模式: DRY-RUN")
     print(f"  后端 max_workers: {args.backend_max_workers}")
+    if CPU_BACKEND or CPU_GATEWAY or CPU_LOADGEN:
+        print(f"  CPU 绑核 (taskset): 后端={CPU_BACKEND or 'off'}, 网关={CPU_GATEWAY or 'off'}, 发压={CPU_LOADGEN or 'off'}")
+    if GATEWAY_BINARY:
+        print(f"  网关二进制: {GATEWAY_BINARY}")
     print(f"{'#'*70}")
 
     os.makedirs(RESULTS_DIR, exist_ok=True)

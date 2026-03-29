@@ -160,6 +160,7 @@ class ClientPriceTable:
 
 # 全局实例，在 run() 中根据 CLI 参数初始化
 _price_table: Optional[ClientPriceTable] = None
+_hard_reject_enabled: bool = False
 
 
 # ══════════════════════════════════════════════════
@@ -399,25 +400,45 @@ async def execute_session(
     plan.state = SessionState.RUNNING
     plan.start_time = time.time()
 
-    # Shadow Check: 客户端价格预测（仅记录，不拦截）
+    # 客户端价格预测（Shadow / Hard Reject）
     shadow_would_reject = False
 
     for i, step in enumerate(plan.steps):
-        # ── 客户端预测性准入 (Shadow Mode) ──
+        # ── 客户端预测性准入 ──
         if _price_table is not None:
             _price_table.shadow_total_checks += 1
+            client_reject_this = False
             if plan.mode == AgentMode.PLAN_AND_SOLVE and i == 0:
-                # P&S: 第 0 步检查整个 DAG 总价
                 est = _price_table.estimate_session_cost(plan)
                 if est is not None and est > plan.budget:
-                    shadow_would_reject = True
-                    _price_table.shadow_reject_count += 1
+                    client_reject_this = True
             elif plan.mode == AgentMode.REACT:
-                # ReAct: 每步检查当前工具价格
                 est = _price_table.estimate_step_cost(step.tool_name)
                 if est is not None and est > plan.budget:
-                    shadow_would_reject = True
-                    _price_table.shadow_reject_count += 1
+                    client_reject_this = True
+
+            if client_reject_this:
+                shadow_would_reject = True
+                _price_table.shadow_reject_count += 1
+                # Hard Reject: 本地直接拒绝，不发送网络请求
+                if _hard_reject_enabled:
+                    if i == 0:
+                        plan.state = SessionState.REJECTED_AT_STEP_0
+                    else:
+                        plan.state = SessionState.CASCADE_FAILED
+                    plan.end_time = time.time()
+                    plan.step_results.append({
+                        "step_id": step.step_id,
+                        "tool_name": step.tool_name,
+                        "status": "client_rejected",
+                        "latency_ms": 0.0,
+                        "locked_price": None,
+                        "regime": None,
+                        "timestamp": time.time(),
+                        "shadow_would_reject": True,
+                    })
+                    _price_table.shadow_match_count += 1
+                    return plan
 
         req_counter[0] += 1
         result = await send_tool_call(http_session, url, plan, i, req_counter[0])
@@ -484,6 +505,7 @@ class AggregatedStats:
     effective_goodput_total: float = 0.0
     # 延迟
     all_latencies:      List[float] = field(default_factory=list)
+    session_e2e_latencies: List[float] = field(default_factory=list)
     total_steps:        int = 0
     total_step_success: int = 0
     elapsed_seconds:    float = 0.0
@@ -528,6 +550,11 @@ def compute_stats(plans: List[SessionPlan], elapsed: float) -> AggregatedStats:
 
         stats.raw_goodput_total += plan.raw_goodput
         stats.effective_goodput_total += plan.total_weight
+
+        # 全链路端到端延迟（仅成功会话）
+        if plan.state == SessionState.SUCCESS and plan.end_time > plan.start_time:
+            e2e_ms = (plan.end_time - plan.start_time) * 1000.0
+            stats.session_e2e_latencies.append(e2e_ms)
 
         for sr in plan.step_results:
             stats.total_steps += 1
@@ -581,15 +608,27 @@ def print_stats(stats: AggregatedStats):
         print(f"  P99:   {p99:.1f}")
         print(f"  Mean:  {sum(lats)/len(lats):.1f}")
 
+    if stats.session_e2e_latencies:
+        e2e = sorted(stats.session_e2e_latencies)
+        e2e_p50 = e2e[len(e2e) // 2]
+        e2e_p95 = e2e[int(len(e2e) * 0.95)]
+        e2e_p99 = e2e[int(len(e2e) * 0.99)]
+        print(f"\n  ── 会话端到端延迟 (ms, 仅成功会话) ──")
+        print(f"  E2E_P50:   {e2e_p50:.1f}")
+        print(f"  E2E_P95:   {e2e_p95:.1f}")
+        print(f"  E2E_P99:   {e2e_p99:.1f}")
+        print(f"  E2E_Mean:  {sum(e2e)/len(e2e):.1f}")
+
     # 客户端价格预测统计
     if stats.client_shadow_checks > 0:
         match_rate = _pct(stats.client_shadow_match, stats.client_shadow_reject) if stats.client_shadow_reject > 0 else "N/A"
-        print(f"\n  ── 客户端预测准入 (Shadow Mode) ──")
+        mode_label = "Hard Reject" if _hard_reject_enabled else "Shadow Mode"
+        print(f"\n  ── 客户端预测准入 ({mode_label}) ──")
         print(f"  总检查次数:        {stats.client_shadow_checks}")
-        print(f"  Shadow 拒绝次数:   {stats.client_shadow_reject}  ({_pct(stats.client_shadow_reject, stats.client_shadow_checks)})")
-        print(f"  Shadow→网关命中:   {stats.client_shadow_match}  (命中率={match_rate})")
+        print(f"  Client 拒绝次数:   {stats.client_shadow_reject}  ({_pct(stats.client_shadow_reject, stats.client_shadow_checks)})")
+        print(f"  Client→网关命中:   {stats.client_shadow_match}  (命中率={match_rate})")
         saved = stats.client_shadow_reject
-        print(f"  Client_Saved_Requests: {saved}  (若启用 Hard Reject 可节省的请求)")
+        print(f"  Client_Saved_Requests: {saved}")
 
     print(f"{'='*60}")
 
@@ -667,11 +706,15 @@ def save_session_csv(plans: List[SessionPlan], path: str):
 async def run(args):
     # 初始化客户端价格表
     global _price_table
+    global _hard_reject_enabled
     if args.price_ttl > 0:
         _price_table = ClientPriceTable(ttl_sec=args.price_ttl)
-        print(f"[DAG发压机] 客户端价格预测: ON (TTL={args.price_ttl}s, Shadow Mode)")
+        _hard_reject_enabled = args.hard_reject
+        mode_str = "Hard Reject" if _hard_reject_enabled else "Shadow Mode"
+        print(f"[DAG发压机] 客户端价格预测: ON (TTL={args.price_ttl}s, {mode_str})")
     else:
         _price_table = None
+        _hard_reject_enabled = False
 
     # 生成会话计划
     plans: List[SessionPlan] = []
@@ -793,6 +836,8 @@ def main():
                         help="mock_heavy CPU 烧录时间/ms (default: 800)")
     parser.add_argument("--price-ttl", type=float, default=1.0,
                         help="客户端价格缓存 TTL/秒, 0=禁用价格预测 (default: 1.0)")
+    parser.add_argument("--hard-reject", action="store_true", default=False,
+                        help="启用客户端 Hard Reject: 价格预测超预算则本地拒绝，不发送请求")
     args = parser.parse_args()
 
     # CPU 亲和性
