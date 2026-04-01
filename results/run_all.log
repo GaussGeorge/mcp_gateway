@@ -1,0 +1,1842 @@
+
+######################################################################
+  MCP-DP 自动化跑批脚本
+  实验: Exp1_Core, Exp2_HeavyRatio, Exp3_MixedMode, Exp4_Ablation, Exp5_ScaleConc, Exp6_ScaleConcReact, Exp7_ClientReject
+  总实例数: 585
+  重复次数: 5
+  后端: http://127.0.0.1:8080
+  后端 max_workers: 10
+  CPU 绑核 (taskset): 后端=8-15, 网关=4-7, 发压=0-3
+  网关二进制: ./gateway_linux
+######################################################################
+  启动后端 (max_workers=10)…
+  后端已启动 (pid=47979, max_workers=10)
+
+======================================================================
+  实验: Exp1_Core — Step 脉冲突发 — 核心性能对比（全载常态）
+  网关: ng, srl, rajomon, dagor, sbac, plangate_full
+  重复: 5 次
+======================================================================
+
+  [Exp1_Core/ng/run1]
+    启动网关: ng (mode=ng, port=9101)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp1_Core/ng/run2]
+    启动网关: ng (mode=ng, port=9102)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp1_Core/ng/run3]
+    启动网关: ng (mode=ng, port=9103)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp1_Core/ng/run4]
+    启动网关: ng (mode=ng, port=9104)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp1_Core/ng/run5]
+    启动网关: ng (mode=ng, port=9105)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp1_Core/srl/run1]
+    启动网关: srl (mode=srl, port=9106)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp1_Core/srl/run2]
+    启动网关: srl (mode=srl, port=9107)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp1_Core/srl/run3]
+    启动网关: srl (mode=srl, port=9108)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp1_Core/srl/run4]
+    启动网关: srl (mode=srl, port=9109)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp1_Core/srl/run5]
+    启动网关: srl (mode=srl, port=9110)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp1_Core/rajomon/run1]
+    启动网关: rajomon (mode=rajomon, port=9111)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp1_Core/rajomon/run2]
+    启动网关: rajomon (mode=rajomon, port=9112)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp1_Core/rajomon/run3]
+    启动网关: rajomon (mode=rajomon, port=9113)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp1_Core/rajomon/run4]
+    启动网关: rajomon (mode=rajomon, port=9114)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp1_Core/rajomon/run5]
+    启动网关: rajomon (mode=rajomon, port=9115)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp1_Core/dagor/run1]
+    启动网关: dagor (mode=dagor, port=9116)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp1_Core/dagor/run2]
+    启动网关: dagor (mode=dagor, port=9117)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp1_Core/dagor/run3]
+    启动网关: dagor (mode=dagor, port=9118)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp1_Core/dagor/run4]
+    启动网关: dagor (mode=dagor, port=9119)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp1_Core/dagor/run5]
+    启动网关: dagor (mode=dagor, port=9120)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp1_Core/sbac/run1]
+    启动网关: sbac (mode=sbac, port=9121)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp1_Core/sbac/run2]
+    启动网关: sbac (mode=sbac, port=9122)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp1_Core/sbac/run3]
+    启动网关: sbac (mode=sbac, port=9123)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp1_Core/sbac/run4]
+    启动网关: sbac (mode=sbac, port=9124)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp1_Core/sbac/run5]
+    启动网关: sbac (mode=sbac, port=9125)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp1_Core/plangate_full/run1]
+    启动网关: plangate_full (mode=mcpdp, port=9126)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp1_Core/plangate_full/run2]
+    启动网关: plangate_full (mode=mcpdp, port=9127)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp1_Core/plangate_full/run3]
+    启动网关: plangate_full (mode=mcpdp, port=9128)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp1_Core/plangate_full/run4]
+    启动网关: plangate_full (mode=mcpdp, port=9129)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp1_Core/plangate_full/run5]
+    启动网关: plangate_full (mode=mcpdp, port=9130)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+
+  汇总已保存: /mnt/d/mcp-governance-main/scripts/../results/exp1_core/exp1_core_summary.csv
+
+======================================================================
+  实验: Exp2_HeavyRatio — 重量工具占比扫参
+  网关: ng, srl, rajomon, dagor, sbac, plangate_full
+  重复: 5 次
+  扫参: heavy_ratio = [0.1, 0.3, 0.5, 0.7]
+======================================================================
+
+  [Exp2_HeavyRatio/ng/heavy_ratio=0.1/run1]
+    启动网关: ng (mode=ng, port=9101)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.1 conc=20 dur=60s
+  [Exp2_HeavyRatio/ng/heavy_ratio=0.1/run2]
+    启动网关: ng (mode=ng, port=9102)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.1 conc=20 dur=60s
+  [Exp2_HeavyRatio/ng/heavy_ratio=0.1/run3]
+    启动网关: ng (mode=ng, port=9103)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.1 conc=20 dur=60s
+  [Exp2_HeavyRatio/ng/heavy_ratio=0.1/run4]
+    启动网关: ng (mode=ng, port=9104)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.1 conc=20 dur=60s
+  [Exp2_HeavyRatio/ng/heavy_ratio=0.1/run5]
+    启动网关: ng (mode=ng, port=9105)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.1 conc=20 dur=60s
+  [Exp2_HeavyRatio/srl/heavy_ratio=0.1/run1]
+    启动网关: srl (mode=srl, port=9106)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.1 conc=20 dur=60s
+  [Exp2_HeavyRatio/srl/heavy_ratio=0.1/run2]
+    启动网关: srl (mode=srl, port=9107)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.1 conc=20 dur=60s
+  [Exp2_HeavyRatio/srl/heavy_ratio=0.1/run3]
+    启动网关: srl (mode=srl, port=9108)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.1 conc=20 dur=60s
+  [Exp2_HeavyRatio/srl/heavy_ratio=0.1/run4]
+    启动网关: srl (mode=srl, port=9109)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.1 conc=20 dur=60s
+  [Exp2_HeavyRatio/srl/heavy_ratio=0.1/run5]
+    启动网关: srl (mode=srl, port=9110)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.1 conc=20 dur=60s
+  [Exp2_HeavyRatio/rajomon/heavy_ratio=0.1/run1]
+    启动网关: rajomon (mode=rajomon, port=9111)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.1 conc=20 dur=60s
+  [Exp2_HeavyRatio/rajomon/heavy_ratio=0.1/run2]
+    启动网关: rajomon (mode=rajomon, port=9112)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.1 conc=20 dur=60s
+  [Exp2_HeavyRatio/rajomon/heavy_ratio=0.1/run3]
+    启动网关: rajomon (mode=rajomon, port=9113)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.1 conc=20 dur=60s
+  [Exp2_HeavyRatio/rajomon/heavy_ratio=0.1/run4]
+    启动网关: rajomon (mode=rajomon, port=9114)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.1 conc=20 dur=60s
+  [Exp2_HeavyRatio/rajomon/heavy_ratio=0.1/run5]
+    启动网关: rajomon (mode=rajomon, port=9115)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.1 conc=20 dur=60s
+  [Exp2_HeavyRatio/dagor/heavy_ratio=0.1/run1]
+    启动网关: dagor (mode=dagor, port=9116)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.1 conc=20 dur=60s
+  [Exp2_HeavyRatio/dagor/heavy_ratio=0.1/run2]
+    启动网关: dagor (mode=dagor, port=9117)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.1 conc=20 dur=60s
+  [Exp2_HeavyRatio/dagor/heavy_ratio=0.1/run3]
+    启动网关: dagor (mode=dagor, port=9118)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.1 conc=20 dur=60s
+  [Exp2_HeavyRatio/dagor/heavy_ratio=0.1/run4]
+    启动网关: dagor (mode=dagor, port=9119)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.1 conc=20 dur=60s
+  [Exp2_HeavyRatio/dagor/heavy_ratio=0.1/run5]
+    启动网关: dagor (mode=dagor, port=9120)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.1 conc=20 dur=60s
+  [Exp2_HeavyRatio/sbac/heavy_ratio=0.1/run1]
+    启动网关: sbac (mode=sbac, port=9121)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.1 conc=20 dur=60s
+  [Exp2_HeavyRatio/sbac/heavy_ratio=0.1/run2]
+    启动网关: sbac (mode=sbac, port=9122)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.1 conc=20 dur=60s
+  [Exp2_HeavyRatio/sbac/heavy_ratio=0.1/run3]
+    启动网关: sbac (mode=sbac, port=9123)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.1 conc=20 dur=60s
+  [Exp2_HeavyRatio/sbac/heavy_ratio=0.1/run4]
+    启动网关: sbac (mode=sbac, port=9124)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.1 conc=20 dur=60s
+  [Exp2_HeavyRatio/sbac/heavy_ratio=0.1/run5]
+    启动网关: sbac (mode=sbac, port=9125)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.1 conc=20 dur=60s
+  [Exp2_HeavyRatio/plangate_full/heavy_ratio=0.1/run1]
+    启动网关: plangate_full (mode=mcpdp, port=9126)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.1 conc=20 dur=60s
+  [Exp2_HeavyRatio/plangate_full/heavy_ratio=0.1/run2]
+    启动网关: plangate_full (mode=mcpdp, port=9127)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.1 conc=20 dur=60s
+  [Exp2_HeavyRatio/plangate_full/heavy_ratio=0.1/run3]
+    启动网关: plangate_full (mode=mcpdp, port=9128)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.1 conc=20 dur=60s
+  [Exp2_HeavyRatio/plangate_full/heavy_ratio=0.1/run4]
+    启动网关: plangate_full (mode=mcpdp, port=9129)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.1 conc=20 dur=60s
+  [Exp2_HeavyRatio/plangate_full/heavy_ratio=0.1/run5]
+    启动网关: plangate_full (mode=mcpdp, port=9130)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.1 conc=20 dur=60s
+  [Exp2_HeavyRatio/ng/heavy_ratio=0.3/run1]
+    启动网关: ng (mode=ng, port=9131)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp2_HeavyRatio/ng/heavy_ratio=0.3/run2]
+    启动网关: ng (mode=ng, port=9132)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp2_HeavyRatio/ng/heavy_ratio=0.3/run3]
+    启动网关: ng (mode=ng, port=9133)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp2_HeavyRatio/ng/heavy_ratio=0.3/run4]
+    启动网关: ng (mode=ng, port=9134)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp2_HeavyRatio/ng/heavy_ratio=0.3/run5]
+    启动网关: ng (mode=ng, port=9135)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp2_HeavyRatio/srl/heavy_ratio=0.3/run1]
+    启动网关: srl (mode=srl, port=9136)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp2_HeavyRatio/srl/heavy_ratio=0.3/run2]
+    启动网关: srl (mode=srl, port=9137)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp2_HeavyRatio/srl/heavy_ratio=0.3/run3]
+    启动网关: srl (mode=srl, port=9138)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp2_HeavyRatio/srl/heavy_ratio=0.3/run4]
+    启动网关: srl (mode=srl, port=9139)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp2_HeavyRatio/srl/heavy_ratio=0.3/run5]
+    启动网关: srl (mode=srl, port=9140)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp2_HeavyRatio/rajomon/heavy_ratio=0.3/run1]
+    启动网关: rajomon (mode=rajomon, port=9141)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp2_HeavyRatio/rajomon/heavy_ratio=0.3/run2]
+    启动网关: rajomon (mode=rajomon, port=9142)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp2_HeavyRatio/rajomon/heavy_ratio=0.3/run3]
+    启动网关: rajomon (mode=rajomon, port=9143)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp2_HeavyRatio/rajomon/heavy_ratio=0.3/run4]
+    启动网关: rajomon (mode=rajomon, port=9144)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp2_HeavyRatio/rajomon/heavy_ratio=0.3/run5]
+    启动网关: rajomon (mode=rajomon, port=9145)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp2_HeavyRatio/dagor/heavy_ratio=0.3/run1]
+    启动网关: dagor (mode=dagor, port=9146)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp2_HeavyRatio/dagor/heavy_ratio=0.3/run2]
+    启动网关: dagor (mode=dagor, port=9147)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp2_HeavyRatio/dagor/heavy_ratio=0.3/run3]
+    启动网关: dagor (mode=dagor, port=9148)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp2_HeavyRatio/dagor/heavy_ratio=0.3/run4]
+    启动网关: dagor (mode=dagor, port=9149)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp2_HeavyRatio/dagor/heavy_ratio=0.3/run5]
+    启动网关: dagor (mode=dagor, port=9150)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp2_HeavyRatio/sbac/heavy_ratio=0.3/run1]
+    启动网关: sbac (mode=sbac, port=9151)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp2_HeavyRatio/sbac/heavy_ratio=0.3/run2]
+    启动网关: sbac (mode=sbac, port=9152)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp2_HeavyRatio/sbac/heavy_ratio=0.3/run3]
+    启动网关: sbac (mode=sbac, port=9153)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp2_HeavyRatio/sbac/heavy_ratio=0.3/run4]
+    启动网关: sbac (mode=sbac, port=9154)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp2_HeavyRatio/sbac/heavy_ratio=0.3/run5]
+    启动网关: sbac (mode=sbac, port=9155)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp2_HeavyRatio/plangate_full/heavy_ratio=0.3/run1]
+    启动网关: plangate_full (mode=mcpdp, port=9156)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp2_HeavyRatio/plangate_full/heavy_ratio=0.3/run2]
+    启动网关: plangate_full (mode=mcpdp, port=9157)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp2_HeavyRatio/plangate_full/heavy_ratio=0.3/run3]
+    启动网关: plangate_full (mode=mcpdp, port=9158)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp2_HeavyRatio/plangate_full/heavy_ratio=0.3/run4]
+    启动网关: plangate_full (mode=mcpdp, port=9159)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp2_HeavyRatio/plangate_full/heavy_ratio=0.3/run5]
+    启动网关: plangate_full (mode=mcpdp, port=9160)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp2_HeavyRatio/ng/heavy_ratio=0.5/run1]
+    启动网关: ng (mode=ng, port=9161)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.5 conc=20 dur=60s
+  [Exp2_HeavyRatio/ng/heavy_ratio=0.5/run2]
+    启动网关: ng (mode=ng, port=9162)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.5 conc=20 dur=60s
+  [Exp2_HeavyRatio/ng/heavy_ratio=0.5/run3]
+    启动网关: ng (mode=ng, port=9163)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.5 conc=20 dur=60s
+  [Exp2_HeavyRatio/ng/heavy_ratio=0.5/run4]
+    启动网关: ng (mode=ng, port=9164)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.5 conc=20 dur=60s
+  [Exp2_HeavyRatio/ng/heavy_ratio=0.5/run5]
+    启动网关: ng (mode=ng, port=9165)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.5 conc=20 dur=60s
+  [Exp2_HeavyRatio/srl/heavy_ratio=0.5/run1]
+    启动网关: srl (mode=srl, port=9166)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.5 conc=20 dur=60s
+  [Exp2_HeavyRatio/srl/heavy_ratio=0.5/run2]
+    启动网关: srl (mode=srl, port=9167)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.5 conc=20 dur=60s
+  [Exp2_HeavyRatio/srl/heavy_ratio=0.5/run3]
+    启动网关: srl (mode=srl, port=9168)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.5 conc=20 dur=60s
+  [Exp2_HeavyRatio/srl/heavy_ratio=0.5/run4]
+    启动网关: srl (mode=srl, port=9169)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.5 conc=20 dur=60s
+  [Exp2_HeavyRatio/srl/heavy_ratio=0.5/run5]
+    启动网关: srl (mode=srl, port=9170)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.5 conc=20 dur=60s
+  [Exp2_HeavyRatio/rajomon/heavy_ratio=0.5/run1]
+    启动网关: rajomon (mode=rajomon, port=9171)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.5 conc=20 dur=60s
+  [Exp2_HeavyRatio/rajomon/heavy_ratio=0.5/run2]
+    启动网关: rajomon (mode=rajomon, port=9172)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.5 conc=20 dur=60s
+  [Exp2_HeavyRatio/rajomon/heavy_ratio=0.5/run3]
+    启动网关: rajomon (mode=rajomon, port=9173)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.5 conc=20 dur=60s
+  [Exp2_HeavyRatio/rajomon/heavy_ratio=0.5/run4]
+    启动网关: rajomon (mode=rajomon, port=9174)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.5 conc=20 dur=60s
+  [Exp2_HeavyRatio/rajomon/heavy_ratio=0.5/run5]
+    启动网关: rajomon (mode=rajomon, port=9175)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.5 conc=20 dur=60s
+  [Exp2_HeavyRatio/dagor/heavy_ratio=0.5/run1]
+    启动网关: dagor (mode=dagor, port=9176)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.5 conc=20 dur=60s
+  [Exp2_HeavyRatio/dagor/heavy_ratio=0.5/run2]
+    启动网关: dagor (mode=dagor, port=9177)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.5 conc=20 dur=60s
+  [Exp2_HeavyRatio/dagor/heavy_ratio=0.5/run3]
+    启动网关: dagor (mode=dagor, port=9178)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.5 conc=20 dur=60s
+  [Exp2_HeavyRatio/dagor/heavy_ratio=0.5/run4]
+    启动网关: dagor (mode=dagor, port=9179)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.5 conc=20 dur=60s
+  [Exp2_HeavyRatio/dagor/heavy_ratio=0.5/run5]
+    启动网关: dagor (mode=dagor, port=9180)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.5 conc=20 dur=60s
+  [Exp2_HeavyRatio/sbac/heavy_ratio=0.5/run1]
+    启动网关: sbac (mode=sbac, port=9181)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.5 conc=20 dur=60s
+  [Exp2_HeavyRatio/sbac/heavy_ratio=0.5/run2]
+    启动网关: sbac (mode=sbac, port=9182)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.5 conc=20 dur=60s
+  [Exp2_HeavyRatio/sbac/heavy_ratio=0.5/run3]
+    启动网关: sbac (mode=sbac, port=9183)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.5 conc=20 dur=60s
+  [Exp2_HeavyRatio/sbac/heavy_ratio=0.5/run4]
+    启动网关: sbac (mode=sbac, port=9184)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.5 conc=20 dur=60s
+  [Exp2_HeavyRatio/sbac/heavy_ratio=0.5/run5]
+    启动网关: sbac (mode=sbac, port=9185)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.5 conc=20 dur=60s
+  [Exp2_HeavyRatio/plangate_full/heavy_ratio=0.5/run1]
+    启动网关: plangate_full (mode=mcpdp, port=9186)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.5 conc=20 dur=60s
+  [Exp2_HeavyRatio/plangate_full/heavy_ratio=0.5/run2]
+    启动网关: plangate_full (mode=mcpdp, port=9187)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.5 conc=20 dur=60s
+  [Exp2_HeavyRatio/plangate_full/heavy_ratio=0.5/run3]
+    启动网关: plangate_full (mode=mcpdp, port=9188)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.5 conc=20 dur=60s
+  [Exp2_HeavyRatio/plangate_full/heavy_ratio=0.5/run4]
+    启动网关: plangate_full (mode=mcpdp, port=9189)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.5 conc=20 dur=60s
+  [Exp2_HeavyRatio/plangate_full/heavy_ratio=0.5/run5]
+    启动网关: plangate_full (mode=mcpdp, port=9190)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.5 conc=20 dur=60s
+  [Exp2_HeavyRatio/ng/heavy_ratio=0.7/run1]
+    启动网关: ng (mode=ng, port=9191)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.7 conc=20 dur=60s
+  [Exp2_HeavyRatio/ng/heavy_ratio=0.7/run2]
+    启动网关: ng (mode=ng, port=9192)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.7 conc=20 dur=60s
+  [Exp2_HeavyRatio/ng/heavy_ratio=0.7/run3]
+    启动网关: ng (mode=ng, port=9193)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.7 conc=20 dur=60s
+  [Exp2_HeavyRatio/ng/heavy_ratio=0.7/run4]
+    启动网关: ng (mode=ng, port=9194)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.7 conc=20 dur=60s
+  [Exp2_HeavyRatio/ng/heavy_ratio=0.7/run5]
+    启动网关: ng (mode=ng, port=9195)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.7 conc=20 dur=60s
+  [Exp2_HeavyRatio/srl/heavy_ratio=0.7/run1]
+    启动网关: srl (mode=srl, port=9196)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.7 conc=20 dur=60s
+  [Exp2_HeavyRatio/srl/heavy_ratio=0.7/run2]
+    启动网关: srl (mode=srl, port=9197)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.7 conc=20 dur=60s
+  [Exp2_HeavyRatio/srl/heavy_ratio=0.7/run3]
+    启动网关: srl (mode=srl, port=9198)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.7 conc=20 dur=60s
+  [Exp2_HeavyRatio/srl/heavy_ratio=0.7/run4]
+    启动网关: srl (mode=srl, port=9199)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.7 conc=20 dur=60s
+  [Exp2_HeavyRatio/srl/heavy_ratio=0.7/run5]
+    启动网关: srl (mode=srl, port=9100)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.7 conc=20 dur=60s
+  [Exp2_HeavyRatio/rajomon/heavy_ratio=0.7/run1]
+    启动网关: rajomon (mode=rajomon, port=9101)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.7 conc=20 dur=60s
+  [Exp2_HeavyRatio/rajomon/heavy_ratio=0.7/run2]
+    启动网关: rajomon (mode=rajomon, port=9102)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.7 conc=20 dur=60s
+  [Exp2_HeavyRatio/rajomon/heavy_ratio=0.7/run3]
+    启动网关: rajomon (mode=rajomon, port=9103)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.7 conc=20 dur=60s
+  [Exp2_HeavyRatio/rajomon/heavy_ratio=0.7/run4]
+    启动网关: rajomon (mode=rajomon, port=9104)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.7 conc=20 dur=60s
+  [Exp2_HeavyRatio/rajomon/heavy_ratio=0.7/run5]
+    启动网关: rajomon (mode=rajomon, port=9105)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.7 conc=20 dur=60s
+  [Exp2_HeavyRatio/dagor/heavy_ratio=0.7/run1]
+    启动网关: dagor (mode=dagor, port=9106)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.7 conc=20 dur=60s
+  [Exp2_HeavyRatio/dagor/heavy_ratio=0.7/run2]
+    启动网关: dagor (mode=dagor, port=9107)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.7 conc=20 dur=60s
+  [Exp2_HeavyRatio/dagor/heavy_ratio=0.7/run3]
+    启动网关: dagor (mode=dagor, port=9108)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.7 conc=20 dur=60s
+  [Exp2_HeavyRatio/dagor/heavy_ratio=0.7/run4]
+    启动网关: dagor (mode=dagor, port=9109)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.7 conc=20 dur=60s
+  [Exp2_HeavyRatio/dagor/heavy_ratio=0.7/run5]
+    启动网关: dagor (mode=dagor, port=9110)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.7 conc=20 dur=60s
+  [Exp2_HeavyRatio/sbac/heavy_ratio=0.7/run1]
+    启动网关: sbac (mode=sbac, port=9111)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.7 conc=20 dur=60s
+  [Exp2_HeavyRatio/sbac/heavy_ratio=0.7/run2]
+    启动网关: sbac (mode=sbac, port=9112)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.7 conc=20 dur=60s
+  [Exp2_HeavyRatio/sbac/heavy_ratio=0.7/run3]
+    启动网关: sbac (mode=sbac, port=9113)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.7 conc=20 dur=60s
+  [Exp2_HeavyRatio/sbac/heavy_ratio=0.7/run4]
+    启动网关: sbac (mode=sbac, port=9114)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.7 conc=20 dur=60s
+  [Exp2_HeavyRatio/sbac/heavy_ratio=0.7/run5]
+    启动网关: sbac (mode=sbac, port=9115)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.7 conc=20 dur=60s
+  [Exp2_HeavyRatio/plangate_full/heavy_ratio=0.7/run1]
+    启动网关: plangate_full (mode=mcpdp, port=9116)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.7 conc=20 dur=60s
+  [Exp2_HeavyRatio/plangate_full/heavy_ratio=0.7/run2]
+    启动网关: plangate_full (mode=mcpdp, port=9117)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.7 conc=20 dur=60s
+  [Exp2_HeavyRatio/plangate_full/heavy_ratio=0.7/run3]
+    启动网关: plangate_full (mode=mcpdp, port=9118)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.7 conc=20 dur=60s
+  [Exp2_HeavyRatio/plangate_full/heavy_ratio=0.7/run4]
+    启动网关: plangate_full (mode=mcpdp, port=9119)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.7 conc=20 dur=60s
+  [Exp2_HeavyRatio/plangate_full/heavy_ratio=0.7/run5]
+    启动网关: plangate_full (mode=mcpdp, port=9120)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.7 conc=20 dur=60s
+
+  汇总已保存: /mnt/d/mcp-governance-main/scripts/../results/exp2_heavyratio/exp2_heavyratio_summary.csv
+
+======================================================================
+  实验: Exp3_MixedMode — 混合模式 P&S + ReAct 比例扫参
+  网关: ng, srl, rajomon, dagor, sbac, plangate_full
+  重复: 5 次
+  扫参: ps_ratio = [0.0, 0.3, 0.5, 0.7, 1.0]
+======================================================================
+
+  [Exp3_MixedMode/ng/ps_ratio=0.0/run1]
+    启动网关: ng (mode=ng, port=9101)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/ng/ps_ratio=0.0/run2]
+    启动网关: ng (mode=ng, port=9102)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/ng/ps_ratio=0.0/run3]
+    启动网关: ng (mode=ng, port=9103)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/ng/ps_ratio=0.0/run4]
+    启动网关: ng (mode=ng, port=9104)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/ng/ps_ratio=0.0/run5]
+    启动网关: ng (mode=ng, port=9105)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/srl/ps_ratio=0.0/run1]
+    启动网关: srl (mode=srl, port=9106)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/srl/ps_ratio=0.0/run2]
+    启动网关: srl (mode=srl, port=9107)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/srl/ps_ratio=0.0/run3]
+    启动网关: srl (mode=srl, port=9108)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/srl/ps_ratio=0.0/run4]
+    启动网关: srl (mode=srl, port=9109)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/srl/ps_ratio=0.0/run5]
+    启动网关: srl (mode=srl, port=9110)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/rajomon/ps_ratio=0.0/run1]
+    启动网关: rajomon (mode=rajomon, port=9111)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/rajomon/ps_ratio=0.0/run2]
+    启动网关: rajomon (mode=rajomon, port=9112)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/rajomon/ps_ratio=0.0/run3]
+    启动网关: rajomon (mode=rajomon, port=9113)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/rajomon/ps_ratio=0.0/run4]
+    启动网关: rajomon (mode=rajomon, port=9114)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/rajomon/ps_ratio=0.0/run5]
+    启动网关: rajomon (mode=rajomon, port=9115)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/dagor/ps_ratio=0.0/run1]
+    启动网关: dagor (mode=dagor, port=9116)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/dagor/ps_ratio=0.0/run2]
+    启动网关: dagor (mode=dagor, port=9117)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/dagor/ps_ratio=0.0/run3]
+    启动网关: dagor (mode=dagor, port=9118)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/dagor/ps_ratio=0.0/run4]
+    启动网关: dagor (mode=dagor, port=9119)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/dagor/ps_ratio=0.0/run5]
+    启动网关: dagor (mode=dagor, port=9120)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/sbac/ps_ratio=0.0/run1]
+    启动网关: sbac (mode=sbac, port=9121)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/sbac/ps_ratio=0.0/run2]
+    启动网关: sbac (mode=sbac, port=9122)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/sbac/ps_ratio=0.0/run3]
+    启动网关: sbac (mode=sbac, port=9123)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/sbac/ps_ratio=0.0/run4]
+    启动网关: sbac (mode=sbac, port=9124)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/sbac/ps_ratio=0.0/run5]
+    启动网关: sbac (mode=sbac, port=9125)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/plangate_full/ps_ratio=0.0/run1]
+    启动网关: plangate_full (mode=mcpdp, port=9126)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/plangate_full/ps_ratio=0.0/run2]
+    启动网关: plangate_full (mode=mcpdp, port=9127)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/plangate_full/ps_ratio=0.0/run3]
+    启动网关: plangate_full (mode=mcpdp, port=9128)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/plangate_full/ps_ratio=0.0/run4]
+    启动网关: plangate_full (mode=mcpdp, port=9129)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/plangate_full/ps_ratio=0.0/run5]
+    启动网关: plangate_full (mode=mcpdp, port=9130)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/ng/ps_ratio=0.3/run1]
+    启动网关: ng (mode=ng, port=9131)
+    发压: sessions=200 ps_ratio=0.3 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/ng/ps_ratio=0.3/run2]
+    启动网关: ng (mode=ng, port=9132)
+    发压: sessions=200 ps_ratio=0.3 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/ng/ps_ratio=0.3/run3]
+    启动网关: ng (mode=ng, port=9133)
+    发压: sessions=200 ps_ratio=0.3 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/ng/ps_ratio=0.3/run4]
+    启动网关: ng (mode=ng, port=9134)
+    发压: sessions=200 ps_ratio=0.3 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/ng/ps_ratio=0.3/run5]
+    启动网关: ng (mode=ng, port=9135)
+    发压: sessions=200 ps_ratio=0.3 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/srl/ps_ratio=0.3/run1]
+    启动网关: srl (mode=srl, port=9136)
+    发压: sessions=200 ps_ratio=0.3 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/srl/ps_ratio=0.3/run2]
+    启动网关: srl (mode=srl, port=9137)
+    发压: sessions=200 ps_ratio=0.3 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/srl/ps_ratio=0.3/run3]
+    启动网关: srl (mode=srl, port=9138)
+    发压: sessions=200 ps_ratio=0.3 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/srl/ps_ratio=0.3/run4]
+    启动网关: srl (mode=srl, port=9139)
+    发压: sessions=200 ps_ratio=0.3 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/srl/ps_ratio=0.3/run5]
+    启动网关: srl (mode=srl, port=9140)
+    发压: sessions=200 ps_ratio=0.3 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/rajomon/ps_ratio=0.3/run1]
+    启动网关: rajomon (mode=rajomon, port=9141)
+    发压: sessions=200 ps_ratio=0.3 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/rajomon/ps_ratio=0.3/run2]
+    启动网关: rajomon (mode=rajomon, port=9142)
+    发压: sessions=200 ps_ratio=0.3 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/rajomon/ps_ratio=0.3/run3]
+    启动网关: rajomon (mode=rajomon, port=9143)
+    发压: sessions=200 ps_ratio=0.3 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/rajomon/ps_ratio=0.3/run4]
+    启动网关: rajomon (mode=rajomon, port=9144)
+    发压: sessions=200 ps_ratio=0.3 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/rajomon/ps_ratio=0.3/run5]
+    启动网关: rajomon (mode=rajomon, port=9145)
+    发压: sessions=200 ps_ratio=0.3 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/dagor/ps_ratio=0.3/run1]
+    启动网关: dagor (mode=dagor, port=9146)
+    发压: sessions=200 ps_ratio=0.3 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/dagor/ps_ratio=0.3/run2]
+    启动网关: dagor (mode=dagor, port=9147)
+    发压: sessions=200 ps_ratio=0.3 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/dagor/ps_ratio=0.3/run3]
+    启动网关: dagor (mode=dagor, port=9148)
+    发压: sessions=200 ps_ratio=0.3 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/dagor/ps_ratio=0.3/run4]
+    启动网关: dagor (mode=dagor, port=9149)
+    发压: sessions=200 ps_ratio=0.3 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/dagor/ps_ratio=0.3/run5]
+    启动网关: dagor (mode=dagor, port=9150)
+    发压: sessions=200 ps_ratio=0.3 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/sbac/ps_ratio=0.3/run1]
+    启动网关: sbac (mode=sbac, port=9151)
+    发压: sessions=200 ps_ratio=0.3 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/sbac/ps_ratio=0.3/run2]
+    启动网关: sbac (mode=sbac, port=9152)
+    发压: sessions=200 ps_ratio=0.3 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/sbac/ps_ratio=0.3/run3]
+    启动网关: sbac (mode=sbac, port=9153)
+    发压: sessions=200 ps_ratio=0.3 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/sbac/ps_ratio=0.3/run4]
+    启动网关: sbac (mode=sbac, port=9154)
+    发压: sessions=200 ps_ratio=0.3 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/sbac/ps_ratio=0.3/run5]
+    启动网关: sbac (mode=sbac, port=9155)
+    发压: sessions=200 ps_ratio=0.3 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/plangate_full/ps_ratio=0.3/run1]
+    启动网关: plangate_full (mode=mcpdp, port=9156)
+    发压: sessions=200 ps_ratio=0.3 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/plangate_full/ps_ratio=0.3/run2]
+    启动网关: plangate_full (mode=mcpdp, port=9157)
+    发压: sessions=200 ps_ratio=0.3 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/plangate_full/ps_ratio=0.3/run3]
+    启动网关: plangate_full (mode=mcpdp, port=9158)
+    发压: sessions=200 ps_ratio=0.3 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/plangate_full/ps_ratio=0.3/run4]
+    启动网关: plangate_full (mode=mcpdp, port=9159)
+    发压: sessions=200 ps_ratio=0.3 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/plangate_full/ps_ratio=0.3/run5]
+    启动网关: plangate_full (mode=mcpdp, port=9160)
+    发压: sessions=200 ps_ratio=0.3 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/ng/ps_ratio=0.5/run1]
+    启动网关: ng (mode=ng, port=9161)
+    发压: sessions=200 ps_ratio=0.5 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/ng/ps_ratio=0.5/run2]
+    启动网关: ng (mode=ng, port=9162)
+    发压: sessions=200 ps_ratio=0.5 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/ng/ps_ratio=0.5/run3]
+    启动网关: ng (mode=ng, port=9163)
+    发压: sessions=200 ps_ratio=0.5 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/ng/ps_ratio=0.5/run4]
+    启动网关: ng (mode=ng, port=9164)
+    发压: sessions=200 ps_ratio=0.5 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/ng/ps_ratio=0.5/run5]
+    启动网关: ng (mode=ng, port=9165)
+    发压: sessions=200 ps_ratio=0.5 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/srl/ps_ratio=0.5/run1]
+    启动网关: srl (mode=srl, port=9166)
+    发压: sessions=200 ps_ratio=0.5 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/srl/ps_ratio=0.5/run2]
+    启动网关: srl (mode=srl, port=9167)
+    发压: sessions=200 ps_ratio=0.5 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/srl/ps_ratio=0.5/run3]
+    启动网关: srl (mode=srl, port=9168)
+    发压: sessions=200 ps_ratio=0.5 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/srl/ps_ratio=0.5/run4]
+    启动网关: srl (mode=srl, port=9169)
+    发压: sessions=200 ps_ratio=0.5 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/srl/ps_ratio=0.5/run5]
+    启动网关: srl (mode=srl, port=9170)
+    发压: sessions=200 ps_ratio=0.5 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/rajomon/ps_ratio=0.5/run1]
+    启动网关: rajomon (mode=rajomon, port=9171)
+    发压: sessions=200 ps_ratio=0.5 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/rajomon/ps_ratio=0.5/run2]
+    启动网关: rajomon (mode=rajomon, port=9172)
+    发压: sessions=200 ps_ratio=0.5 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/rajomon/ps_ratio=0.5/run3]
+    启动网关: rajomon (mode=rajomon, port=9173)
+    发压: sessions=200 ps_ratio=0.5 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/rajomon/ps_ratio=0.5/run4]
+    启动网关: rajomon (mode=rajomon, port=9174)
+    发压: sessions=200 ps_ratio=0.5 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/rajomon/ps_ratio=0.5/run5]
+    启动网关: rajomon (mode=rajomon, port=9175)
+    发压: sessions=200 ps_ratio=0.5 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/dagor/ps_ratio=0.5/run1]
+    启动网关: dagor (mode=dagor, port=9176)
+    发压: sessions=200 ps_ratio=0.5 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/dagor/ps_ratio=0.5/run2]
+    启动网关: dagor (mode=dagor, port=9177)
+    发压: sessions=200 ps_ratio=0.5 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/dagor/ps_ratio=0.5/run3]
+    启动网关: dagor (mode=dagor, port=9178)
+    发压: sessions=200 ps_ratio=0.5 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/dagor/ps_ratio=0.5/run4]
+    启动网关: dagor (mode=dagor, port=9179)
+    发压: sessions=200 ps_ratio=0.5 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/dagor/ps_ratio=0.5/run5]
+    启动网关: dagor (mode=dagor, port=9180)
+    发压: sessions=200 ps_ratio=0.5 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/sbac/ps_ratio=0.5/run1]
+    启动网关: sbac (mode=sbac, port=9181)
+    发压: sessions=200 ps_ratio=0.5 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/sbac/ps_ratio=0.5/run2]
+    启动网关: sbac (mode=sbac, port=9182)
+    发压: sessions=200 ps_ratio=0.5 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/sbac/ps_ratio=0.5/run3]
+    启动网关: sbac (mode=sbac, port=9183)
+    发压: sessions=200 ps_ratio=0.5 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/sbac/ps_ratio=0.5/run4]
+    启动网关: sbac (mode=sbac, port=9184)
+    发压: sessions=200 ps_ratio=0.5 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/sbac/ps_ratio=0.5/run5]
+    启动网关: sbac (mode=sbac, port=9185)
+    发压: sessions=200 ps_ratio=0.5 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/plangate_full/ps_ratio=0.5/run1]
+    启动网关: plangate_full (mode=mcpdp, port=9186)
+    发压: sessions=200 ps_ratio=0.5 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/plangate_full/ps_ratio=0.5/run2]
+    启动网关: plangate_full (mode=mcpdp, port=9187)
+    发压: sessions=200 ps_ratio=0.5 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/plangate_full/ps_ratio=0.5/run3]
+    启动网关: plangate_full (mode=mcpdp, port=9188)
+    发压: sessions=200 ps_ratio=0.5 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/plangate_full/ps_ratio=0.5/run4]
+    启动网关: plangate_full (mode=mcpdp, port=9189)
+    发压: sessions=200 ps_ratio=0.5 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/plangate_full/ps_ratio=0.5/run5]
+    启动网关: plangate_full (mode=mcpdp, port=9190)
+    发压: sessions=200 ps_ratio=0.5 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/ng/ps_ratio=0.7/run1]
+    启动网关: ng (mode=ng, port=9191)
+    发压: sessions=200 ps_ratio=0.7 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/ng/ps_ratio=0.7/run2]
+    启动网关: ng (mode=ng, port=9192)
+    发压: sessions=200 ps_ratio=0.7 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/ng/ps_ratio=0.7/run3]
+    启动网关: ng (mode=ng, port=9193)
+    发压: sessions=200 ps_ratio=0.7 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/ng/ps_ratio=0.7/run4]
+    启动网关: ng (mode=ng, port=9194)
+    发压: sessions=200 ps_ratio=0.7 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/ng/ps_ratio=0.7/run5]
+    启动网关: ng (mode=ng, port=9195)
+    发压: sessions=200 ps_ratio=0.7 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/srl/ps_ratio=0.7/run1]
+    启动网关: srl (mode=srl, port=9196)
+    发压: sessions=200 ps_ratio=0.7 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/srl/ps_ratio=0.7/run2]
+    启动网关: srl (mode=srl, port=9197)
+    发压: sessions=200 ps_ratio=0.7 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/srl/ps_ratio=0.7/run3]
+    启动网关: srl (mode=srl, port=9198)
+    发压: sessions=200 ps_ratio=0.7 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/srl/ps_ratio=0.7/run4]
+    启动网关: srl (mode=srl, port=9199)
+    发压: sessions=200 ps_ratio=0.7 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/srl/ps_ratio=0.7/run5]
+    启动网关: srl (mode=srl, port=9100)
+    发压: sessions=200 ps_ratio=0.7 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/rajomon/ps_ratio=0.7/run1]
+    启动网关: rajomon (mode=rajomon, port=9101)
+    发压: sessions=200 ps_ratio=0.7 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/rajomon/ps_ratio=0.7/run2]
+    启动网关: rajomon (mode=rajomon, port=9102)
+    发压: sessions=200 ps_ratio=0.7 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/rajomon/ps_ratio=0.7/run3]
+    启动网关: rajomon (mode=rajomon, port=9103)
+    发压: sessions=200 ps_ratio=0.7 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/rajomon/ps_ratio=0.7/run4]
+    启动网关: rajomon (mode=rajomon, port=9104)
+    发压: sessions=200 ps_ratio=0.7 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/rajomon/ps_ratio=0.7/run5]
+    启动网关: rajomon (mode=rajomon, port=9105)
+    发压: sessions=200 ps_ratio=0.7 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/dagor/ps_ratio=0.7/run1]
+    启动网关: dagor (mode=dagor, port=9106)
+    发压: sessions=200 ps_ratio=0.7 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/dagor/ps_ratio=0.7/run2]
+    启动网关: dagor (mode=dagor, port=9107)
+    发压: sessions=200 ps_ratio=0.7 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/dagor/ps_ratio=0.7/run3]
+    启动网关: dagor (mode=dagor, port=9108)
+    发压: sessions=200 ps_ratio=0.7 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/dagor/ps_ratio=0.7/run4]
+    启动网关: dagor (mode=dagor, port=9109)
+    发压: sessions=200 ps_ratio=0.7 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/dagor/ps_ratio=0.7/run5]
+    启动网关: dagor (mode=dagor, port=9110)
+    发压: sessions=200 ps_ratio=0.7 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/sbac/ps_ratio=0.7/run1]
+    启动网关: sbac (mode=sbac, port=9111)
+    发压: sessions=200 ps_ratio=0.7 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/sbac/ps_ratio=0.7/run2]
+    启动网关: sbac (mode=sbac, port=9112)
+    发压: sessions=200 ps_ratio=0.7 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/sbac/ps_ratio=0.7/run3]
+    启动网关: sbac (mode=sbac, port=9113)
+    发压: sessions=200 ps_ratio=0.7 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/sbac/ps_ratio=0.7/run4]
+    启动网关: sbac (mode=sbac, port=9114)
+    发压: sessions=200 ps_ratio=0.7 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/sbac/ps_ratio=0.7/run5]
+    启动网关: sbac (mode=sbac, port=9115)
+    发压: sessions=200 ps_ratio=0.7 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/plangate_full/ps_ratio=0.7/run1]
+    启动网关: plangate_full (mode=mcpdp, port=9116)
+    发压: sessions=200 ps_ratio=0.7 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/plangate_full/ps_ratio=0.7/run2]
+    启动网关: plangate_full (mode=mcpdp, port=9117)
+    发压: sessions=200 ps_ratio=0.7 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/plangate_full/ps_ratio=0.7/run3]
+    启动网关: plangate_full (mode=mcpdp, port=9118)
+    发压: sessions=200 ps_ratio=0.7 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/plangate_full/ps_ratio=0.7/run4]
+    启动网关: plangate_full (mode=mcpdp, port=9119)
+    发压: sessions=200 ps_ratio=0.7 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/plangate_full/ps_ratio=0.7/run5]
+    启动网关: plangate_full (mode=mcpdp, port=9120)
+    发压: sessions=200 ps_ratio=0.7 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/ng/ps_ratio=1.0/run1]
+    启动网关: ng (mode=ng, port=9121)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/ng/ps_ratio=1.0/run2]
+    启动网关: ng (mode=ng, port=9122)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/ng/ps_ratio=1.0/run3]
+    启动网关: ng (mode=ng, port=9123)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/ng/ps_ratio=1.0/run4]
+    启动网关: ng (mode=ng, port=9124)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/ng/ps_ratio=1.0/run5]
+    启动网关: ng (mode=ng, port=9125)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/srl/ps_ratio=1.0/run1]
+    启动网关: srl (mode=srl, port=9126)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/srl/ps_ratio=1.0/run2]
+    启动网关: srl (mode=srl, port=9127)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/srl/ps_ratio=1.0/run3]
+    启动网关: srl (mode=srl, port=9128)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/srl/ps_ratio=1.0/run4]
+    启动网关: srl (mode=srl, port=9129)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/srl/ps_ratio=1.0/run5]
+    启动网关: srl (mode=srl, port=9130)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/rajomon/ps_ratio=1.0/run1]
+    启动网关: rajomon (mode=rajomon, port=9131)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/rajomon/ps_ratio=1.0/run2]
+    启动网关: rajomon (mode=rajomon, port=9132)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/rajomon/ps_ratio=1.0/run3]
+    启动网关: rajomon (mode=rajomon, port=9133)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/rajomon/ps_ratio=1.0/run4]
+    启动网关: rajomon (mode=rajomon, port=9134)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/rajomon/ps_ratio=1.0/run5]
+    启动网关: rajomon (mode=rajomon, port=9135)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/dagor/ps_ratio=1.0/run1]
+    启动网关: dagor (mode=dagor, port=9136)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/dagor/ps_ratio=1.0/run2]
+    启动网关: dagor (mode=dagor, port=9137)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/dagor/ps_ratio=1.0/run3]
+    启动网关: dagor (mode=dagor, port=9138)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/dagor/ps_ratio=1.0/run4]
+    启动网关: dagor (mode=dagor, port=9139)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/dagor/ps_ratio=1.0/run5]
+    启动网关: dagor (mode=dagor, port=9140)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/sbac/ps_ratio=1.0/run1]
+    启动网关: sbac (mode=sbac, port=9141)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/sbac/ps_ratio=1.0/run2]
+    启动网关: sbac (mode=sbac, port=9142)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/sbac/ps_ratio=1.0/run3]
+    启动网关: sbac (mode=sbac, port=9143)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/sbac/ps_ratio=1.0/run4]
+    启动网关: sbac (mode=sbac, port=9144)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/sbac/ps_ratio=1.0/run5]
+    启动网关: sbac (mode=sbac, port=9145)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/plangate_full/ps_ratio=1.0/run1]
+    启动网关: plangate_full (mode=mcpdp, port=9146)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/plangate_full/ps_ratio=1.0/run2]
+    启动网关: plangate_full (mode=mcpdp, port=9147)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/plangate_full/ps_ratio=1.0/run3]
+    启动网关: plangate_full (mode=mcpdp, port=9148)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/plangate_full/ps_ratio=1.0/run4]
+    启动网关: plangate_full (mode=mcpdp, port=9149)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp3_MixedMode/plangate_full/ps_ratio=1.0/run5]
+    启动网关: plangate_full (mode=mcpdp, port=9150)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+
+  汇总已保存: /mnt/d/mcp-governance-main/scripts/../results/exp3_mixedmode/exp3_mixedmode_summary.csv
+
+======================================================================
+  实验: Exp4_Ablation — 严格单变量消融实验: Full vs w/o-BudgetLock vs w/o-SessionCap vs Rajomon(SOTA)
+  网关: plangate_full, wo_budgetlock, wo_sessioncap, rajomon
+  重复: 5 次
+======================================================================
+
+  [Exp4_Ablation/plangate_full/run1]
+    启动网关: plangate_full (mode=mcpdp, port=9101)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp4_Ablation/plangate_full/run2]
+    启动网关: plangate_full (mode=mcpdp, port=9102)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp4_Ablation/plangate_full/run3]
+    启动网关: plangate_full (mode=mcpdp, port=9103)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp4_Ablation/plangate_full/run4]
+    启动网关: plangate_full (mode=mcpdp, port=9104)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp4_Ablation/plangate_full/run5]
+    启动网关: plangate_full (mode=mcpdp, port=9105)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp4_Ablation/wo_budgetlock/run1]
+    启动网关: wo_budgetlock (mode=mcpdp-no-budgetlock, port=9106)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp4_Ablation/wo_budgetlock/run2]
+    启动网关: wo_budgetlock (mode=mcpdp-no-budgetlock, port=9107)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp4_Ablation/wo_budgetlock/run3]
+    启动网关: wo_budgetlock (mode=mcpdp-no-budgetlock, port=9108)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp4_Ablation/wo_budgetlock/run4]
+    启动网关: wo_budgetlock (mode=mcpdp-no-budgetlock, port=9109)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp4_Ablation/wo_budgetlock/run5]
+    启动网关: wo_budgetlock (mode=mcpdp-no-budgetlock, port=9110)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp4_Ablation/wo_sessioncap/run1]
+    启动网关: wo_sessioncap (mode=mcpdp-no-sessioncap, port=9111)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp4_Ablation/wo_sessioncap/run2]
+    启动网关: wo_sessioncap (mode=mcpdp-no-sessioncap, port=9112)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp4_Ablation/wo_sessioncap/run3]
+    启动网关: wo_sessioncap (mode=mcpdp-no-sessioncap, port=9113)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp4_Ablation/wo_sessioncap/run4]
+    启动网关: wo_sessioncap (mode=mcpdp-no-sessioncap, port=9114)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp4_Ablation/wo_sessioncap/run5]
+    启动网关: wo_sessioncap (mode=mcpdp-no-sessioncap, port=9115)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp4_Ablation/rajomon/run1]
+    启动网关: rajomon (mode=rajomon, port=9116)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp4_Ablation/rajomon/run2]
+    启动网关: rajomon (mode=rajomon, port=9117)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp4_Ablation/rajomon/run3]
+    启动网关: rajomon (mode=rajomon, port=9118)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp4_Ablation/rajomon/run4]
+    启动网关: rajomon (mode=rajomon, port=9119)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp4_Ablation/rajomon/run5]
+    启动网关: rajomon (mode=rajomon, port=9120)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+
+  汇总已保存: /mnt/d/mcp-governance-main/scripts/../results/exp4_ablation/exp4_ablation_summary.csv
+
+======================================================================
+  实验: Exp5_ScaleConc — 并发扩展测试
+  网关: ng, srl, rajomon, dagor, sbac, plangate_full
+  重复: 5 次
+  扫参: concurrency = [10, 20, 40, 60]
+======================================================================
+
+  [Exp5_ScaleConc/ng/concurrency=10/run1]
+    启动网关: ng (mode=ng, port=9101)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=10 dur=60s
+  [Exp5_ScaleConc/ng/concurrency=10/run2]
+    启动网关: ng (mode=ng, port=9102)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=10 dur=60s
+  [Exp5_ScaleConc/ng/concurrency=10/run3]
+    启动网关: ng (mode=ng, port=9103)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=10 dur=60s
+  [Exp5_ScaleConc/ng/concurrency=10/run4]
+    启动网关: ng (mode=ng, port=9104)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=10 dur=60s
+  [Exp5_ScaleConc/ng/concurrency=10/run5]
+    启动网关: ng (mode=ng, port=9105)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=10 dur=60s
+  [Exp5_ScaleConc/srl/concurrency=10/run1]
+    启动网关: srl (mode=srl, port=9106)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=10 dur=60s
+  [Exp5_ScaleConc/srl/concurrency=10/run2]
+    启动网关: srl (mode=srl, port=9107)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=10 dur=60s
+  [Exp5_ScaleConc/srl/concurrency=10/run3]
+    启动网关: srl (mode=srl, port=9108)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=10 dur=60s
+  [Exp5_ScaleConc/srl/concurrency=10/run4]
+    启动网关: srl (mode=srl, port=9109)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=10 dur=60s
+  [Exp5_ScaleConc/srl/concurrency=10/run5]
+    启动网关: srl (mode=srl, port=9110)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=10 dur=60s
+  [Exp5_ScaleConc/rajomon/concurrency=10/run1]
+    启动网关: rajomon (mode=rajomon, port=9111)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=10 dur=60s
+  [Exp5_ScaleConc/rajomon/concurrency=10/run2]
+    启动网关: rajomon (mode=rajomon, port=9112)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=10 dur=60s
+  [Exp5_ScaleConc/rajomon/concurrency=10/run3]
+    启动网关: rajomon (mode=rajomon, port=9113)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=10 dur=60s
+  [Exp5_ScaleConc/rajomon/concurrency=10/run4]
+    启动网关: rajomon (mode=rajomon, port=9114)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=10 dur=60s
+  [Exp5_ScaleConc/rajomon/concurrency=10/run5]
+    启动网关: rajomon (mode=rajomon, port=9115)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=10 dur=60s
+  [Exp5_ScaleConc/dagor/concurrency=10/run1]
+    启动网关: dagor (mode=dagor, port=9116)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=10 dur=60s
+  [Exp5_ScaleConc/dagor/concurrency=10/run2]
+    启动网关: dagor (mode=dagor, port=9117)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=10 dur=60s
+  [Exp5_ScaleConc/dagor/concurrency=10/run3]
+    启动网关: dagor (mode=dagor, port=9118)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=10 dur=60s
+  [Exp5_ScaleConc/dagor/concurrency=10/run4]
+    启动网关: dagor (mode=dagor, port=9119)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=10 dur=60s
+  [Exp5_ScaleConc/dagor/concurrency=10/run5]
+    启动网关: dagor (mode=dagor, port=9120)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=10 dur=60s
+  [Exp5_ScaleConc/sbac/concurrency=10/run1]
+    启动网关: sbac (mode=sbac, port=9121)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=10 dur=60s
+  [Exp5_ScaleConc/sbac/concurrency=10/run2]
+    启动网关: sbac (mode=sbac, port=9122)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=10 dur=60s
+  [Exp5_ScaleConc/sbac/concurrency=10/run3]
+    启动网关: sbac (mode=sbac, port=9123)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=10 dur=60s
+  [Exp5_ScaleConc/sbac/concurrency=10/run4]
+    启动网关: sbac (mode=sbac, port=9124)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=10 dur=60s
+  [Exp5_ScaleConc/sbac/concurrency=10/run5]
+    启动网关: sbac (mode=sbac, port=9125)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=10 dur=60s
+  [Exp5_ScaleConc/plangate_full/concurrency=10/run1]
+    启动网关: plangate_full (mode=mcpdp, port=9126)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=10 dur=60s
+  [Exp5_ScaleConc/plangate_full/concurrency=10/run2]
+    启动网关: plangate_full (mode=mcpdp, port=9127)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=10 dur=60s
+  [Exp5_ScaleConc/plangate_full/concurrency=10/run3]
+    启动网关: plangate_full (mode=mcpdp, port=9128)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=10 dur=60s
+  [Exp5_ScaleConc/plangate_full/concurrency=10/run4]
+    启动网关: plangate_full (mode=mcpdp, port=9129)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=10 dur=60s
+  [Exp5_ScaleConc/plangate_full/concurrency=10/run5]
+    启动网关: plangate_full (mode=mcpdp, port=9130)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=10 dur=60s
+  [Exp5_ScaleConc/ng/concurrency=20/run1]
+    启动网关: ng (mode=ng, port=9131)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp5_ScaleConc/ng/concurrency=20/run2]
+    启动网关: ng (mode=ng, port=9132)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp5_ScaleConc/ng/concurrency=20/run3]
+    启动网关: ng (mode=ng, port=9133)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp5_ScaleConc/ng/concurrency=20/run4]
+    启动网关: ng (mode=ng, port=9134)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp5_ScaleConc/ng/concurrency=20/run5]
+    启动网关: ng (mode=ng, port=9135)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp5_ScaleConc/srl/concurrency=20/run1]
+    启动网关: srl (mode=srl, port=9136)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp5_ScaleConc/srl/concurrency=20/run2]
+    启动网关: srl (mode=srl, port=9137)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp5_ScaleConc/srl/concurrency=20/run3]
+    启动网关: srl (mode=srl, port=9138)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp5_ScaleConc/srl/concurrency=20/run4]
+    启动网关: srl (mode=srl, port=9139)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp5_ScaleConc/srl/concurrency=20/run5]
+    启动网关: srl (mode=srl, port=9140)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp5_ScaleConc/rajomon/concurrency=20/run1]
+    启动网关: rajomon (mode=rajomon, port=9141)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp5_ScaleConc/rajomon/concurrency=20/run2]
+    启动网关: rajomon (mode=rajomon, port=9142)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp5_ScaleConc/rajomon/concurrency=20/run3]
+    启动网关: rajomon (mode=rajomon, port=9143)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp5_ScaleConc/rajomon/concurrency=20/run4]
+    启动网关: rajomon (mode=rajomon, port=9144)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp5_ScaleConc/rajomon/concurrency=20/run5]
+    启动网关: rajomon (mode=rajomon, port=9145)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp5_ScaleConc/dagor/concurrency=20/run1]
+    启动网关: dagor (mode=dagor, port=9146)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp5_ScaleConc/dagor/concurrency=20/run2]
+    启动网关: dagor (mode=dagor, port=9147)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp5_ScaleConc/dagor/concurrency=20/run3]
+    启动网关: dagor (mode=dagor, port=9148)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp5_ScaleConc/dagor/concurrency=20/run4]
+    启动网关: dagor (mode=dagor, port=9149)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp5_ScaleConc/dagor/concurrency=20/run5]
+    启动网关: dagor (mode=dagor, port=9150)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp5_ScaleConc/sbac/concurrency=20/run1]
+    启动网关: sbac (mode=sbac, port=9151)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp5_ScaleConc/sbac/concurrency=20/run2]
+    启动网关: sbac (mode=sbac, port=9152)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp5_ScaleConc/sbac/concurrency=20/run3]
+    启动网关: sbac (mode=sbac, port=9153)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp5_ScaleConc/sbac/concurrency=20/run4]
+    启动网关: sbac (mode=sbac, port=9154)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp5_ScaleConc/sbac/concurrency=20/run5]
+    启动网关: sbac (mode=sbac, port=9155)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp5_ScaleConc/plangate_full/concurrency=20/run1]
+    启动网关: plangate_full (mode=mcpdp, port=9156)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp5_ScaleConc/plangate_full/concurrency=20/run2]
+    启动网关: plangate_full (mode=mcpdp, port=9157)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp5_ScaleConc/plangate_full/concurrency=20/run3]
+    启动网关: plangate_full (mode=mcpdp, port=9158)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp5_ScaleConc/plangate_full/concurrency=20/run4]
+    启动网关: plangate_full (mode=mcpdp, port=9159)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp5_ScaleConc/plangate_full/concurrency=20/run5]
+    启动网关: plangate_full (mode=mcpdp, port=9160)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=20 dur=60s
+  [Exp5_ScaleConc/ng/concurrency=40/run1]
+    启动网关: ng (mode=ng, port=9161)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=40 dur=60s
+  [Exp5_ScaleConc/ng/concurrency=40/run2]
+    启动网关: ng (mode=ng, port=9162)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=40 dur=60s
+  [Exp5_ScaleConc/ng/concurrency=40/run3]
+    启动网关: ng (mode=ng, port=9163)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=40 dur=60s
+  [Exp5_ScaleConc/ng/concurrency=40/run4]
+    启动网关: ng (mode=ng, port=9164)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=40 dur=60s
+  [Exp5_ScaleConc/ng/concurrency=40/run5]
+    启动网关: ng (mode=ng, port=9165)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=40 dur=60s
+  [Exp5_ScaleConc/srl/concurrency=40/run1]
+    启动网关: srl (mode=srl, port=9166)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=40 dur=60s
+  [Exp5_ScaleConc/srl/concurrency=40/run2]
+    启动网关: srl (mode=srl, port=9167)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=40 dur=60s
+  [Exp5_ScaleConc/srl/concurrency=40/run3]
+    启动网关: srl (mode=srl, port=9168)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=40 dur=60s
+  [Exp5_ScaleConc/srl/concurrency=40/run4]
+    启动网关: srl (mode=srl, port=9169)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=40 dur=60s
+  [Exp5_ScaleConc/srl/concurrency=40/run5]
+    启动网关: srl (mode=srl, port=9170)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=40 dur=60s
+  [Exp5_ScaleConc/rajomon/concurrency=40/run1]
+    启动网关: rajomon (mode=rajomon, port=9171)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=40 dur=60s
+  [Exp5_ScaleConc/rajomon/concurrency=40/run2]
+    启动网关: rajomon (mode=rajomon, port=9172)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=40 dur=60s
+  [Exp5_ScaleConc/rajomon/concurrency=40/run3]
+    启动网关: rajomon (mode=rajomon, port=9173)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=40 dur=60s
+  [Exp5_ScaleConc/rajomon/concurrency=40/run4]
+    启动网关: rajomon (mode=rajomon, port=9174)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=40 dur=60s
+  [Exp5_ScaleConc/rajomon/concurrency=40/run5]
+    启动网关: rajomon (mode=rajomon, port=9175)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=40 dur=60s
+  [Exp5_ScaleConc/dagor/concurrency=40/run1]
+    启动网关: dagor (mode=dagor, port=9176)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=40 dur=60s
+  [Exp5_ScaleConc/dagor/concurrency=40/run2]
+    启动网关: dagor (mode=dagor, port=9177)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=40 dur=60s
+  [Exp5_ScaleConc/dagor/concurrency=40/run3]
+    启动网关: dagor (mode=dagor, port=9178)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=40 dur=60s
+  [Exp5_ScaleConc/dagor/concurrency=40/run4]
+    启动网关: dagor (mode=dagor, port=9179)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=40 dur=60s
+  [Exp5_ScaleConc/dagor/concurrency=40/run5]
+    启动网关: dagor (mode=dagor, port=9180)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=40 dur=60s
+  [Exp5_ScaleConc/sbac/concurrency=40/run1]
+    启动网关: sbac (mode=sbac, port=9181)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=40 dur=60s
+  [Exp5_ScaleConc/sbac/concurrency=40/run2]
+    启动网关: sbac (mode=sbac, port=9182)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=40 dur=60s
+  [Exp5_ScaleConc/sbac/concurrency=40/run3]
+    启动网关: sbac (mode=sbac, port=9183)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=40 dur=60s
+  [Exp5_ScaleConc/sbac/concurrency=40/run4]
+    启动网关: sbac (mode=sbac, port=9184)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=40 dur=60s
+  [Exp5_ScaleConc/sbac/concurrency=40/run5]
+    启动网关: sbac (mode=sbac, port=9185)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=40 dur=60s
+  [Exp5_ScaleConc/plangate_full/concurrency=40/run1]
+    启动网关: plangate_full (mode=mcpdp, port=9186)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=40 dur=60s
+  [Exp5_ScaleConc/plangate_full/concurrency=40/run2]
+    启动网关: plangate_full (mode=mcpdp, port=9187)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=40 dur=60s
+  [Exp5_ScaleConc/plangate_full/concurrency=40/run3]
+    启动网关: plangate_full (mode=mcpdp, port=9188)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=40 dur=60s
+  [Exp5_ScaleConc/plangate_full/concurrency=40/run4]
+    启动网关: plangate_full (mode=mcpdp, port=9189)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=40 dur=60s
+  [Exp5_ScaleConc/plangate_full/concurrency=40/run5]
+    启动网关: plangate_full (mode=mcpdp, port=9190)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=40 dur=60s
+  [Exp5_ScaleConc/ng/concurrency=60/run1]
+    启动网关: ng (mode=ng, port=9191)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=60 dur=60s
+  [Exp5_ScaleConc/ng/concurrency=60/run2]
+    启动网关: ng (mode=ng, port=9192)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=60 dur=60s
+  [Exp5_ScaleConc/ng/concurrency=60/run3]
+    启动网关: ng (mode=ng, port=9193)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=60 dur=60s
+  [Exp5_ScaleConc/ng/concurrency=60/run4]
+    启动网关: ng (mode=ng, port=9194)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=60 dur=60s
+  [Exp5_ScaleConc/ng/concurrency=60/run5]
+    启动网关: ng (mode=ng, port=9195)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=60 dur=60s
+  [Exp5_ScaleConc/srl/concurrency=60/run1]
+    启动网关: srl (mode=srl, port=9196)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=60 dur=60s
+  [Exp5_ScaleConc/srl/concurrency=60/run2]
+    启动网关: srl (mode=srl, port=9197)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=60 dur=60s
+  [Exp5_ScaleConc/srl/concurrency=60/run3]
+    启动网关: srl (mode=srl, port=9198)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=60 dur=60s
+  [Exp5_ScaleConc/srl/concurrency=60/run4]
+    启动网关: srl (mode=srl, port=9199)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=60 dur=60s
+  [Exp5_ScaleConc/srl/concurrency=60/run5]
+    启动网关: srl (mode=srl, port=9100)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=60 dur=60s
+  [Exp5_ScaleConc/rajomon/concurrency=60/run1]
+    启动网关: rajomon (mode=rajomon, port=9101)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=60 dur=60s
+  [Exp5_ScaleConc/rajomon/concurrency=60/run2]
+    启动网关: rajomon (mode=rajomon, port=9102)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=60 dur=60s
+  [Exp5_ScaleConc/rajomon/concurrency=60/run3]
+    启动网关: rajomon (mode=rajomon, port=9103)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=60 dur=60s
+  [Exp5_ScaleConc/rajomon/concurrency=60/run4]
+    启动网关: rajomon (mode=rajomon, port=9104)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=60 dur=60s
+  [Exp5_ScaleConc/rajomon/concurrency=60/run5]
+    启动网关: rajomon (mode=rajomon, port=9105)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=60 dur=60s
+  [Exp5_ScaleConc/dagor/concurrency=60/run1]
+    启动网关: dagor (mode=dagor, port=9106)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=60 dur=60s
+  [Exp5_ScaleConc/dagor/concurrency=60/run2]
+    启动网关: dagor (mode=dagor, port=9107)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=60 dur=60s
+  [Exp5_ScaleConc/dagor/concurrency=60/run3]
+    启动网关: dagor (mode=dagor, port=9108)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=60 dur=60s
+  [Exp5_ScaleConc/dagor/concurrency=60/run4]
+    启动网关: dagor (mode=dagor, port=9109)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=60 dur=60s
+  [Exp5_ScaleConc/dagor/concurrency=60/run5]
+    启动网关: dagor (mode=dagor, port=9110)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=60 dur=60s
+  [Exp5_ScaleConc/sbac/concurrency=60/run1]
+    启动网关: sbac (mode=sbac, port=9111)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=60 dur=60s
+  [Exp5_ScaleConc/sbac/concurrency=60/run2]
+    启动网关: sbac (mode=sbac, port=9112)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=60 dur=60s
+  [Exp5_ScaleConc/sbac/concurrency=60/run3]
+    启动网关: sbac (mode=sbac, port=9113)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=60 dur=60s
+  [Exp5_ScaleConc/sbac/concurrency=60/run4]
+    启动网关: sbac (mode=sbac, port=9114)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=60 dur=60s
+  [Exp5_ScaleConc/sbac/concurrency=60/run5]
+    启动网关: sbac (mode=sbac, port=9115)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=60 dur=60s
+  [Exp5_ScaleConc/plangate_full/concurrency=60/run1]
+    启动网关: plangate_full (mode=mcpdp, port=9116)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=60 dur=60s
+  [Exp5_ScaleConc/plangate_full/concurrency=60/run2]
+    启动网关: plangate_full (mode=mcpdp, port=9117)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=60 dur=60s
+  [Exp5_ScaleConc/plangate_full/concurrency=60/run3]
+    启动网关: plangate_full (mode=mcpdp, port=9118)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=60 dur=60s
+  [Exp5_ScaleConc/plangate_full/concurrency=60/run4]
+    启动网关: plangate_full (mode=mcpdp, port=9119)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=60 dur=60s
+  [Exp5_ScaleConc/plangate_full/concurrency=60/run5]
+    启动网关: plangate_full (mode=mcpdp, port=9120)
+    发压: sessions=200 ps_ratio=1.0 heavy=0.3 conc=60 dur=60s
+
+  汇总已保存: /mnt/d/mcp-governance-main/scripts/../results/exp5_scaleconc/exp5_scaleconc_summary.csv
+
+======================================================================
+  实验: Exp6_ScaleConcReact — 纯 ReAct 下的并发扩展测试 (ps_ratio=0.0)
+  网关: ng, srl, rajomon, dagor, sbac, plangate_full
+  重复: 5 次
+  扫参: concurrency = [10, 20, 40, 60]
+======================================================================
+
+  [Exp6_ScaleConcReact/ng/concurrency=10/run1]
+    启动网关: ng (mode=ng, port=9101)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=10 dur=60s
+  [Exp6_ScaleConcReact/ng/concurrency=10/run2]
+    启动网关: ng (mode=ng, port=9102)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=10 dur=60s
+  [Exp6_ScaleConcReact/ng/concurrency=10/run3]
+    启动网关: ng (mode=ng, port=9103)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=10 dur=60s
+  [Exp6_ScaleConcReact/ng/concurrency=10/run4]
+    启动网关: ng (mode=ng, port=9104)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=10 dur=60s
+  [Exp6_ScaleConcReact/ng/concurrency=10/run5]
+    启动网关: ng (mode=ng, port=9105)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=10 dur=60s
+  [Exp6_ScaleConcReact/srl/concurrency=10/run1]
+    启动网关: srl (mode=srl, port=9106)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=10 dur=60s
+  [Exp6_ScaleConcReact/srl/concurrency=10/run2]
+    启动网关: srl (mode=srl, port=9107)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=10 dur=60s
+  [Exp6_ScaleConcReact/srl/concurrency=10/run3]
+    启动网关: srl (mode=srl, port=9108)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=10 dur=60s
+  [Exp6_ScaleConcReact/srl/concurrency=10/run4]
+    启动网关: srl (mode=srl, port=9109)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=10 dur=60s
+  [Exp6_ScaleConcReact/srl/concurrency=10/run5]
+    启动网关: srl (mode=srl, port=9110)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=10 dur=60s
+  [Exp6_ScaleConcReact/rajomon/concurrency=10/run1]
+    启动网关: rajomon (mode=rajomon, port=9111)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=10 dur=60s
+  [Exp6_ScaleConcReact/rajomon/concurrency=10/run2]
+    启动网关: rajomon (mode=rajomon, port=9112)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=10 dur=60s
+  [Exp6_ScaleConcReact/rajomon/concurrency=10/run3]
+    启动网关: rajomon (mode=rajomon, port=9113)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=10 dur=60s
+  [Exp6_ScaleConcReact/rajomon/concurrency=10/run4]
+    启动网关: rajomon (mode=rajomon, port=9114)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=10 dur=60s
+  [Exp6_ScaleConcReact/rajomon/concurrency=10/run5]
+    启动网关: rajomon (mode=rajomon, port=9115)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=10 dur=60s
+  [Exp6_ScaleConcReact/dagor/concurrency=10/run1]
+    启动网关: dagor (mode=dagor, port=9116)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=10 dur=60s
+  [Exp6_ScaleConcReact/dagor/concurrency=10/run2]
+    启动网关: dagor (mode=dagor, port=9117)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=10 dur=60s
+  [Exp6_ScaleConcReact/dagor/concurrency=10/run3]
+    启动网关: dagor (mode=dagor, port=9118)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=10 dur=60s
+  [Exp6_ScaleConcReact/dagor/concurrency=10/run4]
+    启动网关: dagor (mode=dagor, port=9119)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=10 dur=60s
+  [Exp6_ScaleConcReact/dagor/concurrency=10/run5]
+    启动网关: dagor (mode=dagor, port=9120)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=10 dur=60s
+  [Exp6_ScaleConcReact/sbac/concurrency=10/run1]
+    启动网关: sbac (mode=sbac, port=9121)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=10 dur=60s
+  [Exp6_ScaleConcReact/sbac/concurrency=10/run2]
+    启动网关: sbac (mode=sbac, port=9122)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=10 dur=60s
+  [Exp6_ScaleConcReact/sbac/concurrency=10/run3]
+    启动网关: sbac (mode=sbac, port=9123)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=10 dur=60s
+  [Exp6_ScaleConcReact/sbac/concurrency=10/run4]
+    启动网关: sbac (mode=sbac, port=9124)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=10 dur=60s
+  [Exp6_ScaleConcReact/sbac/concurrency=10/run5]
+    启动网关: sbac (mode=sbac, port=9125)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=10 dur=60s
+  [Exp6_ScaleConcReact/plangate_full/concurrency=10/run1]
+    启动网关: plangate_full (mode=mcpdp, port=9126)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=10 dur=60s
+  [Exp6_ScaleConcReact/plangate_full/concurrency=10/run2]
+    启动网关: plangate_full (mode=mcpdp, port=9127)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=10 dur=60s
+  [Exp6_ScaleConcReact/plangate_full/concurrency=10/run3]
+    启动网关: plangate_full (mode=mcpdp, port=9128)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=10 dur=60s
+  [Exp6_ScaleConcReact/plangate_full/concurrency=10/run4]
+    启动网关: plangate_full (mode=mcpdp, port=9129)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=10 dur=60s
+  [Exp6_ScaleConcReact/plangate_full/concurrency=10/run5]
+    启动网关: plangate_full (mode=mcpdp, port=9130)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=10 dur=60s
+  [Exp6_ScaleConcReact/ng/concurrency=20/run1]
+    启动网关: ng (mode=ng, port=9131)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp6_ScaleConcReact/ng/concurrency=20/run2]
+    启动网关: ng (mode=ng, port=9132)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp6_ScaleConcReact/ng/concurrency=20/run3]
+    启动网关: ng (mode=ng, port=9133)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp6_ScaleConcReact/ng/concurrency=20/run4]
+    启动网关: ng (mode=ng, port=9134)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp6_ScaleConcReact/ng/concurrency=20/run5]
+    启动网关: ng (mode=ng, port=9135)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp6_ScaleConcReact/srl/concurrency=20/run1]
+    启动网关: srl (mode=srl, port=9136)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp6_ScaleConcReact/srl/concurrency=20/run2]
+    启动网关: srl (mode=srl, port=9137)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp6_ScaleConcReact/srl/concurrency=20/run3]
+    启动网关: srl (mode=srl, port=9138)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp6_ScaleConcReact/srl/concurrency=20/run4]
+    启动网关: srl (mode=srl, port=9139)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp6_ScaleConcReact/srl/concurrency=20/run5]
+    启动网关: srl (mode=srl, port=9140)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp6_ScaleConcReact/rajomon/concurrency=20/run1]
+    启动网关: rajomon (mode=rajomon, port=9141)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp6_ScaleConcReact/rajomon/concurrency=20/run2]
+    启动网关: rajomon (mode=rajomon, port=9142)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp6_ScaleConcReact/rajomon/concurrency=20/run3]
+    启动网关: rajomon (mode=rajomon, port=9143)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp6_ScaleConcReact/rajomon/concurrency=20/run4]
+    启动网关: rajomon (mode=rajomon, port=9144)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp6_ScaleConcReact/rajomon/concurrency=20/run5]
+    启动网关: rajomon (mode=rajomon, port=9145)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp6_ScaleConcReact/dagor/concurrency=20/run1]
+    启动网关: dagor (mode=dagor, port=9146)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp6_ScaleConcReact/dagor/concurrency=20/run2]
+    启动网关: dagor (mode=dagor, port=9147)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp6_ScaleConcReact/dagor/concurrency=20/run3]
+    启动网关: dagor (mode=dagor, port=9148)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp6_ScaleConcReact/dagor/concurrency=20/run4]
+    启动网关: dagor (mode=dagor, port=9149)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp6_ScaleConcReact/dagor/concurrency=20/run5]
+    启动网关: dagor (mode=dagor, port=9150)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp6_ScaleConcReact/sbac/concurrency=20/run1]
+    启动网关: sbac (mode=sbac, port=9151)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp6_ScaleConcReact/sbac/concurrency=20/run2]
+    启动网关: sbac (mode=sbac, port=9152)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp6_ScaleConcReact/sbac/concurrency=20/run3]
+    启动网关: sbac (mode=sbac, port=9153)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp6_ScaleConcReact/sbac/concurrency=20/run4]
+    启动网关: sbac (mode=sbac, port=9154)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp6_ScaleConcReact/sbac/concurrency=20/run5]
+    启动网关: sbac (mode=sbac, port=9155)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp6_ScaleConcReact/plangate_full/concurrency=20/run1]
+    启动网关: plangate_full (mode=mcpdp, port=9156)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp6_ScaleConcReact/plangate_full/concurrency=20/run2]
+    启动网关: plangate_full (mode=mcpdp, port=9157)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp6_ScaleConcReact/plangate_full/concurrency=20/run3]
+    启动网关: plangate_full (mode=mcpdp, port=9158)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp6_ScaleConcReact/plangate_full/concurrency=20/run4]
+    启动网关: plangate_full (mode=mcpdp, port=9159)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp6_ScaleConcReact/plangate_full/concurrency=20/run5]
+    启动网关: plangate_full (mode=mcpdp, port=9160)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=20 dur=60s
+  [Exp6_ScaleConcReact/ng/concurrency=40/run1]
+    启动网关: ng (mode=ng, port=9161)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=40 dur=60s
+  [Exp6_ScaleConcReact/ng/concurrency=40/run2]
+    启动网关: ng (mode=ng, port=9162)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=40 dur=60s
+  [Exp6_ScaleConcReact/ng/concurrency=40/run3]
+    启动网关: ng (mode=ng, port=9163)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=40 dur=60s
+  [Exp6_ScaleConcReact/ng/concurrency=40/run4]
+    启动网关: ng (mode=ng, port=9164)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=40 dur=60s
+  [Exp6_ScaleConcReact/ng/concurrency=40/run5]
+    启动网关: ng (mode=ng, port=9165)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=40 dur=60s
+  [Exp6_ScaleConcReact/srl/concurrency=40/run1]
+    启动网关: srl (mode=srl, port=9166)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=40 dur=60s
+  [Exp6_ScaleConcReact/srl/concurrency=40/run2]
+    启动网关: srl (mode=srl, port=9167)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=40 dur=60s
+  [Exp6_ScaleConcReact/srl/concurrency=40/run3]
+    启动网关: srl (mode=srl, port=9168)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=40 dur=60s
+  [Exp6_ScaleConcReact/srl/concurrency=40/run4]
+    启动网关: srl (mode=srl, port=9169)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=40 dur=60s
+  [Exp6_ScaleConcReact/srl/concurrency=40/run5]
+    启动网关: srl (mode=srl, port=9170)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=40 dur=60s
+  [Exp6_ScaleConcReact/rajomon/concurrency=40/run1]
+    启动网关: rajomon (mode=rajomon, port=9171)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=40 dur=60s
+  [Exp6_ScaleConcReact/rajomon/concurrency=40/run2]
+    启动网关: rajomon (mode=rajomon, port=9172)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=40 dur=60s
+  [Exp6_ScaleConcReact/rajomon/concurrency=40/run3]
+    启动网关: rajomon (mode=rajomon, port=9173)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=40 dur=60s
+  [Exp6_ScaleConcReact/rajomon/concurrency=40/run4]
+    启动网关: rajomon (mode=rajomon, port=9174)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=40 dur=60s
+  [Exp6_ScaleConcReact/rajomon/concurrency=40/run5]
+    启动网关: rajomon (mode=rajomon, port=9175)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=40 dur=60s
+  [Exp6_ScaleConcReact/dagor/concurrency=40/run1]
+    启动网关: dagor (mode=dagor, port=9176)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=40 dur=60s
+  [Exp6_ScaleConcReact/dagor/concurrency=40/run2]
+    启动网关: dagor (mode=dagor, port=9177)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=40 dur=60s
+  [Exp6_ScaleConcReact/dagor/concurrency=40/run3]
+    启动网关: dagor (mode=dagor, port=9178)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=40 dur=60s
+  [Exp6_ScaleConcReact/dagor/concurrency=40/run4]
+    启动网关: dagor (mode=dagor, port=9179)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=40 dur=60s
+  [Exp6_ScaleConcReact/dagor/concurrency=40/run5]
+    启动网关: dagor (mode=dagor, port=9180)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=40 dur=60s
+  [Exp6_ScaleConcReact/sbac/concurrency=40/run1]
+    启动网关: sbac (mode=sbac, port=9181)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=40 dur=60s
+  [Exp6_ScaleConcReact/sbac/concurrency=40/run2]
+    启动网关: sbac (mode=sbac, port=9182)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=40 dur=60s
+  [Exp6_ScaleConcReact/sbac/concurrency=40/run3]
+    启动网关: sbac (mode=sbac, port=9183)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=40 dur=60s
+  [Exp6_ScaleConcReact/sbac/concurrency=40/run4]
+    启动网关: sbac (mode=sbac, port=9184)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=40 dur=60s
+  [Exp6_ScaleConcReact/sbac/concurrency=40/run5]
+    启动网关: sbac (mode=sbac, port=9185)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=40 dur=60s
+  [Exp6_ScaleConcReact/plangate_full/concurrency=40/run1]
+    启动网关: plangate_full (mode=mcpdp, port=9186)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=40 dur=60s
+  [Exp6_ScaleConcReact/plangate_full/concurrency=40/run2]
+    启动网关: plangate_full (mode=mcpdp, port=9187)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=40 dur=60s
+  [Exp6_ScaleConcReact/plangate_full/concurrency=40/run3]
+    启动网关: plangate_full (mode=mcpdp, port=9188)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=40 dur=60s
+  [Exp6_ScaleConcReact/plangate_full/concurrency=40/run4]
+    启动网关: plangate_full (mode=mcpdp, port=9189)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=40 dur=60s
+  [Exp6_ScaleConcReact/plangate_full/concurrency=40/run5]
+    启动网关: plangate_full (mode=mcpdp, port=9190)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=40 dur=60s
+  [Exp6_ScaleConcReact/ng/concurrency=60/run1]
+    启动网关: ng (mode=ng, port=9191)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=60 dur=60s
+  [Exp6_ScaleConcReact/ng/concurrency=60/run2]
+    启动网关: ng (mode=ng, port=9192)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=60 dur=60s
+  [Exp6_ScaleConcReact/ng/concurrency=60/run3]
+    启动网关: ng (mode=ng, port=9193)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=60 dur=60s
+  [Exp6_ScaleConcReact/ng/concurrency=60/run4]
+    启动网关: ng (mode=ng, port=9194)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=60 dur=60s
+  [Exp6_ScaleConcReact/ng/concurrency=60/run5]
+    启动网关: ng (mode=ng, port=9195)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=60 dur=60s
+  [Exp6_ScaleConcReact/srl/concurrency=60/run1]
+    启动网关: srl (mode=srl, port=9196)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=60 dur=60s
+  [Exp6_ScaleConcReact/srl/concurrency=60/run2]
+    启动网关: srl (mode=srl, port=9197)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=60 dur=60s
+  [Exp6_ScaleConcReact/srl/concurrency=60/run3]
+    启动网关: srl (mode=srl, port=9198)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=60 dur=60s
+  [Exp6_ScaleConcReact/srl/concurrency=60/run4]
+    启动网关: srl (mode=srl, port=9199)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=60 dur=60s
+  [Exp6_ScaleConcReact/srl/concurrency=60/run5]
+    启动网关: srl (mode=srl, port=9100)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=60 dur=60s
+  [Exp6_ScaleConcReact/rajomon/concurrency=60/run1]
+    启动网关: rajomon (mode=rajomon, port=9101)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=60 dur=60s
+  [Exp6_ScaleConcReact/rajomon/concurrency=60/run2]
+    启动网关: rajomon (mode=rajomon, port=9102)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=60 dur=60s
+  [Exp6_ScaleConcReact/rajomon/concurrency=60/run3]
+    启动网关: rajomon (mode=rajomon, port=9103)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=60 dur=60s
+  [Exp6_ScaleConcReact/rajomon/concurrency=60/run4]
+    启动网关: rajomon (mode=rajomon, port=9104)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=60 dur=60s
+  [Exp6_ScaleConcReact/rajomon/concurrency=60/run5]
+    启动网关: rajomon (mode=rajomon, port=9105)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=60 dur=60s
+  [Exp6_ScaleConcReact/dagor/concurrency=60/run1]
+    启动网关: dagor (mode=dagor, port=9106)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=60 dur=60s
+  [Exp6_ScaleConcReact/dagor/concurrency=60/run2]
+    启动网关: dagor (mode=dagor, port=9107)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=60 dur=60s
+  [Exp6_ScaleConcReact/dagor/concurrency=60/run3]
+    启动网关: dagor (mode=dagor, port=9108)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=60 dur=60s
+  [Exp6_ScaleConcReact/dagor/concurrency=60/run4]
+    启动网关: dagor (mode=dagor, port=9109)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=60 dur=60s
+  [Exp6_ScaleConcReact/dagor/concurrency=60/run5]
+    启动网关: dagor (mode=dagor, port=9110)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=60 dur=60s
+  [Exp6_ScaleConcReact/sbac/concurrency=60/run1]
+    启动网关: sbac (mode=sbac, port=9111)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=60 dur=60s
+  [Exp6_ScaleConcReact/sbac/concurrency=60/run2]
+    启动网关: sbac (mode=sbac, port=9112)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=60 dur=60s
+  [Exp6_ScaleConcReact/sbac/concurrency=60/run3]
+    启动网关: sbac (mode=sbac, port=9113)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=60 dur=60s
+  [Exp6_ScaleConcReact/sbac/concurrency=60/run4]
+    启动网关: sbac (mode=sbac, port=9114)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=60 dur=60s
+  [Exp6_ScaleConcReact/sbac/concurrency=60/run5]
+    启动网关: sbac (mode=sbac, port=9115)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=60 dur=60s
+  [Exp6_ScaleConcReact/plangate_full/concurrency=60/run1]
+    启动网关: plangate_full (mode=mcpdp, port=9116)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=60 dur=60s
+  [Exp6_ScaleConcReact/plangate_full/concurrency=60/run2]
+    启动网关: plangate_full (mode=mcpdp, port=9117)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=60 dur=60s
+  [Exp6_ScaleConcReact/plangate_full/concurrency=60/run3]
+    启动网关: plangate_full (mode=mcpdp, port=9118)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=60 dur=60s
+  [Exp6_ScaleConcReact/plangate_full/concurrency=60/run4]
+    启动网关: plangate_full (mode=mcpdp, port=9119)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=60 dur=60s
+  [Exp6_ScaleConcReact/plangate_full/concurrency=60/run5]
+    启动网关: plangate_full (mode=mcpdp, port=9120)
+    发压: sessions=200 ps_ratio=0.0 heavy=0.3 conc=60 dur=60s
+
+  汇总已保存: /mnt/d/mcp-governance-main/scripts/../results/exp6_scaleconcreact/exp6_scaleconcreact_summary.csv
+
+======================================================================
+  实验: Exp7_ClientReject — 客户端 Hard Reject — price_ttl 扫参验证最优缓存时效
+  网关: plangate_full
+  重复: 5 次
+  扫参: price_ttl = [0.1, 0.2, 0.5, 1.0, 2.0]
+======================================================================
+
+  [Exp7_ClientReject/plangate_full/price_ttl=0.1/run1]
+    启动网关: plangate_full (mode=mcpdp, port=9101)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp7_ClientReject/plangate_full/price_ttl=0.1/run2]
+    启动网关: plangate_full (mode=mcpdp, port=9102)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp7_ClientReject/plangate_full/price_ttl=0.1/run3]
+    启动网关: plangate_full (mode=mcpdp, port=9103)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp7_ClientReject/plangate_full/price_ttl=0.1/run4]
+    启动网关: plangate_full (mode=mcpdp, port=9104)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp7_ClientReject/plangate_full/price_ttl=0.1/run5]
+    启动网关: plangate_full (mode=mcpdp, port=9105)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp7_ClientReject/plangate_full/price_ttl=0.2/run1]
+    启动网关: plangate_full (mode=mcpdp, port=9106)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp7_ClientReject/plangate_full/price_ttl=0.2/run2]
+    启动网关: plangate_full (mode=mcpdp, port=9107)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp7_ClientReject/plangate_full/price_ttl=0.2/run3]
+    启动网关: plangate_full (mode=mcpdp, port=9108)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp7_ClientReject/plangate_full/price_ttl=0.2/run4]
+    启动网关: plangate_full (mode=mcpdp, port=9109)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp7_ClientReject/plangate_full/price_ttl=0.2/run5]
+    启动网关: plangate_full (mode=mcpdp, port=9110)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp7_ClientReject/plangate_full/price_ttl=0.5/run1]
+    启动网关: plangate_full (mode=mcpdp, port=9111)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp7_ClientReject/plangate_full/price_ttl=0.5/run2]
+    启动网关: plangate_full (mode=mcpdp, port=9112)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp7_ClientReject/plangate_full/price_ttl=0.5/run3]
+    启动网关: plangate_full (mode=mcpdp, port=9113)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp7_ClientReject/plangate_full/price_ttl=0.5/run4]
+    启动网关: plangate_full (mode=mcpdp, port=9114)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp7_ClientReject/plangate_full/price_ttl=0.5/run5]
+    启动网关: plangate_full (mode=mcpdp, port=9115)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp7_ClientReject/plangate_full/price_ttl=1.0/run1]
+    启动网关: plangate_full (mode=mcpdp, port=9116)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp7_ClientReject/plangate_full/price_ttl=1.0/run2]
+    启动网关: plangate_full (mode=mcpdp, port=9117)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp7_ClientReject/plangate_full/price_ttl=1.0/run3]
+    启动网关: plangate_full (mode=mcpdp, port=9118)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp7_ClientReject/plangate_full/price_ttl=1.0/run4]
+    启动网关: plangate_full (mode=mcpdp, port=9119)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp7_ClientReject/plangate_full/price_ttl=1.0/run5]
+    启动网关: plangate_full (mode=mcpdp, port=9120)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp7_ClientReject/plangate_full/price_ttl=2.0/run1]
+    启动网关: plangate_full (mode=mcpdp, port=9121)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp7_ClientReject/plangate_full/price_ttl=2.0/run2]
+    启动网关: plangate_full (mode=mcpdp, port=9122)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp7_ClientReject/plangate_full/price_ttl=2.0/run3]
+    启动网关: plangate_full (mode=mcpdp, port=9123)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp7_ClientReject/plangate_full/price_ttl=2.0/run4]
+    启动网关: plangate_full (mode=mcpdp, port=9124)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+  [Exp7_ClientReject/plangate_full/price_ttl=2.0/run5]
+    启动网关: plangate_full (mode=mcpdp, port=9125)
+    发压: sessions=500 ps_ratio=1.0 heavy=0.3 conc=200 dur=60s
+
+  汇总已保存: /mnt/d/mcp-governance-main/scripts/../results/exp7_clientreject/exp7_clientreject_summary.csv
+
+######################################################################
+  全部完成!
+  耗时: 254.5 分钟
+  结果目录: /mnt/d/mcp-governance-main/scripts/../results
+######################################################################

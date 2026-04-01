@@ -11,44 +11,44 @@
   DAG 会话发压机 — 统计摘要
 ============================================================
   总会话数:        200
-  ├─ SUCCESS:      83  (41.5%)
-  ├─ REJECTED@S0:  106  (53.0%)
-  ├─ CASCADE_FAIL: 11  (5.5%)
+  ├─ SUCCESS:      91  (45.5%)
+  ├─ REJECTED@S0:  103  (51.5%)
+  ├─ CASCADE_FAIL: 6  (3.0%)
   └─ PENDING:      0
 
-  [Plan-and-Solve]  total=145  success=50  rejected@s0=95  cascade=0
-  [ReAct]           total=55  success=33  rejected@s0=11  cascade=11
+  [Plan-and-Solve]  total=145  success=56  rejected@s0=89  cascade=0
+  [ReAct]           total=55  success=35  rejected@s0=14  cascade=6
 
   ── Goodput 指标 ──
-  Raw Goodput (单步累加):       776.0
-  Effective Goodput (全链路):    723.0
-  Raw Goodput/s:                50.31
-  Effective Goodput/s:          46.87
+  Raw Goodput (单步累加):       857.0
+  Effective Goodput (全链路):    841.0
+  Raw Goodput/s:                55.90
+  Effective Goodput/s:          54.85
 
   ── 步骤级统计 ──
-  总步骤数:          497
-  步骤成功数:        380  (76.5%)
+  总步骤数:          526
+  步骤成功数:        417  (79.3%)
   会话吞吐量:        13.0 sessions/s
 
   ── 延迟 (ms) ──
-  P50:   156.2
-  P95:   810.9
-  P99:   889.6
-  Mean:  222.5
+  P50:   157.7
+  P95:   865.4
+  P99:   1017.2
+  Mean:  256.3
 
   ── 会话端到端延迟 (ms, 仅成功会话) ──
-  E2E_P50:   1058.7
-  E2E_P95:   2671.2
-  E2E_P99:   3562.7
-  E2E_Mean:  1242.0
+  E2E_P50:   1278.1
+  E2E_P95:   3079.0
+  E2E_P99:   3894.8
+  E2E_Mean:  1446.6
 
   ── 客户端预测准入 (Shadow Mode) ──
-  总检查次数:        497
-  Client 拒绝次数:   70  (14.1%)
-  Client→网关命中:   53  (命中率=75.7%)
-  Client_Saved_Requests: 70
+  总检查次数:        526
+  Client 拒绝次数:   82  (15.6%)
+  Client→网关命中:   50  (命中率=61.0%)
+  Client_Saved_Requests: 82
 ============================================================
 
 [DAG发压机] 步骤级数据: /mnt/d/mcp-governance-main/scripts/../results/exp3_mixedmode/plangate_full_ps_ratio0.7_run2.csv
 [DAG发压机] 会话级数据: /mnt/d/mcp-governance-main/scripts/../results/exp3_mixedmode/plangate_full_ps_ratio0.7_run2_sessions.csv
-[DAG发压机] 总记录: 497 步 / 200 会话
+[DAG发压机] 总记录: 526 步 / 200 会话

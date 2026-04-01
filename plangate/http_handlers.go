@@ -75,7 +75,7 @@ func (s *MCPDPServer) handleToolsList(req *mcpgov.JSONRPCRequest) *mcpgov.JSONRP
 	return mcpgov.NewSuccessResponse(req.ID, mcpgov.MCPToolsListResult{Tools: tools})
 }
 
-// handleToolsCall 核心：双模态路由 (创新点 3)
+// handleToolsCall 核心：双模态路由 (创新点 3) + ReAct 沉没成本准入 (创新点 4)
 func (s *MCPDPServer) handleToolsCall(ctx context.Context, r *http.Request, req *mcpgov.JSONRPCRequest) *mcpgov.JSONRPCResponse {
 	dagHeader := r.Header.Get(HeaderPlanDAG)
 	sessionID := r.Header.Get(HeaderSessionID)
@@ -86,14 +86,29 @@ func (s *MCPDPServer) handleToolsCall(ctx context.Context, r *http.Request, req 
 	}
 
 	// ====== Plan-and-Solve 模式: 后续步骤（带 X-Session-ID + 预算锁）======
-	// 消融模式下跳过预算锁查询，直接走 ReAct
 	if sessionID != "" && !s.disableBudgetLock {
 		if res, ok := s.budgetMgr.Get(sessionID); ok {
 			return s.handleReservedStep(ctx, req, res)
 		}
-		// 预留不存在或过期 → 降级为 ReAct
 	}
 
-	// ====== ReAct 模式: 标准 MCPGovernor 动态定价 ======
+	// ====== P&S 消融模式 (disableBudgetLock): 后续步骤走标准动态定价 ======
+	if sessionID != "" && s.disableBudgetLock {
+		if _, ok := s.budgetMgr.Get(sessionID); ok {
+			return s.handleReActMode(ctx, req)
+		}
+	}
+
+	// ====== ReAct 沉没成本感知准入 (创新点 4) ======
+	if sessionID != "" {
+		// 已跟踪的 ReAct 会话 → 沉没成本递减价格
+		if rState, ok := s.reactSessions.Get(sessionID); ok {
+			return s.handleReActSunkCostStep(ctx, req, rState)
+		}
+		// 新 ReAct 会话首步 → 准入 + 创建跟踪
+		return s.handleReActFirstStep(ctx, req, sessionID)
+	}
+
+	// ====== 无会话上下文的 ReAct 回退 ======
 	return s.handleReActMode(ctx, req)
 }

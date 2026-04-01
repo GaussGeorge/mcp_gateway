@@ -11,44 +11,44 @@
   DAG 会话发压机 — 统计摘要
 ============================================================
   总会话数:        200
-  ├─ SUCCESS:      185  (92.5%)
-  ├─ REJECTED@S0:  8  (4.0%)
-  ├─ CASCADE_FAIL: 7  (3.5%)
+  ├─ SUCCESS:      195  (97.5%)
+  ├─ REJECTED@S0:  0  (0.0%)
+  ├─ CASCADE_FAIL: 5  (2.5%)
   └─ PENDING:      0
 
-  [Plan-and-Solve]  total=200  success=185  rejected@s0=8  cascade=7
+  [Plan-and-Solve]  total=200  success=195  rejected@s0=0  cascade=5
   [ReAct]           total=0  success=0  rejected@s0=0  cascade=0
 
   ── Goodput 指标 ──
-  Raw Goodput (单步累加):       2024.0
-  Effective Goodput (全链路):    1965.0
-  Raw Goodput/s:                71.43
-  Effective Goodput/s:          69.34
+  Raw Goodput (单步累加):       2107.0
+  Effective Goodput (全链路):    2056.0
+  Raw Goodput/s:                68.60
+  Effective Goodput/s:          66.94
 
   ── 步骤级统计 ──
-  总步骤数:          971
-  步骤成功数:        956  (98.5%)
-  会话吞吐量:        7.1 sessions/s
+  总步骤数:          1004
+  步骤成功数:        999  (99.5%)
+  会话吞吐量:        6.5 sessions/s
 
   ── 延迟 (ms) ──
-  P50:   157.4
-  P95:   809.3
-  P99:   812.6
-  Mean:  283.4
+  P50:   156.9
+  P95:   808.4
+  P99:   1413.6
+  Mean:  297.6
 
   ── 会话端到端延迟 (ms, 仅成功会话) ──
-  E2E_P50:   1294.7
-  E2E_P95:   2758.3
-  E2E_P99:   3556.5
-  E2E_Mean:  1441.7
+  E2E_P50:   1296.1
+  E2E_P95:   2900.5
+  E2E_P99:   4127.7
+  E2E_Mean:  1495.6
 
   ── 客户端预测准入 (Shadow Mode) ──
-  总检查次数:        971
-  Client 拒绝次数:   152  (15.7%)
-  Client→网关命中:   15  (命中率=9.9%)
-  Client_Saved_Requests: 152
+  总检查次数:        1004
+  Client 拒绝次数:   163  (16.2%)
+  Client→网关命中:   5  (命中率=3.1%)
+  Client_Saved_Requests: 163
 ============================================================
 
 [DAG发压机] 步骤级数据: /mnt/d/mcp-governance-main/scripts/../results/exp5_scaleconc/rajomon_concurrency10_run5.csv
 [DAG发压机] 会话级数据: /mnt/d/mcp-governance-main/scripts/../results/exp5_scaleconc/rajomon_concurrency10_run5_sessions.csv
-[DAG发压机] 总记录: 971 步 / 200 会话
+[DAG发压机] 总记录: 1004 步 / 200 会话

@@ -552,6 +552,25 @@ def main():
     else:
         print(f"  [SKIP] Exp5 数据不存在: {exp5_path}")
 
+    exp6_path = os.path.join(RESULTS_DIR, "exp6_scaleconcreact", "exp6_scaleconcreact_summary.csv")
+    if os.path.exists(exp6_path):
+        data6 = load_sweep_summary(exp6_path)
+        print("生成 Exp6 图表...")
+        _plot_sweep_line(data6, "effective_goodput_s",
+                         "Concurrency", "Effective Goodput/s",
+                         "Exp6 (ReAct): Concurrency vs Effective Goodput/s",
+                         "exp6_react_conc_effgps.png")
+        _plot_sweep_line(data6, "cascade_failed",
+                         "Concurrency", "Cascade Failures (avg)",
+                         "Exp6 (ReAct): Concurrency vs Cascade Failures",
+                         "exp6_react_conc_cascade.png")
+        _plot_sweep_line(data6, "e2e_p50_ms",
+                         "Concurrency", "Session E2E P50 Latency (ms)",
+                         "Exp6 (ReAct): Concurrency vs Session E2E P50 Latency",
+                         "exp6_react_conc_e2e.png")
+    else:
+        print(f"  [SKIP] Exp6 数据不存在: {exp6_path}")
+
     if os.path.exists(exp7_path):
         data7 = load_sweep_summary(exp7_path)
         print("生成 Exp7 图表...")

@@ -49,7 +49,15 @@ for d in agg(os.path.join(BASE, 'exp7_clientreject', 'exp7_clientreject_summary.
     print(f"{d['sweep_val']:>5s}  {fmt('effective_goodput_s_mean','effective_goodput_s_std',d):>16s}  {fmt('cascade_failed_mean','cascade_failed_std',d):>14s}  {fmt('success_mean','success_std',d):>14s}  {fmt('rejected_s0_mean','rejected_s0_std',d):>14s}  {fmt('e2e_p50_ms_mean','e2e_p50_ms_std',d):>16s}  {fmt('e2e_p95_ms_mean','e2e_p95_ms_std',d):>16s}  {fmt('e2e_p99_ms_mean','e2e_p99_ms_std',d):>16s}")
 
 print()
-print('=== Exp5_ScaleConc (key gateways E2E) ===')
+print('=== Exp5_ScaleConc (P&S, key gateways E2E) ===')
 print(f"{'Gateway':16s}  {'conc':>4s}  {'EffGP/s':>16s}  {'Cascade':>14s}  {'E2E_P50':>16s}  {'E2E_P95':>16s}")
 for d in agg(os.path.join(BASE, 'exp5_scaleconc', 'exp5_scaleconc_summary.csv'), ['gateway','sweep_val']):
     print(f"{d['gateway']:16s}  {d['sweep_val']:>4s}  {fmt('effective_goodput_s_mean','effective_goodput_s_std',d):>16s}  {fmt('cascade_failed_mean','cascade_failed_std',d):>14s}  {fmt('e2e_p50_ms_mean','e2e_p50_ms_std',d):>16s}  {fmt('e2e_p95_ms_mean','e2e_p95_ms_std',d):>16s}")
+
+exp6_csv = os.path.join(BASE, 'exp6_scaleconcreact', 'exp6_scaleconcreact_summary.csv')
+if os.path.exists(exp6_csv):
+    print()
+    print('=== Exp6_ScaleConcReact (ReAct, key gateways E2E) ===')
+    print(f"{'Gateway':16s}  {'conc':>4s}  {'EffGP/s':>16s}  {'Cascade':>14s}  {'E2E_P50':>16s}  {'E2E_P95':>16s}")
+    for d in agg(exp6_csv, ['gateway','sweep_val']):
+        print(f"{d['gateway']:16s}  {d['sweep_val']:>4s}  {fmt('effective_goodput_s_mean','effective_goodput_s_std',d):>16s}  {fmt('cascade_failed_mean','cascade_failed_std',d):>14s}  {fmt('e2e_p50_ms_mean','e2e_p50_ms_std',d):>16s}  {fmt('e2e_p95_ms_mean','e2e_p95_ms_std',d):>16s}")

@@ -1,761 +1,800 @@
-2026/03/29 20:55:45.277647 从后端获取到 3 个工具
-2026/03/29 20:55:45.279482   [plangate-full] 注册工具: calculate
-2026/03/29 20:55:45.279884   [plangate-full] 注册工具: web_fetch
-2026/03/29 20:55:45.280378   [plangate-full] 注册工具: mock_heavy
-2026/03/29 20:55:45.280787 ========================================
-2026/03/29 20:55:45.281178   MCP Gateway [mcpdp] 启动
-2026/03/29 20:55:45.281539   监听: http://127.0.0.1:9157
-2026/03/29 20:55:45.282007   后端: http://127.0.0.1:8080
-2026/03/29 20:55:45.282429 ========================================
-2026/03/29 20:55:46.145308 [PlanGate Pre-flight] session=sess-0000-c9096a0d budget=500 totalCost=0 steps=3
-2026/03/29 20:55:46.145982 [PlanGate Budget Reserve] session=sess-0000-c9096a0d locked totalCost=0 prices=map[calculate:0 mock_heavy:0]
-2026/03/29 20:55:46.146483 [PlanGate Pre-flight] session=sess-0000-c9096a0d ADMITTED, reservation created
-2026/03/29 20:55:46.153504 [PlanGate Reserved] session=sess-0000-c9096a0d step=1 tool=mock_heavy tokens=500 lockedPrice=0
-2026/03/29 20:55:46.176418 [PlanGate Pre-flight] session=sess-0001-dc70412c budget=500 totalCost=0 steps=3
-2026/03/29 20:55:46.176900 [PlanGate Budget Reserve] session=sess-0001-dc70412c locked totalCost=0 prices=map[mock_heavy:0 web_fetch:0]
-2026/03/29 20:55:46.177215 [PlanGate Pre-flight] session=sess-0001-dc70412c ADMITTED, reservation created
-2026/03/29 20:55:46.380408 [PlanGate Pre-flight] session=sess-0002-7c370a10 budget=500 totalCost=0 steps=7
-2026/03/29 20:55:46.381223 [PlanGate Budget Reserve] session=sess-0002-7c370a10 locked totalCost=0 prices=map[calculate:0 mock_heavy:0 web_fetch:0]
-2026/03/29 20:55:46.381750 [PlanGate Pre-flight] session=sess-0002-7c370a10 ADMITTED, reservation created
-2026/03/29 20:55:46.471962 [PlanGate Pre-flight] session=sess-0003-531efb10 budget=500 totalCost=0 steps=3
-2026/03/29 20:55:46.472683 [PlanGate Budget Reserve] session=sess-0003-531efb10 locked totalCost=0 prices=map[calculate:0 mock_heavy:0 web_fetch:0]
-2026/03/29 20:55:46.473237 [PlanGate Pre-flight] session=sess-0003-531efb10 ADMITTED, reservation created
-2026/03/29 20:55:46.481699 [PlanGate Reserved] session=sess-0003-531efb10 step=1 tool=web_fetch tokens=500 lockedPrice=0
-2026/03/29 20:55:46.528554 [PlanGate Pre-flight] session=sess-0004-b215ed29 budget=500 totalCost=0 steps=7
-2026/03/29 20:55:46.529176 [PlanGate Budget Reserve] session=sess-0004-b215ed29 locked totalCost=0 prices=map[calculate:0 mock_heavy:0 web_fetch:0]
-2026/03/29 20:55:46.529624 [PlanGate Pre-flight] session=sess-0004-b215ed29 ADMITTED, reservation created
-2026/03/29 20:55:46.541471 [PlanGate Pre-flight] session=sess-0005-be13b3ab budget=500 totalCost=0 steps=5
-2026/03/29 20:55:46.542089 [PlanGate Budget Reserve] session=sess-0005-be13b3ab locked totalCost=0 prices=map[calculate:0 mock_heavy:0]
-2026/03/29 20:55:46.542539 [PlanGate Pre-flight] session=sess-0005-be13b3ab ADMITTED, reservation created
-2026/03/29 20:55:46.554375 [PlanGate Pre-flight] session=sess-0006-1634b842 budget=500 totalCost=0 steps=7
-2026/03/29 20:55:46.554849 [PlanGate Budget Reserve] session=sess-0006-1634b842 locked totalCost=0 prices=map[calculate:0 mock_heavy:0 web_fetch:0]
-2026/03/29 20:55:46.555321 [PlanGate Pre-flight] session=sess-0006-1634b842 ADMITTED, reservation created
-2026/03/29 20:55:46.557755 [PlanGate Pre-flight] session=sess-0007-d25e7ab6 budget=500 totalCost=0 steps=6
-2026/03/29 20:55:46.558243 [PlanGate Budget Reserve] session=sess-0007-d25e7ab6 locked totalCost=0 prices=map[calculate:0 mock_heavy:0 web_fetch:0]
-2026/03/29 20:55:46.558879 [PlanGate Pre-flight] session=sess-0007-d25e7ab6 ADMITTED, reservation created
-2026/03/29 20:55:46.640845 [PlanGate Reserved] session=sess-0003-531efb10 step=2 tool=mock_heavy tokens=500 lockedPrice=0
-2026/03/29 20:55:46.687360 [PlanGate Reserved] session=sess-0004-b215ed29 step=1 tool=calculate tokens=500 lockedPrice=0
-2026/03/29 20:55:46.694208 [PlanGate Reserved] session=sess-0004-b215ed29 step=2 tool=mock_heavy tokens=500 lockedPrice=0
-2026/03/29 20:55:46.695041 [PlanGate Pre-flight] session=sess-0008-60e97281 budget=500 totalCost=210 steps=3
-2026/03/29 20:55:46.695581 [PlanGate Budget Reserve] session=sess-0008-60e97281 locked totalCost=210 prices=map[mock_heavy:150 web_fetch:30]
-2026/03/29 20:55:46.696084 [PlanGate Pre-flight] session=sess-0008-60e97281 ADMITTED, reservation created
-2026/03/29 20:55:46.756537 [PlanGate Pre-flight] session=sess-0009-a9451d62 budget=500 totalCost=630 steps=6
-2026/03/29 20:55:46.757279 [PlanGate Pre-flight] session=sess-0009-a9451d62 REJECTED (budget 500 < cost 630)
-2026/03/29 20:55:46.838666 [PlanGate Pre-flight] session=sess-0010-222ffa7b budget=500 totalCost=405 steps=5
-2026/03/29 20:55:46.839609 [PlanGate Budget Reserve] session=sess-0010-222ffa7b locked totalCost=405 prices=map[calculate:45 mock_heavy:225 web_fetch:45]
-2026/03/29 20:55:46.840295 [PlanGate Pre-flight] session=sess-0010-222ffa7b ADMITTED, reservation created
-2026/03/29 20:55:46.841746 [PlanGate Pre-flight] session=sess-0011-c773e66c budget=500 totalCost=675 steps=7
-2026/03/29 20:55:46.842552 [PlanGate Pre-flight] session=sess-0011-c773e66c REJECTED (budget 500 < cost 675)
-2026/03/29 20:55:46.848142 [PlanGate Reserved] session=sess-0010-222ffa7b step=1 tool=calculate tokens=500 lockedPrice=45
-2026/03/29 20:55:46.856201 [PlanGate Reserved] session=sess-0010-222ffa7b step=2 tool=web_fetch tokens=500 lockedPrice=45
-2026/03/29 20:55:46.962351 [PlanGate Reserved] session=sess-0000-c9096a0d step=2 tool=calculate tokens=500 lockedPrice=0
-2026/03/29 20:55:46.985154 [PlanGate Reserved] session=sess-0001-dc70412c step=1 tool=mock_heavy tokens=500 lockedPrice=0
-2026/03/29 20:55:47.013897 [PlanGate Reserved] session=sess-0010-222ffa7b step=3 tool=calculate tokens=500 lockedPrice=45
-2026/03/29 20:55:47.019948 [PlanGate Reserved] session=sess-0010-222ffa7b step=4 tool=mock_heavy tokens=500 lockedPrice=225
-2026/03/29 20:55:47.075514 [PlanGate Pre-flight] session=sess-0012-55dc19b3 budget=500 totalCost=600 steps=6
-2026/03/29 20:55:47.076266 [PlanGate Pre-flight] session=sess-0012-55dc19b3 REJECTED (budget 500 < cost 600)
-2026/03/29 20:55:47.191766 [PlanGate Reserved] session=sess-0002-7c370a10 step=1 tool=calculate tokens=500 lockedPrice=0
-2026/03/29 20:55:47.194585 [PlanGate Pre-flight] session=sess-0013-fb939596 budget=500 totalCost=4200 steps=4
-2026/03/29 20:55:47.195183 [PlanGate Pre-flight] session=sess-0013-fb939596 REJECTED (budget 500 < cost 4200)
-2026/03/29 20:55:47.198750 [PlanGate Reserved] session=sess-0002-7c370a10 step=2 tool=web_fetch tokens=500 lockedPrice=0
-2026/03/29 20:55:47.211047 [PlanGate Pre-flight] session=sess-0014-1b780b29 budget=500 totalCost=1050 steps=3
-2026/03/29 20:55:47.211581 [PlanGate Pre-flight] session=sess-0014-1b780b29 REJECTED (budget 500 < cost 1050)
-2026/03/29 20:55:47.226066 [PlanGate Pre-flight] session=sess-0015-16a2e889 budget=500 totalCost=3850 steps=7
-2026/03/29 20:55:47.226734 [PlanGate Pre-flight] session=sess-0015-16a2e889 REJECTED (budget 500 < cost 3850)
-2026/03/29 20:55:47.240558 [PlanGate Pre-flight] session=sess-0016-aa2319bb budget=500 totalCost=3150 steps=5
-2026/03/29 20:55:47.241369 [PlanGate Pre-flight] session=sess-0016-aa2319bb REJECTED (budget 500 < cost 3150)
-2026/03/29 20:55:47.265367 [PlanGate Pre-flight] session=sess-0017-45e3bc89 budget=500 totalCost=6650 steps=7
-2026/03/29 20:55:47.266187 [PlanGate Pre-flight] session=sess-0017-45e3bc89 REJECTED (budget 500 < cost 6650)
-2026/03/29 20:55:47.316425 [PlanGate Pre-flight] session=sess-0018-26d54766 budget=500 totalCost=6650 steps=7
-2026/03/29 20:55:47.317115 [PlanGate Pre-flight] session=sess-0018-26d54766 REJECTED (budget 500 < cost 6650)
-2026/03/29 20:55:47.351971 [PlanGate Reserved] session=sess-0005-be13b3ab step=1 tool=calculate tokens=500 lockedPrice=0
-2026/03/29 20:55:47.354549 [PlanGate Pre-flight] session=sess-0019-e71b165f budget=500 totalCost=5250 steps=7
-2026/03/29 20:55:47.355154 [PlanGate Pre-flight] session=sess-0019-e71b165f REJECTED (budget 500 < cost 5250)
-2026/03/29 20:55:47.358592 [PlanGate Reserved] session=sess-0002-7c370a10 step=3 tool=mock_heavy tokens=500 lockedPrice=0
-2026/03/29 20:55:47.360670 [PlanGate Reserved] session=sess-0005-be13b3ab step=2 tool=calculate tokens=500 lockedPrice=0
-2026/03/29 20:55:47.363616 [PlanGate Reserved] session=sess-0006-1634b842 step=1 tool=calculate tokens=500 lockedPrice=0
-2026/03/29 20:55:47.371369 [PlanGate Reserved] session=sess-0007-d25e7ab6 step=1 tool=mock_heavy tokens=500 lockedPrice=0
-2026/03/29 20:55:47.375078 [PlanGate Reserved] session=sess-0005-be13b3ab step=3 tool=calculate tokens=500 lockedPrice=0
-2026/03/29 20:55:47.378207 [PlanGate Reserved] session=sess-0006-1634b842 step=2 tool=mock_heavy tokens=500 lockedPrice=0
-2026/03/29 20:55:47.379312 [PlanGate Pre-flight] session=sess-0020-9b2bdff0 budget=500 totalCost=4200 steps=4
-2026/03/29 20:55:47.380153 [PlanGate Pre-flight] session=sess-0020-9b2bdff0 REJECTED (budget 500 < cost 4200)
-2026/03/29 20:55:47.381488 [PlanGate Reserved] session=sess-0005-be13b3ab step=4 tool=mock_heavy tokens=500 lockedPrice=0
-2026/03/29 20:55:47.444615 [PlanGate Pre-flight] session=sess-0021-67cfcb7d budget=500 totalCost=5250 steps=7
-2026/03/29 20:55:47.445516 [PlanGate Pre-flight] session=sess-0021-67cfcb7d REJECTED (budget 500 < cost 5250)
-2026/03/29 20:55:47.455605 [PlanGate Pre-flight] session=sess-0022-82804136 budget=500 totalCost=6650 steps=7
-2026/03/29 20:55:47.456308 [PlanGate Pre-flight] session=sess-0022-82804136 REJECTED (budget 500 < cost 6650)
-2026/03/29 20:55:47.479545 [PlanGate Pre-flight] session=sess-0023-66df39e0 budget=500 totalCost=4550 steps=5
-2026/03/29 20:55:47.480285 [PlanGate Pre-flight] session=sess-0023-66df39e0 REJECTED (budget 500 < cost 4550)
-2026/03/29 20:55:47.501833 [PlanGate Reserved] session=sess-0004-b215ed29 step=3 tool=calculate tokens=500 lockedPrice=0
-2026/03/29 20:55:47.503953 [PlanGate Reserved] session=sess-0008-60e97281 step=1 tool=web_fetch tokens=500 lockedPrice=30
-2026/03/29 20:55:47.511070 [PlanGate Pre-flight] session=sess-0024-87912c9a budget=500 totalCost=4550 steps=5
-2026/03/29 20:55:47.511751 [PlanGate Pre-flight] session=sess-0024-87912c9a REJECTED (budget 500 < cost 4550)
-2026/03/29 20:55:47.512306 [PlanGate Reserved] session=sess-0004-b215ed29 step=4 tool=calculate tokens=500 lockedPrice=0
-2026/03/29 20:55:47.520575 [PlanGate Reserved] session=sess-0004-b215ed29 step=5 tool=web_fetch tokens=500 lockedPrice=0
-2026/03/29 20:55:47.552317 [PlanGate Pre-flight] session=sess-0025-6ead7db7 budget=500 totalCost=1400 steps=4
-2026/03/29 20:55:47.553010 [PlanGate Pre-flight] session=sess-0025-6ead7db7 REJECTED (budget 500 < cost 1400)
-2026/03/29 20:55:47.656260 [PlanGate Pre-flight] session=sess-0026-92dd8113 budget=500 totalCost=22 steps=7
-2026/03/29 20:55:47.657108 [PlanGate Budget Reserve] session=sess-0026-92dd8113 locked totalCost=22 prices=map[calculate:2 mock_heavy:10 web_fetch:2]
-2026/03/29 20:55:47.657852 [PlanGate Pre-flight] session=sess-0026-92dd8113 ADMITTED, reservation created
-2026/03/29 20:55:47.664819 [PlanGate Reserved] session=sess-0008-60e97281 step=2 tool=web_fetch tokens=500 lockedPrice=30
-2026/03/29 20:55:47.670727 [PlanGate Pre-flight] session=sess-0027-1bb6e3d9 budget=500 totalCost=24 steps=4
-2026/03/29 20:55:47.671179 [PlanGate Budget Reserve] session=sess-0027-1bb6e3d9 locked totalCost=24 prices=map[calculate:2 mock_heavy:10]
-2026/03/29 20:55:47.671548 [PlanGate Pre-flight] session=sess-0027-1bb6e3d9 ADMITTED, reservation created
-2026/03/29 20:55:47.678526 [PlanGate Reserved] session=sess-0004-b215ed29 step=6 tool=web_fetch tokens=500 lockedPrice=0
-2026/03/29 20:55:47.720417 [PlanGate Pre-flight] session=sess-0028-782ee5eb budget=500 totalCost=16 steps=4
-2026/03/29 20:55:47.720875 [PlanGate Budget Reserve] session=sess-0028-782ee5eb locked totalCost=16 prices=map[mock_heavy:10 web_fetch:2]
-2026/03/29 20:55:47.721226 [PlanGate Pre-flight] session=sess-0028-782ee5eb ADMITTED, reservation created
-2026/03/29 20:55:47.784423 [PlanGate Pre-flight] session=sess-0029-26d3a261 budget=500 totalCost=76 steps=7
-2026/03/29 20:55:47.785307 [PlanGate Budget Reserve] session=sess-0029-26d3a261 locked totalCost=76 prices=map[calculate:4 mock_heavy:20 web_fetch:4]
-2026/03/29 20:55:47.786117 [PlanGate Pre-flight] session=sess-0029-26d3a261 ADMITTED, reservation created
-2026/03/29 20:55:47.788712 [PlanGate Pre-flight] session=sess-0030-20ad8535 budget=500 totalCost=40 steps=6
-2026/03/29 20:55:47.789450 [PlanGate Budget Reserve] session=sess-0030-20ad8535 locked totalCost=40 prices=map[calculate:4 mock_heavy:20 web_fetch:4]
-2026/03/29 20:55:47.790318 [PlanGate Pre-flight] session=sess-0030-20ad8535 ADMITTED, reservation created
-2026/03/29 20:55:47.797767 [PlanGate Reserved] session=sess-0001-dc70412c step=2 tool=web_fetch tokens=500 lockedPrice=0
-2026/03/29 20:55:47.799454 [PlanGate Reserved] session=sess-0029-26d3a261 step=1 tool=mock_heavy tokens=500 lockedPrice=20
-2026/03/29 20:55:47.818390 [PlanGate Reserved] session=sess-0026-92dd8113 step=1 tool=calculate tokens=500 lockedPrice=2
-2026/03/29 20:55:47.837784 [PlanGate Reserved] session=sess-0026-92dd8113 step=2 tool=calculate tokens=500 lockedPrice=2
-2026/03/29 20:55:47.844971 [PlanGate Reserved] session=sess-0026-92dd8113 step=3 tool=calculate tokens=500 lockedPrice=2
-2026/03/29 20:55:47.850848 [PlanGate Pre-flight] session=sess-0031-f92bab0b budget=500 totalCost=40 steps=5
-2026/03/29 20:55:47.851579 [PlanGate Budget Reserve] session=sess-0031-f92bab0b locked totalCost=40 prices=map[calculate:8 web_fetch:8]
-2026/03/29 20:55:47.852067 [PlanGate Pre-flight] session=sess-0031-f92bab0b ADMITTED, reservation created
-2026/03/29 20:55:47.852038 [PlanGate Reserved] session=sess-0026-92dd8113 step=4 tool=calculate tokens=500 lockedPrice=2
-2026/03/29 20:55:47.859920 [PlanGate Reserved] session=sess-0031-f92bab0b step=1 tool=web_fetch tokens=500 lockedPrice=8
-2026/03/29 20:55:47.860974 [PlanGate Reserved] session=sess-0026-92dd8113 step=5 tool=mock_heavy tokens=500 lockedPrice=10
-2026/03/29 20:55:47.863923 [PlanGate Pre-flight] session=sess-0032-aab4ff25 budget=500 totalCost=32 steps=4
-2026/03/29 20:55:47.864466 [PlanGate Budget Reserve] session=sess-0032-aab4ff25 locked totalCost=32 prices=map[calculate:8 web_fetch:8]
-2026/03/29 20:55:47.864830 [PlanGate Pre-flight] session=sess-0032-aab4ff25 ADMITTED, reservation created
-2026/03/29 20:55:47.868861 [PlanGate Pre-flight] session=sess-0033-48f0ff74 budget=500 totalCost=104 steps=5
-2026/03/29 20:55:47.869271 [PlanGate Budget Reserve] session=sess-0033-48f0ff74 locked totalCost=104 prices=map[calculate:8 mock_heavy:40 web_fetch:8]
-2026/03/29 20:55:47.869580 [PlanGate Pre-flight] session=sess-0033-48f0ff74 ADMITTED, reservation created
-2026/03/29 20:55:48.018931 [PlanGate Reserved] session=sess-0031-f92bab0b step=2 tool=calculate tokens=500 lockedPrice=8
-2026/03/29 20:55:48.069165 [PlanGate Pre-flight] session=sess-0034-7bf905ee budget=500 totalCost=88 steps=7
-2026/03/29 20:55:48.070255 [PlanGate Budget Reserve] session=sess-0034-7bf905ee locked totalCost=88 prices=map[calculate:8 mock_heavy:40 web_fetch:8]
-2026/03/29 20:55:48.071077 [PlanGate Pre-flight] session=sess-0034-7bf905ee ADMITTED, reservation created
-2026/03/29 20:55:48.172150 [PlanGate Reserved] session=sess-0002-7c370a10 step=4 tool=web_fetch tokens=500 lockedPrice=0
-2026/03/29 20:55:48.173372 [PlanGate Reserved] session=sess-0032-aab4ff25 step=1 tool=web_fetch tokens=500 lockedPrice=8
-2026/03/29 20:55:48.174763 [PlanGate Reserved] session=sess-0031-f92bab0b step=3 tool=web_fetch tokens=500 lockedPrice=8
-2026/03/29 20:55:48.180438 [PlanGate Reserved] session=sess-0034-7bf905ee step=1 tool=calculate tokens=500 lockedPrice=8
-2026/03/29 20:55:48.186471 [PlanGate Reserved] session=sess-0007-d25e7ab6 step=2 tool=web_fetch tokens=500 lockedPrice=0
-2026/03/29 20:55:48.193543 [PlanGate Reserved] session=sess-0006-1634b842 step=3 tool=web_fetch tokens=500 lockedPrice=0
-2026/03/29 20:55:48.199994 [PlanGate Reserved] session=sess-0034-7bf905ee step=2 tool=web_fetch tokens=500 lockedPrice=8
-2026/03/29 20:55:48.295309 [PlanGate Pre-flight] session=sess-0035-d2bc0a7e budget=500 totalCost=3500 steps=7
-2026/03/29 20:55:48.296082 [PlanGate Pre-flight] session=sess-0035-d2bc0a7e REJECTED (budget 500 < cost 3500)
-2026/03/29 20:55:48.326772 [PlanGate Reserved] session=sess-0033-48f0ff74 step=1 tool=mock_heavy tokens=500 lockedPrice=40
-2026/03/29 20:55:48.336178 [PlanGate Reserved] session=sess-0002-7c370a10 step=5 tool=mock_heavy tokens=500 lockedPrice=0
-2026/03/29 20:55:48.341242 [PlanGate Reserved] session=sess-0032-aab4ff25 step=2 tool=web_fetch tokens=500 lockedPrice=8
-2026/03/29 20:55:48.345990 [PlanGate Reserved] session=sess-0031-f92bab0b step=4 tool=calculate tokens=500 lockedPrice=8
-2026/03/29 20:55:48.349583 [PlanGate Reserved] session=sess-0007-d25e7ab6 step=3 tool=web_fetch tokens=500 lockedPrice=0
-2026/03/29 20:55:48.406835 [PlanGate Pre-flight] session=sess-0036-1688064e budget=500 totalCost=5000 steps=6
-2026/03/29 20:55:48.407773 [PlanGate Pre-flight] session=sess-0036-1688064e REJECTED (budget 500 < cost 5000)
-2026/03/29 20:55:48.432083 [PlanGate Pre-flight] session=sess-0037-2bb1206c budget=500 totalCost=9500 steps=7
-2026/03/29 20:55:48.433002 [PlanGate Pre-flight] session=sess-0037-2bb1206c REJECTED (budget 500 < cost 9500)
-2026/03/29 20:55:48.439162 [PlanGate Pre-flight] session=sess-0038-2a2f638e budget=500 totalCost=3500 steps=7
-2026/03/29 20:55:48.439930 [PlanGate Pre-flight] session=sess-0038-2a2f638e REJECTED (budget 500 < cost 3500)
-2026/03/29 20:55:48.479787 [PlanGate Reserved] session=sess-0006-1634b842 step=4 tool=mock_heavy tokens=500 lockedPrice=0
-2026/03/29 20:55:48.481349 [PlanGate Reserved] session=sess-0027-1bb6e3d9 step=1 tool=calculate tokens=500 lockedPrice=2
-2026/03/29 20:55:48.494098 [PlanGate Reserved] session=sess-0034-7bf905ee step=3 tool=calculate tokens=500 lockedPrice=8
-2026/03/29 20:55:48.495566 [PlanGate Reserved] session=sess-0027-1bb6e3d9 step=2 tool=calculate tokens=500 lockedPrice=2
-2026/03/29 20:55:48.505926 [PlanGate Reserved] session=sess-0032-aab4ff25 step=3 tool=calculate tokens=500 lockedPrice=8
-2026/03/29 20:55:48.507366 [PlanGate Reserved] session=sess-0034-7bf905ee step=4 tool=mock_heavy tokens=500 lockedPrice=40
-2026/03/29 20:55:48.508687 [PlanGate Reserved] session=sess-0027-1bb6e3d9 step=3 tool=mock_heavy tokens=500 lockedPrice=10
-2026/03/29 20:55:48.516458 [PlanGate Pre-flight] session=sess-0039-c7be4343 budget=500 totalCost=9000 steps=6
-2026/03/29 20:55:48.517253 [PlanGate Pre-flight] session=sess-0039-c7be4343 REJECTED (budget 500 < cost 9000)
-2026/03/29 20:55:48.556406 [PlanGate Pre-flight] session=sess-0040-be2ed0ae budget=500 totalCost=6500 steps=5
-2026/03/29 20:55:48.557303 [PlanGate Pre-flight] session=sess-0040-be2ed0ae REJECTED (budget 500 < cost 6500)
-2026/03/29 20:55:48.567226 [PlanGate Pre-flight] session=sess-0041-c2ac8a0e budget=500 totalCost=3500 steps=3
-2026/03/29 20:55:48.567880 [PlanGate Pre-flight] session=sess-0041-c2ac8a0e REJECTED (budget 500 < cost 3500)
-2026/03/29 20:55:48.600768 [PlanGate Reserved] session=sess-0028-782ee5eb step=1 tool=web_fetch tokens=500 lockedPrice=2
-2026/03/29 20:55:48.612641 [PlanGate Pre-flight] session=sess-0042-9c60f955 budget=500 totalCost=4000 steps=4
-2026/03/29 20:55:48.613265 [PlanGate Pre-flight] session=sess-0042-9c60f955 REJECTED (budget 500 < cost 4000)
-2026/03/29 20:55:48.615415 [PlanGate Pre-flight] session=sess-0043-72383323 budget=500 totalCost=1500 steps=3
-2026/03/29 20:55:48.615929 [PlanGate Pre-flight] session=sess-0043-72383323 REJECTED (budget 500 < cost 1500)
-2026/03/29 20:55:48.618926 [PlanGate Reserved] session=sess-0030-20ad8535 step=1 tool=calculate tokens=500 lockedPrice=4
-2026/03/29 20:55:48.624391 [PlanGate Reserved] session=sess-0030-20ad8535 step=2 tool=web_fetch tokens=500 lockedPrice=4
-2026/03/29 20:55:48.630680 [PlanGate Reserved] session=sess-0007-d25e7ab6 step=4 tool=calculate tokens=500 lockedPrice=0
-2026/03/29 20:55:48.632136 [PlanGate Reserved] session=sess-0029-26d3a261 step=2 tool=mock_heavy tokens=500 lockedPrice=20
-2026/03/29 20:55:48.634692 [PlanGate Reserved] session=sess-0007-d25e7ab6 step=5 tool=calculate tokens=500 lockedPrice=0
-2026/03/29 20:55:48.758272 [PlanGate Reserved] session=sess-0028-782ee5eb step=2 tool=web_fetch tokens=500 lockedPrice=2
-2026/03/29 20:55:48.776045 [PlanGate Pre-flight] session=sess-0044-50660dc6 budget=500 totalCost=6300 steps=6
-2026/03/29 20:55:48.776646 [PlanGate Pre-flight] session=sess-0044-50660dc6 REJECTED (budget 500 < cost 6300)
-2026/03/29 20:55:48.776589 [PlanGate Reserved] session=sess-0026-92dd8113 step=6 tool=web_fetch tokens=500 lockedPrice=2
-2026/03/29 20:55:48.781665 [PlanGate Reserved] session=sess-0030-20ad8535 step=3 tool=calculate tokens=500 lockedPrice=4
-2026/03/29 20:55:48.787507 [PlanGate Reserved] session=sess-0030-20ad8535 step=4 tool=web_fetch tokens=500 lockedPrice=4
-2026/03/29 20:55:48.798680 [PlanGate Pre-flight] session=sess-0045-a50feb40 budget=500 totalCost=3150 steps=3
-2026/03/29 20:55:48.799127 [PlanGate Pre-flight] session=sess-0045-a50feb40 REJECTED (budget 500 < cost 3150)
-2026/03/29 20:55:48.872851 [PlanGate Pre-flight] session=sess-0046-e8b1043b budget=500 totalCost=4050 steps=5
-2026/03/29 20:55:48.873604 [PlanGate Pre-flight] session=sess-0046-e8b1043b REJECTED (budget 500 < cost 4050)
-2026/03/29 20:55:48.897011 [PlanGate Pre-flight] session=sess-0047-3a7cb59a budget=500 totalCost=5400 steps=4
-2026/03/29 20:55:48.897556 [PlanGate Pre-flight] session=sess-0047-3a7cb59a REJECTED (budget 500 < cost 5400)
-2026/03/29 20:55:48.915614 [PlanGate Reserved] session=sess-0028-782ee5eb step=3 tool=web_fetch tokens=500 lockedPrice=2
-2026/03/29 20:55:48.944762 [PlanGate Reserved] session=sess-0030-20ad8535 step=5 tool=web_fetch tokens=500 lockedPrice=4
-2026/03/29 20:55:48.946912 [PlanGate Pre-flight] session=sess-0048-ce4ae834 budget=500 totalCost=6300 steps=6
-2026/03/29 20:55:48.947373 [PlanGate Pre-flight] session=sess-0048-ce4ae834 REJECTED (budget 500 < cost 6300)
-2026/03/29 20:55:49.000972 [PlanGate Pre-flight] session=sess-0049-cda62db1 budget=500 totalCost=3600 steps=4
-2026/03/29 20:55:49.001757 [PlanGate Pre-flight] session=sess-0049-cda62db1 REJECTED (budget 500 < cost 3600)
-2026/03/29 20:55:49.015506 [PlanGate Pre-flight] session=sess-0050-1d0683fc budget=500 totalCost=8550 steps=7
-2026/03/29 20:55:49.016157 [PlanGate Pre-flight] session=sess-0050-1d0683fc REJECTED (budget 500 < cost 8550)
-2026/03/29 20:55:49.138722 [PlanGate Reserved] session=sess-0033-48f0ff74 step=2 tool=calculate tokens=500 lockedPrice=8
-2026/03/29 20:55:49.146793 [PlanGate Reserved] session=sess-0033-48f0ff74 step=3 tool=calculate tokens=500 lockedPrice=8
-2026/03/29 20:55:49.148288 [PlanGate Reserved] session=sess-0002-7c370a10 step=6 tool=mock_heavy tokens=500 lockedPrice=0
-2026/03/29 20:55:49.154976 [PlanGate Reserved] session=sess-0033-48f0ff74 step=4 tool=mock_heavy tokens=500 lockedPrice=40
-2026/03/29 20:55:49.248924 [PlanGate Pre-flight] session=sess-0051-578b7c8a budget=500 totalCost=7600 steps=7
-2026/03/29 20:55:49.249572 [PlanGate Pre-flight] session=sess-0051-578b7c8a REJECTED (budget 500 < cost 7600)
-2026/03/29 20:55:49.289283 [PlanGate Reserved] session=sess-0006-1634b842 step=5 tool=web_fetch tokens=500 lockedPrice=0
-2026/03/29 20:55:49.317495 [PlanGate Reserved] session=sess-0034-7bf905ee step=5 tool=calculate tokens=500 lockedPrice=8
-2026/03/29 20:55:49.324197 [PlanGate Reserved] session=sess-0034-7bf905ee step=6 tool=calculate tokens=500 lockedPrice=8
-2026/03/29 20:55:49.349079 [PlanGate Pre-flight] session=sess-0052-0a9564d5 budget=500 totalCost=7700 steps=6
-2026/03/29 20:55:49.349690 [PlanGate Pre-flight] session=sess-0052-0a9564d5 REJECTED (budget 500 < cost 7700)
-2026/03/29 20:55:49.440012 [PlanGate Reserved] session=sess-0029-26d3a261 step=3 tool=mock_heavy tokens=500 lockedPrice=20
-2026/03/29 20:55:49.447361 [PlanGate Reserved] session=sess-0006-1634b842 step=6 tool=mock_heavy tokens=500 lockedPrice=0
-2026/03/29 20:55:49.537634 [PlanGate Pre-flight] session=sess-0053-f504089e budget=500 totalCost=495 steps=3
-2026/03/29 20:55:49.538363 [PlanGate Budget Reserve] session=sess-0053-f504089e locked totalCost=495 prices=map[calculate:45 mock_heavy:225]
-2026/03/29 20:55:49.538894 [PlanGate Pre-flight] session=sess-0053-f504089e ADMITTED, reservation created
-2026/03/29 20:55:49.546988 [PlanGate Reserved] session=sess-0053-f504089e step=1 tool=mock_heavy tokens=500 lockedPrice=225
-2026/03/29 20:55:49.688714 [PlanGate Pre-flight] session=sess-0054-6b8d8d7b budget=500 totalCost=450 steps=6
-2026/03/29 20:55:49.689368 [PlanGate Budget Reserve] session=sess-0054-6b8d8d7b locked totalCost=450 prices=map[calculate:45 mock_heavy:225 web_fetch:45]
-2026/03/29 20:55:49.689910 [PlanGate Pre-flight] session=sess-0054-6b8d8d7b ADMITTED, reservation created
-2026/03/29 20:55:49.697724 [PlanGate Reserved] session=sess-0054-6b8d8d7b step=1 tool=web_fetch tokens=500 lockedPrice=45
-2026/03/29 20:55:49.750729 [PlanGate Pre-flight] session=sess-0055-fc83158e budget=500 totalCost=540 steps=4
-2026/03/29 20:55:49.751255 [PlanGate Pre-flight] session=sess-0055-fc83158e REJECTED (budget 500 < cost 540)
-2026/03/29 20:55:49.855962 [PlanGate Reserved] session=sess-0054-6b8d8d7b step=2 tool=web_fetch tokens=500 lockedPrice=45
-2026/03/29 20:55:49.922466 [PlanGate Pre-flight] session=sess-0056-da90baa0 budget=500 totalCost=450 steps=7
-2026/03/29 20:55:49.923397 [PlanGate Budget Reserve] session=sess-0056-da90baa0 locked totalCost=450 prices=map[calculate:30 mock_heavy:150 web_fetch:30]
-2026/03/29 20:55:49.924077 [PlanGate Pre-flight] session=sess-0056-da90baa0 ADMITTED, reservation created
-2026/03/29 20:55:49.929300 [PlanGate Pre-flight] session=sess-0057-9b2209f1 budget=500 totalCost=210 steps=3
-2026/03/29 20:55:49.930089 [PlanGate Budget Reserve] session=sess-0057-9b2209f1 locked totalCost=210 prices=map[mock_heavy:150 web_fetch:30]
-2026/03/29 20:55:49.930957 [PlanGate Pre-flight] session=sess-0057-9b2209f1 ADMITTED, reservation created
-2026/03/29 20:55:49.932917 [PlanGate Reserved] session=sess-0056-da90baa0 step=1 tool=mock_heavy tokens=500 lockedPrice=150
-2026/03/29 20:55:49.944950 [PlanGate Pre-flight] session=sess-0058-78fca688 budget=500 totalCost=300 steps=6
-2026/03/29 20:55:49.945693 [PlanGate Budget Reserve] session=sess-0058-78fca688 locked totalCost=300 prices=map[calculate:30 mock_heavy:150 web_fetch:30]
-2026/03/29 20:55:49.946452 [PlanGate Pre-flight] session=sess-0058-78fca688 ADMITTED, reservation created
-2026/03/29 20:55:49.948335 [PlanGate Pre-flight] session=sess-0059-26d049ca budget=500 totalCost=120 steps=4
-2026/03/29 20:55:49.949046 [PlanGate Budget Reserve] session=sess-0059-26d049ca locked totalCost=120 prices=map[calculate:30 web_fetch:30]
-2026/03/29 20:55:49.949751 [PlanGate Pre-flight] session=sess-0059-26d049ca ADMITTED, reservation created
-2026/03/29 20:55:49.976213 [PlanGate Pre-flight] session=sess-0060-795d540b budget=500 totalCost=450 steps=6
-2026/03/29 20:55:49.976926 [PlanGate Budget Reserve] session=sess-0060-795d540b locked totalCost=450 prices=map[calculate:45 mock_heavy:225 web_fetch:45]
-2026/03/29 20:55:49.977742 [PlanGate Pre-flight] session=sess-0060-795d540b ADMITTED, reservation created
-2026/03/29 20:55:50.010200 [PlanGate Pre-flight] session=sess-0061-86aa5e13 budget=500 totalCost=405 steps=5
-2026/03/29 20:55:50.010875 [PlanGate Budget Reserve] session=sess-0061-86aa5e13 locked totalCost=405 prices=map[calculate:45 mock_heavy:225 web_fetch:45]
-2026/03/29 20:55:50.011788 [PlanGate Pre-flight] session=sess-0061-86aa5e13 ADMITTED, reservation created
-2026/03/29 20:55:50.013882 [PlanGate Reserved] session=sess-0054-6b8d8d7b step=3 tool=mock_heavy tokens=500 lockedPrice=225
-2026/03/29 20:55:50.031798 [PlanGate Pre-flight] session=sess-0062-a11d5e94 budget=500 totalCost=900 steps=7
-2026/03/29 20:55:50.032462 [PlanGate Pre-flight] session=sess-0062-a11d5e94 REJECTED (budget 500 < cost 900)
-2026/03/29 20:55:50.106371 [PlanGate Reserved] session=sess-0058-78fca688 step=1 tool=calculate tokens=500 lockedPrice=30
-2026/03/29 20:55:50.109043 [PlanGate Reserved] session=sess-0059-26d049ca step=1 tool=calculate tokens=500 lockedPrice=30
-2026/03/29 20:55:50.116011 [PlanGate Reserved] session=sess-0058-78fca688 step=2 tool=web_fetch tokens=500 lockedPrice=30
-2026/03/29 20:55:50.118568 [PlanGate Reserved] session=sess-0059-26d049ca step=2 tool=web_fetch tokens=500 lockedPrice=30
-2026/03/29 20:55:50.136649 [PlanGate Reserved] session=sess-0060-795d540b step=1 tool=calculate tokens=500 lockedPrice=45
-2026/03/29 20:55:50.144809 [PlanGate Reserved] session=sess-0060-795d540b step=2 tool=web_fetch tokens=500 lockedPrice=45
-2026/03/29 20:55:50.150501 [PlanGate Pre-flight] session=sess-0063-822416c9 budget=500 totalCost=2450 steps=7
-2026/03/29 20:55:50.151306 [PlanGate Pre-flight] session=sess-0063-822416c9 REJECTED (budget 500 < cost 2450)
-2026/03/29 20:55:50.182203 [PlanGate Pre-flight] session=sess-0064-f2d11d7d budget=500 totalCost=1400 steps=4
-2026/03/29 20:55:50.182985 [PlanGate Pre-flight] session=sess-0064-f2d11d7d REJECTED (budget 500 < cost 1400)
-2026/03/29 20:55:50.205793 [PlanGate Pre-flight] session=sess-0065-f1ac9edf budget=500 totalCost=5250 steps=7
-2026/03/29 20:55:50.206698 [PlanGate Pre-flight] session=sess-0065-f1ac9edf REJECTED (budget 500 < cost 5250)
-2026/03/29 20:55:50.249576 [PlanGate Reserved] session=sess-0029-26d3a261 step=4 tool=web_fetch tokens=500 lockedPrice=4
-2026/03/29 20:55:50.259024 [PlanGate Pre-flight] session=sess-0066-d3a6d844 budget=500 totalCost=2800 steps=4
-2026/03/29 20:55:50.259732 [PlanGate Pre-flight] session=sess-0066-d3a6d844 REJECTED (budget 500 < cost 2800)
-2026/03/29 20:55:50.270326 [PlanGate Pre-flight] session=sess-0067-4ad1196c budget=500 totalCost=4200 steps=4
-2026/03/29 20:55:50.271007 [PlanGate Pre-flight] session=sess-0067-4ad1196c REJECTED (budget 500 < cost 4200)
-2026/03/29 20:55:50.274492 [PlanGate Reserved] session=sess-0058-78fca688 step=3 tool=calculate tokens=500 lockedPrice=30
-2026/03/29 20:55:50.276913 [PlanGate Reserved] session=sess-0059-26d049ca step=3 tool=web_fetch tokens=500 lockedPrice=30
-2026/03/29 20:55:50.283652 [PlanGate Reserved] session=sess-0058-78fca688 step=4 tool=mock_heavy tokens=500 lockedPrice=150
-2026/03/29 20:55:50.303872 [PlanGate Reserved] session=sess-0060-795d540b step=3 tool=web_fetch tokens=500 lockedPrice=45
-2026/03/29 20:55:50.355348 [PlanGate Reserved] session=sess-0053-f504089e step=2 tool=mock_heavy tokens=500 lockedPrice=225
-2026/03/29 20:55:50.452966 [PlanGate Pre-flight] session=sess-0068-ce656617 budget=500 totalCost=2800 steps=4
-2026/03/29 20:55:50.453870 [PlanGate Pre-flight] session=sess-0068-ce656617 REJECTED (budget 500 < cost 2800)
-2026/03/29 20:55:50.458692 [PlanGate Pre-flight] session=sess-0069-561dedda budget=500 totalCost=2450 steps=7
-2026/03/29 20:55:50.459556 [PlanGate Pre-flight] session=sess-0069-561dedda REJECTED (budget 500 < cost 2450)
-2026/03/29 20:55:50.482377 [PlanGate Reserved] session=sess-0029-26d3a261 step=5 tool=calculate tokens=500 lockedPrice=4
-2026/03/29 20:55:50.491235 [PlanGate Reserved] session=sess-0029-26d3a261 step=6 tool=calculate tokens=500 lockedPrice=4
-2026/03/29 20:55:50.536708 [PlanGate Reserved] session=sess-0060-795d540b step=4 tool=mock_heavy tokens=500 lockedPrice=225
-2026/03/29 20:55:50.749046 [PlanGate Pre-flight] session=sess-0070-e162101f budget=500 totalCost=1050 steps=3
-2026/03/29 20:55:50.749749 [PlanGate Pre-flight] session=sess-0070-e162101f REJECTED (budget 500 < cost 1050)
-2026/03/29 20:55:50.814565 [PlanGate Reserved] session=sess-0057-9b2209f1 step=1 tool=web_fetch tokens=500 lockedPrice=30
-2026/03/29 20:55:50.815514 [PlanGate Reserved] session=sess-0056-da90baa0 step=2 tool=web_fetch tokens=500 lockedPrice=30
-2026/03/29 20:55:50.848173 [PlanGate Pre-flight] session=sess-0071-88ee93c5 budget=500 totalCost=2700 steps=5
-2026/03/29 20:55:50.849197 [PlanGate Pre-flight] session=sess-0071-88ee93c5 REJECTED (budget 500 < cost 2700)
-2026/03/29 20:55:50.863888 [PlanGate Pre-flight] session=sess-0072-c6583239 budget=500 totalCost=5700 steps=7
-2026/03/29 20:55:50.864800 [PlanGate Pre-flight] session=sess-0072-c6583239 REJECTED (budget 500 < cost 5700)
-2026/03/29 20:55:50.865197 [PlanGate Pre-flight] session=sess-0073-45c7dfcc budget=500 totalCost=3000 steps=6
-2026/03/29 20:55:50.866273 [PlanGate Pre-flight] session=sess-0073-45c7dfcc REJECTED (budget 500 < cost 3000)
-2026/03/29 20:55:50.893632 [PlanGate Reserved] session=sess-0061-86aa5e13 step=1 tool=web_fetch tokens=500 lockedPrice=45
-2026/03/29 20:55:50.895273 [PlanGate Reserved] session=sess-0054-6b8d8d7b step=4 tool=calculate tokens=500 lockedPrice=45
-2026/03/29 20:55:50.901736 [PlanGate Reserved] session=sess-0054-6b8d8d7b step=5 tool=calculate tokens=500 lockedPrice=45
-2026/03/29 20:55:50.975969 [PlanGate Reserved] session=sess-0057-9b2209f1 step=2 tool=web_fetch tokens=500 lockedPrice=30
-2026/03/29 20:55:50.977370 [PlanGate Reserved] session=sess-0056-da90baa0 step=3 tool=mock_heavy tokens=500 lockedPrice=150
-2026/03/29 20:55:50.978732 [PlanGate Pre-flight] session=sess-0074-2f9d136f budget=500 totalCost=4200 steps=6
-2026/03/29 20:55:50.979464 [PlanGate Pre-flight] session=sess-0074-2f9d136f REJECTED (budget 500 < cost 4200)
-2026/03/29 20:55:51.053035 [PlanGate Reserved] session=sess-0061-86aa5e13 step=2 tool=calculate tokens=500 lockedPrice=45
-2026/03/29 20:55:51.062701 [PlanGate Reserved] session=sess-0061-86aa5e13 step=3 tool=web_fetch tokens=500 lockedPrice=45
-2026/03/29 20:55:51.063645 [PlanGate Pre-flight] session=sess-0075-5cf16d4f budget=500 totalCost=2400 steps=4
-2026/03/29 20:55:51.064886 [PlanGate Pre-flight] session=sess-0075-5cf16d4f REJECTED (budget 500 < cost 2400)
-2026/03/29 20:55:51.151503 [PlanGate Pre-flight] session=sess-0076-1db655d7 budget=500 totalCost=2700 steps=5
-2026/03/29 20:55:51.152401 [PlanGate Pre-flight] session=sess-0076-1db655d7 REJECTED (budget 500 < cost 2700)
-2026/03/29 20:55:51.167443 [PlanGate Reserved] session=sess-0058-78fca688 step=5 tool=web_fetch tokens=500 lockedPrice=30
-2026/03/29 20:55:51.223246 [PlanGate Reserved] session=sess-0061-86aa5e13 step=4 tool=calculate tokens=500 lockedPrice=45
-2026/03/29 20:55:51.250895 [PlanGate Pre-flight] session=sess-0077-bba0e3b6 budget=500 totalCost=1250 steps=5
-2026/03/29 20:55:51.251672 [PlanGate Pre-flight] session=sess-0077-bba0e3b6 REJECTED (budget 500 < cost 1250)
-2026/03/29 20:55:51.257425 [PlanGate Pre-flight] session=sess-0078-b893efb3 budget=500 totalCost=3750 steps=7
-2026/03/29 20:55:51.258313 [PlanGate Pre-flight] session=sess-0078-b893efb3 REJECTED (budget 500 < cost 3750)
-2026/03/29 20:55:51.289419 [PlanGate Pre-flight] session=sess-0079-0c9f8cbb budget=500 totalCost=3500 steps=6
-2026/03/29 20:55:51.290204 [PlanGate Pre-flight] session=sess-0079-0c9f8cbb REJECTED (budget 500 < cost 3500)
-2026/03/29 20:55:51.298153 [PlanGate Pre-flight] session=sess-0080-bfd30848 budget=500 totalCost=1250 steps=5
-2026/03/29 20:55:51.299038 [PlanGate Pre-flight] session=sess-0080-bfd30848 REJECTED (budget 500 < cost 1250)
-2026/03/29 20:55:51.347094 [PlanGate Reserved] session=sess-0060-795d540b step=5 tool=calculate tokens=500 lockedPrice=45
-2026/03/29 20:55:51.433281 [PlanGate Pre-flight] session=sess-0081-7f177e6e budget=500 totalCost=3400 steps=5
-2026/03/29 20:55:51.434216 [PlanGate Pre-flight] session=sess-0081-7f177e6e REJECTED (budget 500 < cost 3400)
-2026/03/29 20:55:51.499993 [PlanGate Pre-flight] session=sess-0082-47eafb28 budget=500 totalCost=105 steps=3
-2026/03/29 20:55:51.501005 [PlanGate Budget Reserve] session=sess-0082-47eafb28 locked totalCost=105 prices=map[calculate:15 mock_heavy:75 web_fetch:15]
-2026/03/29 20:55:51.501849 [PlanGate Pre-flight] session=sess-0082-47eafb28 ADMITTED, reservation created
-2026/03/29 20:55:51.529414 [PlanGate Pre-flight] session=sess-0083-1def0192 budget=500 totalCost=195 steps=5
-2026/03/29 20:55:51.530270 [PlanGate Budget Reserve] session=sess-0083-1def0192 locked totalCost=195 prices=map[calculate:15 mock_heavy:75]
-2026/03/29 20:55:51.530877 [PlanGate Pre-flight] session=sess-0083-1def0192 ADMITTED, reservation created
-2026/03/29 20:55:51.533834 [PlanGate Pre-flight] session=sess-0084-422c2bbe budget=500 totalCost=225 steps=7
-2026/03/29 20:55:51.534306 [PlanGate Budget Reserve] session=sess-0084-422c2bbe locked totalCost=225 prices=map[calculate:15 mock_heavy:75 web_fetch:15]
-2026/03/29 20:55:51.534909 [PlanGate Pre-flight] session=sess-0084-422c2bbe ADMITTED, reservation created
-2026/03/29 20:55:51.560297 [PlanGate Pre-flight] session=sess-0085-8d4ea276 budget=500 totalCost=105 steps=3
-2026/03/29 20:55:51.561017 [PlanGate Budget Reserve] session=sess-0085-8d4ea276 locked totalCost=105 prices=map[calculate:15 mock_heavy:75 web_fetch:15]
-2026/03/29 20:55:51.562022 [PlanGate Pre-flight] session=sess-0085-8d4ea276 ADMITTED, reservation created
-2026/03/29 20:55:51.587300 [PlanGate Pre-flight] session=sess-0086-49666f66 budget=500 totalCost=45 steps=3
-2026/03/29 20:55:51.588179 [PlanGate Budget Reserve] session=sess-0086-49666f66 locked totalCost=45 prices=map[calculate:15 web_fetch:15]
-2026/03/29 20:55:51.588912 [PlanGate Pre-flight] session=sess-0086-49666f66 ADMITTED, reservation created
-2026/03/29 20:55:51.597371 [PlanGate Reserved] session=sess-0086-49666f66 step=1 tool=calculate tokens=500 lockedPrice=15
-2026/03/29 20:55:51.606247 [PlanGate Reserved] session=sess-0086-49666f66 step=2 tool=web_fetch tokens=500 lockedPrice=15
-2026/03/29 20:55:51.662758 [PlanGate Reserved] session=sess-0082-47eafb28 step=1 tool=mock_heavy tokens=500 lockedPrice=75
-2026/03/29 20:55:51.675934 [PlanGate Pre-flight] session=sess-0087-5a11aa9d budget=500 totalCost=105 steps=3
-2026/03/29 20:55:51.676670 [PlanGate Budget Reserve] session=sess-0087-5a11aa9d locked totalCost=105 prices=map[mock_heavy:75 web_fetch:15]
-2026/03/29 20:55:51.677267 [PlanGate Pre-flight] session=sess-0087-5a11aa9d ADMITTED, reservation created
-2026/03/29 20:55:51.745797 [PlanGate Pre-flight] session=sess-0088-c14edf49 budget=500 totalCost=210 steps=6
-2026/03/29 20:55:51.746366 [PlanGate Budget Reserve] session=sess-0088-c14edf49 locked totalCost=210 prices=map[calculate:15 mock_heavy:75 web_fetch:15]
-2026/03/29 20:55:51.746804 [PlanGate Pre-flight] session=sess-0088-c14edf49 ADMITTED, reservation created
-2026/03/29 20:55:51.787435 [PlanGate Reserved] session=sess-0056-da90baa0 step=4 tool=calculate tokens=500 lockedPrice=30
-2026/03/29 20:55:51.796187 [PlanGate Reserved] session=sess-0056-da90baa0 step=5 tool=calculate tokens=500 lockedPrice=30
-2026/03/29 20:55:51.805307 [PlanGate Reserved] session=sess-0056-da90baa0 step=6 tool=web_fetch tokens=500 lockedPrice=30
-2026/03/29 20:55:51.893225 [PlanGate Pre-flight] session=sess-0089-584ee7e8 budget=500 totalCost=90 steps=3
-2026/03/29 20:55:51.893924 [PlanGate Budget Reserve] session=sess-0089-584ee7e8 locked totalCost=90 prices=map[calculate:30 web_fetch:30]
-2026/03/29 20:55:51.894509 [PlanGate Pre-flight] session=sess-0089-584ee7e8 ADMITTED, reservation created
-2026/03/29 20:55:51.902615 [PlanGate Reserved] session=sess-0089-584ee7e8 step=1 tool=calculate tokens=500 lockedPrice=30
-2026/03/29 20:55:51.908896 [PlanGate Reserved] session=sess-0089-584ee7e8 step=2 tool=web_fetch tokens=500 lockedPrice=30
-2026/03/29 20:55:51.936476 [PlanGate Pre-flight] session=sess-0090-bac2595a budget=500 totalCost=90 steps=3
-2026/03/29 20:55:51.937362 [PlanGate Budget Reserve] session=sess-0090-bac2595a locked totalCost=90 prices=map[web_fetch:30]
-2026/03/29 20:55:51.938009 [PlanGate Pre-flight] session=sess-0090-bac2595a ADMITTED, reservation created
-2026/03/29 20:55:51.947222 [PlanGate Pre-flight] session=sess-0091-17bdf040 budget=500 totalCost=315 steps=3
-2026/03/29 20:55:51.948145 [PlanGate Budget Reserve] session=sess-0091-17bdf040 locked totalCost=315 prices=map[calculate:45 mock_heavy:225 web_fetch:45]
-2026/03/29 20:55:51.948869 [PlanGate Pre-flight] session=sess-0091-17bdf040 ADMITTED, reservation created
-2026/03/29 20:55:52.030818 [PlanGate Pre-flight] session=sess-0092-aed87260 budget=500 totalCost=4500 steps=7
-2026/03/29 20:55:52.031750 [PlanGate Pre-flight] session=sess-0092-aed87260 REJECTED (budget 500 < cost 4500)
-2026/03/29 20:55:52.099512 [PlanGate Reserved] session=sess-0090-bac2595a step=1 tool=web_fetch tokens=500 lockedPrice=30
-2026/03/29 20:55:52.128844 [PlanGate Pre-flight] session=sess-0093-305f1ae1 budget=500 totalCost=3300 steps=7
-2026/03/29 20:55:52.129525 [PlanGate Pre-flight] session=sess-0093-305f1ae1 REJECTED (budget 500 < cost 3300)
-2026/03/29 20:55:52.185037 [PlanGate Pre-flight] session=sess-0094-7b5857eb budget=500 totalCost=3600 steps=4
-2026/03/29 20:55:52.185850 [PlanGate Pre-flight] session=sess-0094-7b5857eb REJECTED (budget 500 < cost 3600)
-2026/03/29 20:55:52.260363 [PlanGate Reserved] session=sess-0090-bac2595a step=2 tool=web_fetch tokens=500 lockedPrice=30
-2026/03/29 20:55:52.284907 [PlanGate Pre-flight] session=sess-0095-866a86dc budget=500 totalCost=2700 steps=5
-2026/03/29 20:55:52.285581 [PlanGate Pre-flight] session=sess-0095-866a86dc REJECTED (budget 500 < cost 2700)
-2026/03/29 20:55:52.331193 [PlanGate Pre-flight] session=sess-0096-66355e0c budget=500 totalCost=3000 steps=6
-2026/03/29 20:55:52.331986 [PlanGate Pre-flight] session=sess-0096-66355e0c REJECTED (budget 500 < cost 3000)
-2026/03/29 20:55:52.340742 [PlanGate Reserved] session=sess-0083-1def0192 step=1 tool=calculate tokens=500 lockedPrice=15
-2026/03/29 20:55:52.349349 [PlanGate Reserved] session=sess-0084-422c2bbe step=1 tool=web_fetch tokens=500 lockedPrice=15
-2026/03/29 20:55:52.350653 [PlanGate Reserved] session=sess-0083-1def0192 step=2 tool=mock_heavy tokens=500 lockedPrice=75
-2026/03/29 20:55:52.371664 [PlanGate Reserved] session=sess-0085-8d4ea276 step=1 tool=calculate tokens=500 lockedPrice=15
-2026/03/29 20:55:52.380416 [PlanGate Reserved] session=sess-0085-8d4ea276 step=2 tool=web_fetch tokens=500 lockedPrice=15
-2026/03/29 20:55:52.381736 [PlanGate Pre-flight] session=sess-0097-b60e00ee budget=500 totalCost=3000 steps=6
-2026/03/29 20:55:52.382547 [PlanGate Pre-flight] session=sess-0097-b60e00ee REJECTED (budget 500 < cost 3000)
-2026/03/29 20:55:52.420589 [PlanGate Pre-flight] session=sess-0098-6501d635 budget=500 totalCost=3000 steps=6
-2026/03/29 20:55:52.421268 [PlanGate Pre-flight] session=sess-0098-6501d635 REJECTED (budget 500 < cost 3000)
-2026/03/29 20:55:52.423345 [PlanGate Pre-flight] session=sess-0099-1efb63f4 budget=500 totalCost=7800 steps=6
-2026/03/29 20:55:52.423901 [PlanGate Pre-flight] session=sess-0099-1efb63f4 REJECTED (budget 500 < cost 7800)
-2026/03/29 20:55:52.432589 [PlanGate Pre-flight] session=sess-0100-72a10df8 budget=500 totalCost=4200 steps=6
-2026/03/29 20:55:52.433398 [PlanGate Pre-flight] session=sess-0100-72a10df8 REJECTED (budget 500 < cost 4200)
-2026/03/29 20:55:52.435539 [PlanGate Pre-flight] session=sess-0101-51c33948 budget=500 totalCost=3600 steps=4
-2026/03/29 20:55:52.436175 [PlanGate Pre-flight] session=sess-0101-51c33948 REJECTED (budget 500 < cost 3600)
-2026/03/29 20:55:52.473830 [PlanGate Reserved] session=sess-0082-47eafb28 step=2 tool=calculate tokens=500 lockedPrice=15
-2026/03/29 20:55:52.487935 [PlanGate Reserved] session=sess-0087-5a11aa9d step=1 tool=web_fetch tokens=500 lockedPrice=15
-2026/03/29 20:55:52.503748 [PlanGate Pre-flight] session=sess-0102-b701f23b budget=500 totalCost=3300 steps=7
-2026/03/29 20:55:52.504572 [PlanGate Pre-flight] session=sess-0102-b701f23b REJECTED (budget 500 < cost 3300)
-2026/03/29 20:55:52.508165 [PlanGate Reserved] session=sess-0084-422c2bbe step=2 tool=calculate tokens=500 lockedPrice=15
-2026/03/29 20:55:52.515739 [PlanGate Reserved] session=sess-0084-422c2bbe step=3 tool=calculate tokens=500 lockedPrice=15
-2026/03/29 20:55:52.523592 [PlanGate Reserved] session=sess-0084-422c2bbe step=4 tool=mock_heavy tokens=500 lockedPrice=75
-2026/03/29 20:55:52.530233 [PlanGate Pre-flight] session=sess-0103-8fd02318 budget=500 totalCost=1500 steps=5
-2026/03/29 20:55:52.530909 [PlanGate Pre-flight] session=sess-0103-8fd02318 REJECTED (budget 500 < cost 1500)
-2026/03/29 20:55:52.556578 [PlanGate Reserved] session=sess-0088-c14edf49 step=1 tool=calculate tokens=500 lockedPrice=15
-2026/03/29 20:55:52.565199 [PlanGate Reserved] session=sess-0088-c14edf49 step=2 tool=mock_heavy tokens=500 lockedPrice=75
-2026/03/29 20:55:52.579258 [PlanGate Pre-flight] session=sess-0104-4eb479f0 budget=500 totalCost=3000 steps=6
-2026/03/29 20:55:52.580034 [PlanGate Pre-flight] session=sess-0104-4eb479f0 REJECTED (budget 500 < cost 3000)
-2026/03/29 20:55:52.649344 [PlanGate Reserved] session=sess-0087-5a11aa9d step=2 tool=web_fetch tokens=500 lockedPrice=15
-2026/03/29 20:55:52.739402 [PlanGate Pre-flight] session=sess-0105-680b02ed budget=500 totalCost=2250 steps=5
-2026/03/29 20:55:52.740066 [PlanGate Pre-flight] session=sess-0105-680b02ed REJECTED (budget 500 < cost 2250)
-2026/03/29 20:55:52.760823 [PlanGate Reserved] session=sess-0091-17bdf040 step=1 tool=web_fetch tokens=500 lockedPrice=45
-2026/03/29 20:55:52.761879 [PlanGate Pre-flight] session=sess-0106-d880f26e budget=500 totalCost=3750 steps=7
-2026/03/29 20:55:52.762929 [PlanGate Pre-flight] session=sess-0106-d880f26e REJECTED (budget 500 < cost 3750)
-2026/03/29 20:55:52.799022 [PlanGate Pre-flight] session=sess-0107-e9ba6da8 budget=500 totalCost=4750 steps=7
-2026/03/29 20:55:52.799648 [PlanGate Pre-flight] session=sess-0107-e9ba6da8 REJECTED (budget 500 < cost 4750)
-2026/03/29 20:55:52.893599 [PlanGate Pre-flight] session=sess-0108-db8fa9bb budget=500 totalCost=750 steps=3
-2026/03/29 20:55:52.894287 [PlanGate Pre-flight] session=sess-0108-db8fa9bb REJECTED (budget 500 < cost 750)
-2026/03/29 20:55:52.912135 [PlanGate Pre-flight] session=sess-0109-ddebfae5 budget=500 totalCost=2750 steps=7
-2026/03/29 20:55:52.912699 [PlanGate Pre-flight] session=sess-0109-ddebfae5 REJECTED (budget 500 < cost 2750)
-2026/03/29 20:55:52.917894 [PlanGate Pre-flight] session=sess-0110-89e6257a budget=500 totalCost=1000 steps=4
-2026/03/29 20:55:52.918271 [PlanGate Pre-flight] session=sess-0110-89e6257a REJECTED (budget 500 < cost 1000)
-2026/03/29 20:55:52.919935 [PlanGate Reserved] session=sess-0091-17bdf040 step=2 tool=calculate tokens=500 lockedPrice=45
-2026/03/29 20:55:52.941504 [PlanGate Pre-flight] session=sess-0111-066ac43f budget=500 totalCost=1000 steps=4
-2026/03/29 20:55:52.942048 [PlanGate Pre-flight] session=sess-0111-066ac43f REJECTED (budget 500 < cost 1000)
-2026/03/29 20:55:52.955396 [PlanGate Pre-flight] session=sess-0112-bbb5f5ff budget=500 totalCost=2000 steps=4
-2026/03/29 20:55:52.956133 [PlanGate Pre-flight] session=sess-0112-bbb5f5ff REJECTED (budget 500 < cost 2000)
-2026/03/29 20:55:53.135058 [PlanGate Pre-flight] session=sess-0113-9ed16c68 budget=500 totalCost=2800 steps=6
-2026/03/29 20:55:53.135966 [PlanGate Pre-flight] session=sess-0113-9ed16c68 REJECTED (budget 500 < cost 2800)
-2026/03/29 20:55:53.161585 [PlanGate Reserved] session=sess-0083-1def0192 step=3 tool=calculate tokens=500 lockedPrice=15
-2026/03/29 20:55:53.170804 [PlanGate Reserved] session=sess-0083-1def0192 step=4 tool=calculate tokens=500 lockedPrice=15
-2026/03/29 20:55:53.247150 [PlanGate Pre-flight] session=sess-0114-ba20aae1 budget=500 totalCost=1500 steps=6
-2026/03/29 20:55:53.247857 [PlanGate Pre-flight] session=sess-0114-ba20aae1 REJECTED (budget 500 < cost 1500)
-2026/03/29 20:55:53.315560 [PlanGate Pre-flight] session=sess-0115-392c1d3c budget=500 totalCost=2550 steps=5
-2026/03/29 20:55:53.316397 [PlanGate Pre-flight] session=sess-0115-392c1d3c REJECTED (budget 500 < cost 2550)
-2026/03/29 20:55:53.332971 [PlanGate Reserved] session=sess-0084-422c2bbe step=5 tool=calculate tokens=500 lockedPrice=15
-2026/03/29 20:55:53.341745 [PlanGate Reserved] session=sess-0084-422c2bbe step=6 tool=calculate tokens=500 lockedPrice=15
-2026/03/29 20:55:53.375179 [PlanGate Reserved] session=sess-0088-c14edf49 step=3 tool=web_fetch tokens=500 lockedPrice=15
-2026/03/29 20:55:53.453978 [PlanGate Pre-flight] session=sess-0116-7a785e4c budget=500 totalCost=2850 steps=7
-2026/03/29 20:55:53.454858 [PlanGate Pre-flight] session=sess-0116-7a785e4c REJECTED (budget 500 < cost 2850)
-2026/03/29 20:55:53.535143 [PlanGate Reserved] session=sess-0088-c14edf49 step=4 tool=web_fetch tokens=500 lockedPrice=15
-2026/03/29 20:55:53.564484 [PlanGate Pre-flight] session=sess-0117-f5116534 budget=500 totalCost=1400 steps=6
-2026/03/29 20:55:53.565297 [PlanGate Pre-flight] session=sess-0117-f5116534 REJECTED (budget 500 < cost 1400)
-2026/03/29 20:55:53.579463 [PlanGate Pre-flight] session=sess-0118-08c3609e budget=500 totalCost=900 steps=5
-2026/03/29 20:55:53.580197 [PlanGate Pre-flight] session=sess-0118-08c3609e REJECTED (budget 500 < cost 900)
-2026/03/29 20:55:53.695777 [PlanGate Reserved] session=sess-0088-c14edf49 step=5 tool=web_fetch tokens=500 lockedPrice=15
-2026/03/29 20:55:53.729286 [PlanGate Pre-flight] session=sess-0119-0e43fd01 budget=500 totalCost=800 steps=4
-2026/03/29 20:55:53.730064 [PlanGate Pre-flight] session=sess-0119-0e43fd01 REJECTED (budget 500 < cost 800)
-2026/03/29 20:55:53.782864 [PlanGate Pre-flight] session=sess-0120-dba85916 budget=500 totalCost=600 steps=4
-2026/03/29 20:55:53.783905 [PlanGate Pre-flight] session=sess-0120-dba85916 REJECTED (budget 500 < cost 600)
-2026/03/29 20:55:53.893727 [PlanGate Pre-flight] session=sess-0121-3fea74a2 budget=500 totalCost=500 steps=6
-2026/03/29 20:55:53.894496 [PlanGate Budget Reserve] session=sess-0121-3fea74a2 locked totalCost=500 prices=map[calculate:50 mock_heavy:250 web_fetch:50]
-2026/03/29 20:55:53.895425 [PlanGate Pre-flight] session=sess-0121-3fea74a2 ADMITTED, reservation created
-2026/03/29 20:55:53.904387 [PlanGate Reserved] session=sess-0121-3fea74a2 step=1 tool=web_fetch tokens=500 lockedPrice=50
-2026/03/29 20:55:54.046370 [PlanGate Pre-flight] session=sess-0122-713a1d83 budget=500 totalCost=0 steps=5
-2026/03/29 20:55:54.047512 [PlanGate Budget Reserve] session=sess-0122-713a1d83 locked totalCost=0 prices=map[calculate:0 mock_heavy:0 web_fetch:0]
-2026/03/29 20:55:54.048328 [PlanGate Pre-flight] session=sess-0122-713a1d83 ADMITTED, reservation created
-2026/03/29 20:55:54.064770 [PlanGate Reserved] session=sess-0121-3fea74a2 step=2 tool=web_fetch tokens=500 lockedPrice=50
-2026/03/29 20:55:54.073155 [PlanGate Pre-flight] session=sess-0123-989aa8b4 budget=500 totalCost=0 steps=6
-2026/03/29 20:55:54.073916 [PlanGate Budget Reserve] session=sess-0123-989aa8b4 locked totalCost=0 prices=map[calculate:0 mock_heavy:0 web_fetch:0]
-2026/03/29 20:55:54.074604 [PlanGate Pre-flight] session=sess-0123-989aa8b4 ADMITTED, reservation created
-2026/03/29 20:55:54.081790 [PlanGate Pre-flight] session=sess-0124-08ee4ce2 budget=500 totalCost=0 steps=5
-2026/03/29 20:55:54.082615 [PlanGate Budget Reserve] session=sess-0124-08ee4ce2 locked totalCost=0 prices=map[calculate:0 web_fetch:0]
-2026/03/29 20:55:54.083389 [PlanGate Pre-flight] session=sess-0124-08ee4ce2 ADMITTED, reservation created
-2026/03/29 20:55:54.091456 [PlanGate Reserved] session=sess-0124-08ee4ce2 step=1 tool=web_fetch tokens=500 lockedPrice=0
-2026/03/29 20:55:54.100241 [PlanGate Pre-flight] session=sess-0125-600a6631 budget=500 totalCost=0 steps=5
-2026/03/29 20:55:54.100900 [PlanGate Budget Reserve] session=sess-0125-600a6631 locked totalCost=0 prices=map[calculate:0 mock_heavy:0 web_fetch:0]
-2026/03/29 20:55:54.101729 [PlanGate Pre-flight] session=sess-0125-600a6631 ADMITTED, reservation created
-2026/03/29 20:55:54.139220 [PlanGate Pre-flight] session=sess-0126-bc93cdba budget=500 totalCost=0 steps=4
-2026/03/29 20:55:54.140233 [PlanGate Budget Reserve] session=sess-0126-bc93cdba locked totalCost=0 prices=map[mock_heavy:0 web_fetch:0]
-2026/03/29 20:55:54.140931 [PlanGate Pre-flight] session=sess-0126-bc93cdba ADMITTED, reservation created
-2026/03/29 20:55:54.209578 [PlanGate Reserved] session=sess-0122-713a1d83 step=1 tool=web_fetch tokens=500 lockedPrice=0
-2026/03/29 20:55:54.225207 [PlanGate Reserved] session=sess-0121-3fea74a2 step=3 tool=web_fetch tokens=500 lockedPrice=50
-2026/03/29 20:55:54.250658 [PlanGate Reserved] session=sess-0124-08ee4ce2 step=2 tool=web_fetch tokens=500 lockedPrice=0
-2026/03/29 20:55:54.253555 [PlanGate Pre-flight] session=sess-0127-2b95efa8 budget=500 totalCost=0 steps=6
-2026/03/29 20:55:54.254513 [PlanGate Budget Reserve] session=sess-0127-2b95efa8 locked totalCost=0 prices=map[calculate:0 web_fetch:0]
-2026/03/29 20:55:54.255191 [PlanGate Pre-flight] session=sess-0127-2b95efa8 ADMITTED, reservation created
-2026/03/29 20:55:54.302083 [PlanGate Reserved] session=sess-0126-bc93cdba step=1 tool=web_fetch tokens=500 lockedPrice=0
-2026/03/29 20:55:54.369698 [PlanGate Reserved] session=sess-0122-713a1d83 step=2 tool=mock_heavy tokens=500 lockedPrice=0
-2026/03/29 20:55:54.384065 [PlanGate Reserved] session=sess-0121-3fea74a2 step=4 tool=mock_heavy tokens=500 lockedPrice=250
-2026/03/29 20:55:54.385708 [PlanGate Pre-flight] session=sess-0128-f44466ea budget=500 totalCost=0 steps=4
-2026/03/29 20:55:54.386431 [PlanGate Budget Reserve] session=sess-0128-f44466ea locked totalCost=0 prices=map[calculate:0 web_fetch:0]
-2026/03/29 20:55:54.387271 [PlanGate Pre-flight] session=sess-0128-f44466ea ADMITTED, reservation created
-2026/03/29 20:55:54.386775 [PlanGate Pre-flight] session=sess-0129-a74b3a9a budget=500 totalCost=0 steps=3
-2026/03/29 20:55:54.388722 [PlanGate Budget Reserve] session=sess-0129-a74b3a9a locked totalCost=0 prices=map[mock_heavy:0 web_fetch:0]
-2026/03/29 20:55:54.389099 [PlanGate Pre-flight] session=sess-0129-a74b3a9a ADMITTED, reservation created
-2026/03/29 20:55:54.394844 [PlanGate Reserved] session=sess-0128-f44466ea step=1 tool=calculate tokens=500 lockedPrice=0
-2026/03/29 20:55:54.401389 [PlanGate Reserved] session=sess-0128-f44466ea step=2 tool=web_fetch tokens=500 lockedPrice=0
-2026/03/29 20:55:54.409810 [PlanGate Reserved] session=sess-0124-08ee4ce2 step=3 tool=calculate tokens=500 lockedPrice=0
-2026/03/29 20:55:54.413842 [PlanGate Reserved] session=sess-0127-2b95efa8 step=1 tool=calculate tokens=500 lockedPrice=0
-2026/03/29 20:55:54.417713 [PlanGate Reserved] session=sess-0124-08ee4ce2 step=4 tool=web_fetch tokens=500 lockedPrice=0
-2026/03/29 20:55:54.422192 [PlanGate Reserved] session=sess-0127-2b95efa8 step=2 tool=web_fetch tokens=500 lockedPrice=0
-2026/03/29 20:55:54.436007 [PlanGate Pre-flight] session=sess-0130-4cefddde budget=500 totalCost=2100 steps=3
-2026/03/29 20:55:54.436648 [PlanGate Pre-flight] session=sess-0130-4cefddde REJECTED (budget 500 < cost 2100)
-2026/03/29 20:55:54.461317 [PlanGate Reserved] session=sess-0126-bc93cdba step=2 tool=mock_heavy tokens=500 lockedPrice=0
-2026/03/29 20:55:54.473309 [PlanGate Pre-flight] session=sess-0131-4cb1ff72 budget=500 totalCost=2100 steps=7
-2026/03/29 20:55:54.474139 [PlanGate Pre-flight] session=sess-0131-4cb1ff72 REJECTED (budget 500 < cost 2100)
-2026/03/29 20:55:54.492233 [PlanGate Pre-flight] session=sess-0132-24873d7e budget=500 totalCost=3900 steps=5
-2026/03/29 20:55:54.492846 [PlanGate Pre-flight] session=sess-0132-24873d7e REJECTED (budget 500 < cost 3900)
-2026/03/29 20:55:54.501923 [PlanGate Pre-flight] session=sess-0133-638bd28e budget=500 totalCost=3300 steps=7
-2026/03/29 20:55:54.502794 [PlanGate Pre-flight] session=sess-0133-638bd28e REJECTED (budget 500 < cost 3300)
-2026/03/29 20:55:54.530149 [PlanGate Pre-flight] session=sess-0134-8ea954aa budget=500 totalCost=2700 steps=5
-2026/03/29 20:55:54.530920 [PlanGate Pre-flight] session=sess-0134-8ea954aa REJECTED (budget 500 < cost 2700)
-2026/03/29 20:55:54.560001 [PlanGate Reserved] session=sess-0128-f44466ea step=3 tool=calculate tokens=500 lockedPrice=0
-2026/03/29 20:55:54.580200 [PlanGate Reserved] session=sess-0127-2b95efa8 step=3 tool=calculate tokens=500 lockedPrice=0
-2026/03/29 20:55:54.587195 [PlanGate Reserved] session=sess-0127-2b95efa8 step=4 tool=calculate tokens=500 lockedPrice=0
-2026/03/29 20:55:54.594480 [PlanGate Reserved] session=sess-0127-2b95efa8 step=5 tool=calculate tokens=500 lockedPrice=0
-2026/03/29 20:55:54.724188 [PlanGate Pre-flight] session=sess-0135-dc78b82a budget=500 totalCost=1500 steps=5
-2026/03/29 20:55:54.725097 [PlanGate Pre-flight] session=sess-0135-dc78b82a REJECTED (budget 500 < cost 1500)
-2026/03/29 20:55:54.751534 [PlanGate Pre-flight] session=sess-0136-7515d867 budget=500 totalCost=6600 steps=6
-2026/03/29 20:55:54.752237 [PlanGate Pre-flight] session=sess-0136-7515d867 REJECTED (budget 500 < cost 6600)
-2026/03/29 20:55:54.801327 [PlanGate Pre-flight] session=sess-0137-faf1c61d budget=500 totalCost=3300 steps=7
-2026/03/29 20:55:54.802124 [PlanGate Pre-flight] session=sess-0137-faf1c61d REJECTED (budget 500 < cost 3300)
-2026/03/29 20:55:54.884138 [PlanGate Pre-flight] session=sess-0138-2424fe5e budget=500 totalCost=2100 steps=3
-2026/03/29 20:55:54.884875 [PlanGate Pre-flight] session=sess-0138-2424fe5e REJECTED (budget 500 < cost 2100)
-2026/03/29 20:55:54.885752 [PlanGate Reserved] session=sess-0123-989aa8b4 step=1 tool=mock_heavy tokens=500 lockedPrice=0
-2026/03/29 20:55:54.911536 [PlanGate Reserved] session=sess-0125-600a6631 step=1 tool=mock_heavy tokens=500 lockedPrice=0
-2026/03/29 20:55:54.914405 [PlanGate Pre-flight] session=sess-0139-ba00c8b4 budget=500 totalCost=5400 steps=6
-2026/03/29 20:55:54.915159 [PlanGate Pre-flight] session=sess-0139-ba00c8b4 REJECTED (budget 500 < cost 5400)
-2026/03/29 20:55:55.154540 [PlanGate Pre-flight] session=sess-0140-ea0643c1 budget=500 totalCost=270 steps=5
-2026/03/29 20:55:55.155373 [PlanGate Budget Reserve] session=sess-0140-ea0643c1 locked totalCost=270 prices=map[calculate:30 mock_heavy:150 web_fetch:30]
-2026/03/29 20:55:55.156043 [PlanGate Pre-flight] session=sess-0140-ea0643c1 ADMITTED, reservation created
-2026/03/29 20:55:55.180163 [PlanGate Reserved] session=sess-0122-713a1d83 step=3 tool=calculate tokens=500 lockedPrice=0
-2026/03/29 20:55:55.188945 [PlanGate Reserved] session=sess-0122-713a1d83 step=4 tool=web_fetch tokens=500 lockedPrice=0
-2026/03/29 20:55:55.195703 [PlanGate Reserved] session=sess-0121-3fea74a2 step=5 tool=web_fetch tokens=500 lockedPrice=50
-2026/03/29 20:55:55.197828 [PlanGate Reserved] session=sess-0129-a74b3a9a step=1 tool=web_fetch tokens=500 lockedPrice=0
-2026/03/29 20:55:55.271385 [PlanGate Reserved] session=sess-0126-bc93cdba step=3 tool=web_fetch tokens=500 lockedPrice=0
-2026/03/29 20:55:55.315552 [PlanGate Reserved] session=sess-0140-ea0643c1 step=1 tool=calculate tokens=500 lockedPrice=30
-2026/03/29 20:55:55.324129 [PlanGate Reserved] session=sess-0140-ea0643c1 step=2 tool=web_fetch tokens=500 lockedPrice=30
-2026/03/29 20:55:55.356973 [PlanGate Reserved] session=sess-0129-a74b3a9a step=2 tool=web_fetch tokens=500 lockedPrice=0
-2026/03/29 20:55:55.374135 [PlanGate Pre-flight] session=sess-0141-3546c97b budget=500 totalCost=330 steps=7
-2026/03/29 20:55:55.374886 [PlanGate Budget Reserve] session=sess-0141-3546c97b locked totalCost=330 prices=map[calculate:30 mock_heavy:150 web_fetch:30]
-2026/03/29 20:55:55.375598 [PlanGate Pre-flight] session=sess-0141-3546c97b ADMITTED, reservation created
-2026/03/29 20:55:55.385002 [PlanGate Reserved] session=sess-0141-3546c97b step=1 tool=web_fetch tokens=500 lockedPrice=30
-2026/03/29 20:55:55.394506 [PlanGate Pre-flight] session=sess-0142-08a7902d budget=500 totalCost=570 steps=7
-2026/03/29 20:55:55.395500 [PlanGate Pre-flight] session=sess-0142-08a7902d REJECTED (budget 500 < cost 570)
-2026/03/29 20:55:55.441675 [PlanGate Pre-flight] session=sess-0143-4e7007d7 budget=500 totalCost=180 steps=6
-2026/03/29 20:55:55.442460 [PlanGate Budget Reserve] session=sess-0143-4e7007d7 locked totalCost=180 prices=map[calculate:30 web_fetch:30]
-2026/03/29 20:55:55.443405 [PlanGate Pre-flight] session=sess-0143-4e7007d7 ADMITTED, reservation created
-2026/03/29 20:55:55.452067 [PlanGate Reserved] session=sess-0143-4e7007d7 step=1 tool=calculate tokens=500 lockedPrice=30
-2026/03/29 20:55:55.460037 [PlanGate Reserved] session=sess-0143-4e7007d7 step=2 tool=web_fetch tokens=500 lockedPrice=30
-2026/03/29 20:55:55.466739 [PlanGate Pre-flight] session=sess-0144-a7e621d8 budget=500 totalCost=150 steps=5
-2026/03/29 20:55:55.467560 [PlanGate Budget Reserve] session=sess-0144-a7e621d8 locked totalCost=150 prices=map[calculate:30 web_fetch:30]
-2026/03/29 20:55:55.468318 [PlanGate Pre-flight] session=sess-0144-a7e621d8 ADMITTED, reservation created
-2026/03/29 20:55:55.482859 [PlanGate Reserved] session=sess-0140-ea0643c1 step=3 tool=calculate tokens=500 lockedPrice=30
-2026/03/29 20:55:55.489815 [PlanGate Pre-flight] session=sess-0145-81aa8ee9 budget=500 totalCost=120 steps=4
-2026/03/29 20:55:55.490713 [PlanGate Budget Reserve] session=sess-0145-81aa8ee9 locked totalCost=120 prices=map[calculate:30 web_fetch:30]
-2026/03/29 20:55:55.491278 [PlanGate Pre-flight] session=sess-0145-81aa8ee9 ADMITTED, reservation created
-2026/03/29 20:55:55.491013 [PlanGate Reserved] session=sess-0140-ea0643c1 step=4 tool=mock_heavy tokens=500 lockedPrice=150
-2026/03/29 20:55:55.492528 [PlanGate Pre-flight] session=sess-0146-f8fd2539 budget=500 totalCost=390 steps=5
-2026/03/29 20:55:55.493834 [PlanGate Budget Reserve] session=sess-0146-f8fd2539 locked totalCost=390 prices=map[calculate:30 mock_heavy:150 web_fetch:30]
-2026/03/29 20:55:55.494641 [PlanGate Pre-flight] session=sess-0146-f8fd2539 ADMITTED, reservation created
-2026/03/29 20:55:55.545054 [PlanGate Reserved] session=sess-0141-3546c97b step=2 tool=mock_heavy tokens=500 lockedPrice=150
-2026/03/29 20:55:55.557123 [PlanGate Pre-flight] session=sess-0147-1ce72199 budget=500 totalCost=0 steps=6
-2026/03/29 20:55:55.558144 [PlanGate Budget Reserve] session=sess-0147-1ce72199 locked totalCost=0 prices=map[calculate:0 mock_heavy:0 web_fetch:0]
-2026/03/29 20:55:55.559004 [PlanGate Pre-flight] session=sess-0147-1ce72199 ADMITTED, reservation created
-2026/03/29 20:55:55.605793 [PlanGate Pre-flight] session=sess-0148-418d9b4a budget=500 totalCost=0 steps=5
-2026/03/29 20:55:55.606554 [PlanGate Budget Reserve] session=sess-0148-418d9b4a locked totalCost=0 prices=map[calculate:0 mock_heavy:0 web_fetch:0]
-2026/03/29 20:55:55.607452 [PlanGate Pre-flight] session=sess-0148-418d9b4a ADMITTED, reservation created
-2026/03/29 20:55:55.609289 [PlanGate Pre-flight] session=sess-0149-7b89f210 budget=500 totalCost=0 steps=5
-2026/03/29 20:55:55.609963 [PlanGate Budget Reserve] session=sess-0149-7b89f210 locked totalCost=0 prices=map[calculate:0]
-2026/03/29 20:55:55.610622 [PlanGate Pre-flight] session=sess-0149-7b89f210 ADMITTED, reservation created
-2026/03/29 20:55:55.618468 [PlanGate Reserved] session=sess-0148-418d9b4a step=1 tool=calculate tokens=500 lockedPrice=0
-2026/03/29 20:55:55.621325 [PlanGate Reserved] session=sess-0143-4e7007d7 step=3 tool=calculate tokens=500 lockedPrice=30
-2026/03/29 20:55:55.623501 [PlanGate Reserved] session=sess-0149-7b89f210 step=1 tool=calculate tokens=500 lockedPrice=0
-2026/03/29 20:55:55.630171 [PlanGate Reserved] session=sess-0144-a7e621d8 step=1 tool=web_fetch tokens=500 lockedPrice=30
-2026/03/29 20:55:55.631207 [PlanGate Pre-flight] session=sess-0150-00840cf2 budget=500 totalCost=8 steps=4
-2026/03/29 20:55:55.631919 [PlanGate Budget Reserve] session=sess-0150-00840cf2 locked totalCost=8 prices=map[calculate:2 web_fetch:2]
-2026/03/29 20:55:55.632538 [PlanGate Pre-flight] session=sess-0150-00840cf2 ADMITTED, reservation created
-2026/03/29 20:55:55.632937 [PlanGate Reserved] session=sess-0148-418d9b4a step=2 tool=mock_heavy tokens=500 lockedPrice=0
-2026/03/29 20:55:55.638313 [PlanGate Reserved] session=sess-0143-4e7007d7 step=4 tool=calculate tokens=500 lockedPrice=30
-2026/03/29 20:55:55.640668 [PlanGate Reserved] session=sess-0149-7b89f210 step=2 tool=calculate tokens=500 lockedPrice=0
-2026/03/29 20:55:55.645644 [PlanGate Reserved] session=sess-0150-00840cf2 step=1 tool=web_fetch tokens=500 lockedPrice=2
-2026/03/29 20:55:55.648426 [PlanGate Reserved] session=sess-0143-4e7007d7 step=5 tool=web_fetch tokens=500 lockedPrice=30
-2026/03/29 20:55:55.650136 [PlanGate Reserved] session=sess-0149-7b89f210 step=3 tool=calculate tokens=500 lockedPrice=0
-2026/03/29 20:55:55.650992 [PlanGate Reserved] session=sess-0145-81aa8ee9 step=1 tool=calculate tokens=500 lockedPrice=30
-2026/03/29 20:55:55.700990 [PlanGate Reserved] session=sess-0123-989aa8b4 step=2 tool=calculate tokens=500 lockedPrice=0
-2026/03/29 20:55:55.702347 [PlanGate Reserved] session=sess-0149-7b89f210 step=4 tool=calculate tokens=500 lockedPrice=0
-2026/03/29 20:55:55.703819 [PlanGate Reserved] session=sess-0145-81aa8ee9 step=2 tool=web_fetch tokens=500 lockedPrice=30
-2026/03/29 20:55:55.713466 [PlanGate Reserved] session=sess-0123-989aa8b4 step=3 tool=calculate tokens=500 lockedPrice=0
-2026/03/29 20:55:55.720760 [PlanGate Reserved] session=sess-0147-1ce72199 step=1 tool=mock_heavy tokens=500 lockedPrice=0
-2026/03/29 20:55:55.722700 [PlanGate Reserved] session=sess-0125-600a6631 step=2 tool=web_fetch tokens=500 lockedPrice=0
-2026/03/29 20:55:55.724069 [PlanGate Reserved] session=sess-0123-989aa8b4 step=4 tool=web_fetch tokens=500 lockedPrice=0
-2026/03/29 20:55:55.792743 [PlanGate Pre-flight] session=sess-0151-5115b046 budget=500 totalCost=66 steps=3
-2026/03/29 20:55:55.793501 [PlanGate Budget Reserve] session=sess-0151-5115b046 locked totalCost=66 prices=map[mock_heavy:30 web_fetch:6]
-2026/03/29 20:55:55.794095 [PlanGate Pre-flight] session=sess-0151-5115b046 ADMITTED, reservation created
-2026/03/29 20:55:55.793989 [PlanGate Reserved] session=sess-0144-a7e621d8 step=2 tool=web_fetch tokens=500 lockedPrice=30
-2026/03/29 20:55:55.805692 [PlanGate Reserved] session=sess-0150-00840cf2 step=2 tool=calculate tokens=500 lockedPrice=2
-2026/03/29 20:55:55.812109 [PlanGate Pre-flight] session=sess-0152-ab27c02a budget=500 totalCost=48 steps=4
-2026/03/29 20:55:55.812914 [PlanGate Budget Reserve] session=sess-0152-ab27c02a locked totalCost=48 prices=map[calculate:6 mock_heavy:30 web_fetch:6]
-2026/03/29 20:55:55.813580 [PlanGate Pre-flight] session=sess-0152-ab27c02a ADMITTED, reservation created
-2026/03/29 20:55:55.824217 [PlanGate Pre-flight] session=sess-0153-3db40562 budget=500 totalCost=102 steps=5
-2026/03/29 20:55:55.824839 [PlanGate Budget Reserve] session=sess-0153-3db40562 locked totalCost=102 prices=map[calculate:6 mock_heavy:30 web_fetch:6]
-2026/03/29 20:55:55.825555 [PlanGate Pre-flight] session=sess-0153-3db40562 ADMITTED, reservation created
-2026/03/29 20:55:55.869035 [PlanGate Reserved] session=sess-0145-81aa8ee9 step=3 tool=web_fetch tokens=500 lockedPrice=30
-2026/03/29 20:55:55.870998 [PlanGate Reserved] session=sess-0150-00840cf2 step=3 tool=web_fetch tokens=500 lockedPrice=2
-2026/03/29 20:55:55.873171 [PlanGate Pre-flight] session=sess-0154-42db1b8e budget=500 totalCost=96 steps=4
-2026/03/29 20:55:55.873861 [PlanGate Budget Reserve] session=sess-0154-42db1b8e locked totalCost=96 prices=map[calculate:8 mock_heavy:40 web_fetch:8]
-2026/03/29 20:55:55.874759 [PlanGate Pre-flight] session=sess-0154-42db1b8e ADMITTED, reservation created
-2026/03/29 20:55:55.884260 [PlanGate Reserved] session=sess-0125-600a6631 step=3 tool=calculate tokens=500 lockedPrice=0
-2026/03/29 20:55:55.947208 [PlanGate Reserved] session=sess-0123-989aa8b4 step=5 tool=mock_heavy tokens=500 lockedPrice=0
-2026/03/29 20:55:55.958889 [PlanGate Reserved] session=sess-0144-a7e621d8 step=3 tool=calculate tokens=500 lockedPrice=30
-2026/03/29 20:55:56.023086 [PlanGate Reserved] session=sess-0152-ab27c02a step=1 tool=mock_heavy tokens=500 lockedPrice=30
-2026/03/29 20:55:56.026790 [PlanGate Reserved] session=sess-0153-3db40562 step=1 tool=mock_heavy tokens=500 lockedPrice=30
-2026/03/29 20:55:56.033324 [PlanGate Reserved] session=sess-0125-600a6631 step=4 tool=mock_heavy tokens=500 lockedPrice=0
-2026/03/29 20:55:56.104831 [PlanGate Reserved] session=sess-0144-a7e621d8 step=4 tool=web_fetch tokens=500 lockedPrice=30
-2026/03/29 20:55:56.156514 [PlanGate Pre-flight] session=sess-0155-317496ee budget=500 totalCost=2750 steps=5
-2026/03/29 20:55:56.157426 [PlanGate Pre-flight] session=sess-0155-317496ee REJECTED (budget 500 < cost 2750)
-2026/03/29 20:55:56.175123 [PlanGate Pre-flight] session=sess-0156-ee8981f4 budget=500 totalCost=4400 steps=4
-2026/03/29 20:55:56.175921 [PlanGate Pre-flight] session=sess-0156-ee8981f4 REJECTED (budget 500 < cost 4400)
-2026/03/29 20:55:56.252022 [PlanGate Pre-flight] session=sess-0157-90475df6 budget=500 totalCost=6600 steps=4
-2026/03/29 20:55:56.252782 [PlanGate Pre-flight] session=sess-0157-90475df6 REJECTED (budget 500 < cost 6600)
-2026/03/29 20:55:56.306301 [PlanGate Reserved] session=sess-0146-f8fd2539 step=1 tool=web_fetch tokens=500 lockedPrice=30
-2026/03/29 20:55:56.348460 [PlanGate Pre-flight] session=sess-0158-e8fa68f5 budget=500 totalCost=8800 steps=4
-2026/03/29 20:55:56.349260 [PlanGate Pre-flight] session=sess-0158-e8fa68f5 REJECTED (budget 500 < cost 8800)
-2026/03/29 20:55:56.354679 [PlanGate Reserved] session=sess-0141-3546c97b step=3 tool=web_fetch tokens=500 lockedPrice=30
-2026/03/29 20:55:56.367430 [PlanGate Pre-flight] session=sess-0159-c9aa9154 budget=500 totalCost=7700 steps=6
-2026/03/29 20:55:56.368126 [PlanGate Pre-flight] session=sess-0159-c9aa9154 REJECTED (budget 500 < cost 7700)
-2026/03/29 20:55:56.448665 [PlanGate Reserved] session=sess-0148-418d9b4a step=3 tool=web_fetch tokens=500 lockedPrice=0
-2026/03/29 20:55:56.456114 [PlanGate Pre-flight] session=sess-0160-beb922bd budget=500 totalCost=7150 steps=5
-2026/03/29 20:55:56.456752 [PlanGate Pre-flight] session=sess-0160-beb922bd REJECTED (budget 500 < cost 7150)
-2026/03/29 20:55:56.465655 [PlanGate Reserved] session=sess-0146-f8fd2539 step=2 tool=calculate tokens=500 lockedPrice=30
-2026/03/29 20:55:56.473741 [PlanGate Reserved] session=sess-0146-f8fd2539 step=3 tool=mock_heavy tokens=500 lockedPrice=150
-2026/03/29 20:55:56.487877 [PlanGate Pre-flight] session=sess-0161-59764677 budget=500 totalCost=5000 steps=6
-2026/03/29 20:55:56.488548 [PlanGate Pre-flight] session=sess-0161-59764677 REJECTED (budget 500 < cost 5000)
-2026/03/29 20:55:56.514042 [PlanGate Reserved] session=sess-0141-3546c97b step=4 tool=web_fetch tokens=500 lockedPrice=30
-2026/03/29 20:55:56.532290 [PlanGate Reserved] session=sess-0147-1ce72199 step=2 tool=web_fetch tokens=500 lockedPrice=0
-2026/03/29 20:55:56.555403 [PlanGate Pre-flight] session=sess-0162-1185277e budget=500 totalCost=1500 steps=3
-2026/03/29 20:55:56.556358 [PlanGate Pre-flight] session=sess-0162-1185277e REJECTED (budget 500 < cost 1500)
-2026/03/29 20:55:56.608765 [PlanGate Reserved] session=sess-0151-5115b046 step=1 tool=web_fetch tokens=500 lockedPrice=6
-2026/03/29 20:55:56.610032 [PlanGate Reserved] session=sess-0148-418d9b4a step=4 tool=calculate tokens=500 lockedPrice=0
-2026/03/29 20:55:56.623099 [PlanGate Pre-flight] session=sess-0163-f51ff3b5 budget=500 totalCost=8500 steps=5
-2026/03/29 20:55:56.623772 [PlanGate Pre-flight] session=sess-0163-f51ff3b5 REJECTED (budget 500 < cost 8500)
-2026/03/29 20:55:56.673747 [PlanGate Reserved] session=sess-0141-3546c97b step=5 tool=calculate tokens=500 lockedPrice=30
-2026/03/29 20:55:56.674981 [PlanGate Pre-flight] session=sess-0164-20daf25a budget=500 totalCost=3500 steps=3
-2026/03/29 20:55:56.675505 [PlanGate Pre-flight] session=sess-0164-20daf25a REJECTED (budget 500 < cost 3500)
-2026/03/29 20:55:56.682270 [PlanGate Reserved] session=sess-0141-3546c97b step=6 tool=calculate tokens=500 lockedPrice=30
-2026/03/29 20:55:56.682932 [PlanGate Pre-flight] session=sess-0165-1eb8291a budget=500 totalCost=5500 steps=3
-2026/03/29 20:55:56.683499 [PlanGate Pre-flight] session=sess-0165-1eb8291a REJECTED (budget 500 < cost 5500)
-2026/03/29 20:55:56.691983 [PlanGate Reserved] session=sess-0154-42db1b8e step=1 tool=mock_heavy tokens=500 lockedPrice=40
-2026/03/29 20:55:56.693308 [PlanGate Reserved] session=sess-0147-1ce72199 step=3 tool=mock_heavy tokens=500 lockedPrice=0
-2026/03/29 20:55:56.771567 [PlanGate Reserved] session=sess-0151-5115b046 step=2 tool=mock_heavy tokens=500 lockedPrice=30
-2026/03/29 20:55:56.805279 [PlanGate Pre-flight] session=sess-0166-c6860c30 budget=500 totalCost=3600 steps=4
-2026/03/29 20:55:56.806160 [PlanGate Pre-flight] session=sess-0166-c6860c30 REJECTED (budget 500 < cost 3600)
-2026/03/29 20:55:56.832447 [PlanGate Pre-flight] session=sess-0167-5773dc41 budget=500 totalCost=1350 steps=3
-2026/03/29 20:55:56.833259 [PlanGate Pre-flight] session=sess-0167-5773dc41 REJECTED (budget 500 < cost 1350)
-2026/03/29 20:55:56.846910 [PlanGate Pre-flight] session=sess-0168-8270c3e3 budget=500 totalCost=6300 steps=6
-2026/03/29 20:55:56.847699 [PlanGate Pre-flight] session=sess-0168-8270c3e3 REJECTED (budget 500 < cost 6300)
-2026/03/29 20:55:56.851031 [PlanGate Pre-flight] session=sess-0169-c528f13c budget=500 totalCost=7650 steps=5
-2026/03/29 20:55:56.851848 [PlanGate Pre-flight] session=sess-0169-c528f13c REJECTED (budget 500 < cost 7650)
-2026/03/29 20:55:56.909739 [PlanGate Reserved] session=sess-0152-ab27c02a step=2 tool=web_fetch tokens=500 lockedPrice=6
-2026/03/29 20:55:56.910979 [PlanGate Pre-flight] session=sess-0170-37771a73 budget=500 totalCost=720 steps=4
-2026/03/29 20:55:56.911769 [PlanGate Pre-flight] session=sess-0170-37771a73 REJECTED (budget 500 < cost 720)
-2026/03/29 20:55:56.989167 [PlanGate Pre-flight] session=sess-0171-d321f796 budget=500 totalCost=270 steps=3
-2026/03/29 20:55:56.989801 [PlanGate Budget Reserve] session=sess-0171-d321f796 locked totalCost=270 prices=map[calculate:90 web_fetch:90]
-2026/03/29 20:55:56.990412 [PlanGate Pre-flight] session=sess-0171-d321f796 ADMITTED, reservation created
-2026/03/29 20:55:56.990609 [PlanGate Pre-flight] session=sess-0172-c2f45bba budget=500 totalCost=450 steps=5
-2026/03/29 20:55:56.992064 [PlanGate Budget Reserve] session=sess-0172-c2f45bba locked totalCost=450 prices=map[web_fetch:90]
-2026/03/29 20:55:56.992623 [PlanGate Pre-flight] session=sess-0172-c2f45bba ADMITTED, reservation created
-2026/03/29 20:55:57.039537 [PlanGate Pre-flight] session=sess-0173-64140948 budget=500 totalCost=975 steps=5
-2026/03/29 20:55:57.040481 [PlanGate Pre-flight] session=sess-0173-64140948 REJECTED (budget 500 < cost 975)
-2026/03/29 20:55:57.058584 [PlanGate Pre-flight] session=sess-0174-45a53255 budget=500 totalCost=1050 steps=6
-2026/03/29 20:55:57.059383 [PlanGate Pre-flight] session=sess-0174-45a53255 REJECTED (budget 500 < cost 1050)
-2026/03/29 20:55:57.069408 [PlanGate Reserved] session=sess-0152-ab27c02a step=3 tool=calculate tokens=500 lockedPrice=6
-2026/03/29 20:55:57.110127 [PlanGate Reserved] session=sess-0153-3db40562 step=2 tool=web_fetch tokens=500 lockedPrice=6
-2026/03/29 20:55:57.128571 [PlanGate Pre-flight] session=sess-0175-d14b9ad3 budget=500 totalCost=1425 steps=7
-2026/03/29 20:55:57.129091 [PlanGate Pre-flight] session=sess-0175-d14b9ad3 REJECTED (budget 500 < cost 1425)
-2026/03/29 20:55:57.142807 [PlanGate Pre-flight] session=sess-0176-087b42cd budget=500 totalCost=1425 steps=7
-2026/03/29 20:55:57.143251 [PlanGate Pre-flight] session=sess-0176-087b42cd REJECTED (budget 500 < cost 1425)
-2026/03/29 20:55:57.147734 [PlanGate Reserved] session=sess-0171-d321f796 step=1 tool=calculate tokens=500 lockedPrice=90
-2026/03/29 20:55:57.149415 [PlanGate Reserved] session=sess-0172-c2f45bba step=1 tool=web_fetch tokens=500 lockedPrice=90
-2026/03/29 20:55:57.154931 [PlanGate Reserved] session=sess-0171-d321f796 step=2 tool=calculate tokens=500 lockedPrice=90
-2026/03/29 20:55:57.222853 [PlanGate Pre-flight] session=sess-0177-4e719daa budget=500 totalCost=525 steps=3
-2026/03/29 20:55:57.223752 [PlanGate Pre-flight] session=sess-0177-4e719daa REJECTED (budget 500 < cost 525)
-2026/03/29 20:55:57.257236 [PlanGate Pre-flight] session=sess-0178-276b9e85 budget=500 totalCost=225 steps=3
-2026/03/29 20:55:57.258144 [PlanGate Budget Reserve] session=sess-0178-276b9e85 locked totalCost=225 prices=map[calculate:75 web_fetch:75]
-2026/03/29 20:55:57.259162 [PlanGate Pre-flight] session=sess-0178-276b9e85 ADMITTED, reservation created
-2026/03/29 20:55:57.268642 [PlanGate Reserved] session=sess-0153-3db40562 step=3 tool=mock_heavy tokens=500 lockedPrice=30
-2026/03/29 20:55:57.283434 [PlanGate Reserved] session=sess-0146-f8fd2539 step=4 tool=calculate tokens=500 lockedPrice=30
-2026/03/29 20:55:57.308180 [PlanGate Reserved] session=sess-0172-c2f45bba step=2 tool=web_fetch tokens=500 lockedPrice=90
-2026/03/29 20:55:57.419152 [PlanGate Reserved] session=sess-0178-276b9e85 step=1 tool=calculate tokens=500 lockedPrice=75
-2026/03/29 20:55:57.427165 [PlanGate Reserved] session=sess-0178-276b9e85 step=2 tool=calculate tokens=500 lockedPrice=75
-2026/03/29 20:55:57.442322 [PlanGate Pre-flight] session=sess-0179-084b1acd budget=500 totalCost=420 steps=3
-2026/03/29 20:55:57.443177 [PlanGate Budget Reserve] session=sess-0179-084b1acd locked totalCost=420 prices=map[calculate:60 mock_heavy:300 web_fetch:60]
-2026/03/29 20:55:57.443876 [PlanGate Pre-flight] session=sess-0179-084b1acd ADMITTED, reservation created
-2026/03/29 20:55:57.452412 [PlanGate Reserved] session=sess-0179-084b1acd step=1 tool=mock_heavy tokens=500 lockedPrice=300
-2026/03/29 20:55:57.453586 [PlanGate Pre-flight] session=sess-0180-40c99759 budget=500 totalCost=180 steps=3
-2026/03/29 20:55:57.454261 [PlanGate Budget Reserve] session=sess-0180-40c99759 locked totalCost=180 prices=map[calculate:60 web_fetch:60]
-2026/03/29 20:55:57.454869 [PlanGate Pre-flight] session=sess-0180-40c99759 ADMITTED, reservation created
-2026/03/29 20:55:57.460532 [PlanGate Reserved] session=sess-0180-40c99759 step=1 tool=web_fetch tokens=500 lockedPrice=60
-2026/03/29 20:55:57.467207 [PlanGate Reserved] session=sess-0172-c2f45bba step=3 tool=web_fetch tokens=500 lockedPrice=90
-2026/03/29 20:55:57.483025 [PlanGate Pre-flight] session=sess-0181-20dc1d7b budget=500 totalCost=660 steps=3
-2026/03/29 20:55:57.483801 [PlanGate Pre-flight] session=sess-0181-20dc1d7b REJECTED (budget 500 < cost 660)
-2026/03/29 20:55:57.492247 [PlanGate Pre-flight] session=sess-0182-645b236d budget=500 totalCost=780 steps=5
-2026/03/29 20:55:57.493004 [PlanGate Pre-flight] session=sess-0182-645b236d REJECTED (budget 500 < cost 780)
-2026/03/29 20:55:57.502098 [PlanGate Reserved] session=sess-0154-42db1b8e step=2 tool=web_fetch tokens=500 lockedPrice=8
-2026/03/29 20:55:57.503533 [PlanGate Reserved] session=sess-0147-1ce72199 step=4 tool=mock_heavy tokens=500 lockedPrice=0
-2026/03/29 20:55:57.621913 [PlanGate Reserved] session=sess-0180-40c99759 step=2 tool=web_fetch tokens=500 lockedPrice=60
-2026/03/29 20:55:57.625067 [PlanGate Reserved] session=sess-0172-c2f45bba step=4 tool=web_fetch tokens=500 lockedPrice=90
-2026/03/29 20:55:57.662701 [PlanGate Reserved] session=sess-0154-42db1b8e step=3 tool=calculate tokens=500 lockedPrice=8
-2026/03/29 20:55:57.665308 [PlanGate Pre-flight] session=sess-0183-b7e48e79 budget=500 totalCost=0 steps=4
-2026/03/29 20:55:57.666115 [PlanGate Budget Reserve] session=sess-0183-b7e48e79 locked totalCost=0 prices=map[calculate:0 web_fetch:0]
-2026/03/29 20:55:57.666667 [PlanGate Pre-flight] session=sess-0183-b7e48e79 ADMITTED, reservation created
-2026/03/29 20:55:57.806357 [PlanGate Pre-flight] session=sess-0184-4e3777f3 budget=500 totalCost=0 steps=5
-2026/03/29 20:55:57.807241 [PlanGate Budget Reserve] session=sess-0184-4e3777f3 locked totalCost=0 prices=map[mock_heavy:0 web_fetch:0]
-2026/03/29 20:55:57.808028 [PlanGate Pre-flight] session=sess-0184-4e3777f3 ADMITTED, reservation created
-2026/03/29 20:55:57.825546 [PlanGate Reserved] session=sess-0183-b7e48e79 step=1 tool=web_fetch tokens=500 lockedPrice=0
-2026/03/29 20:55:57.826761 [PlanGate Pre-flight] session=sess-0185-f48bc0fd budget=500 totalCost=0 steps=6
-2026/03/29 20:55:57.827579 [PlanGate Budget Reserve] session=sess-0185-f48bc0fd locked totalCost=0 prices=map[calculate:0 mock_heavy:0 web_fetch:0]
-2026/03/29 20:55:57.828272 [PlanGate Pre-flight] session=sess-0185-f48bc0fd ADMITTED, reservation created
-2026/03/29 20:55:57.901144 [PlanGate Pre-flight] session=sess-0186-4f16dd6c budget=500 totalCost=0 steps=4
-2026/03/29 20:55:57.902068 [PlanGate Budget Reserve] session=sess-0186-4f16dd6c locked totalCost=0 prices=map[calculate:0 mock_heavy:0 web_fetch:0]
-2026/03/29 20:55:57.902777 [PlanGate Pre-flight] session=sess-0186-4f16dd6c ADMITTED, reservation created
-2026/03/29 20:55:57.983985 [PlanGate Reserved] session=sess-0183-b7e48e79 step=2 tool=calculate tokens=500 lockedPrice=0
-2026/03/29 20:55:57.985148 [PlanGate Reserved] session=sess-0185-f48bc0fd step=1 tool=web_fetch tokens=500 lockedPrice=0
-2026/03/29 20:55:57.988619 [PlanGate Reserved] session=sess-0183-b7e48e79 step=3 tool=calculate tokens=500 lockedPrice=0
-2026/03/29 20:55:58.015501 [PlanGate Pre-flight] session=sess-0187-dce13e48 budget=500 totalCost=0 steps=3
-2026/03/29 20:55:58.016259 [PlanGate Budget Reserve] session=sess-0187-dce13e48 locked totalCost=0 prices=map[mock_heavy:0 web_fetch:0]
-2026/03/29 20:55:58.017020 [PlanGate Pre-flight] session=sess-0187-dce13e48 ADMITTED, reservation created
-2026/03/29 20:55:58.062151 [PlanGate Reserved] session=sess-0186-4f16dd6c step=1 tool=calculate tokens=500 lockedPrice=0
-2026/03/29 20:55:58.070303 [PlanGate Reserved] session=sess-0186-4f16dd6c step=2 tool=mock_heavy tokens=500 lockedPrice=0
-2026/03/29 20:55:58.071373 [PlanGate Pre-flight] session=sess-0188-cf9d6c4a budget=500 totalCost=0 steps=3
-2026/03/29 20:55:58.072024 [PlanGate Budget Reserve] session=sess-0188-cf9d6c4a locked totalCost=0 prices=map[calculate:0 mock_heavy:0 web_fetch:0]
-2026/03/29 20:55:58.072732 [PlanGate Pre-flight] session=sess-0188-cf9d6c4a ADMITTED, reservation created
-2026/03/29 20:55:58.080488 [PlanGate Reserved] session=sess-0153-3db40562 step=4 tool=mock_heavy tokens=500 lockedPrice=30
-2026/03/29 20:55:58.122609 [PlanGate Pre-flight] session=sess-0189-78b329fb budget=500 totalCost=0 steps=7
-2026/03/29 20:55:58.123960 [PlanGate Budget Reserve] session=sess-0189-78b329fb locked totalCost=0 prices=map[calculate:0 mock_heavy:0]
-2026/03/29 20:55:58.124571 [PlanGate Pre-flight] session=sess-0189-78b329fb ADMITTED, reservation created
-2026/03/29 20:55:58.133482 [PlanGate Reserved] session=sess-0189-78b329fb step=1 tool=calculate tokens=500 lockedPrice=0
-2026/03/29 20:55:58.141278 [PlanGate Pre-flight] session=sess-0190-d5d1da61 budget=500 totalCost=0 steps=3
-2026/03/29 20:55:58.142137 [PlanGate Budget Reserve] session=sess-0190-d5d1da61 locked totalCost=0 prices=map[calculate:0 web_fetch:0]
-2026/03/29 20:55:58.143086 [PlanGate Pre-flight] session=sess-0190-d5d1da61 ADMITTED, reservation created
-2026/03/29 20:55:58.144082 [PlanGate Reserved] session=sess-0185-f48bc0fd step=2 tool=web_fetch tokens=500 lockedPrice=0
-2026/03/29 20:55:58.142438 [PlanGate Reserved] session=sess-0189-78b329fb step=2 tool=calculate tokens=500 lockedPrice=0
-2026/03/29 20:55:58.149261 [PlanGate Pre-flight] session=sess-0191-ea1455a6 budget=500 totalCost=0 steps=4
-2026/03/29 20:55:58.150158 [PlanGate Budget Reserve] session=sess-0191-ea1455a6 locked totalCost=0 prices=map[web_fetch:0]
-2026/03/29 20:55:58.150860 [PlanGate Pre-flight] session=sess-0191-ea1455a6 ADMITTED, reservation created
-2026/03/29 20:55:58.153813 [PlanGate Reserved] session=sess-0190-d5d1da61 step=1 tool=web_fetch tokens=500 lockedPrice=0
-2026/03/29 20:55:58.158689 [PlanGate Reserved] session=sess-0189-78b329fb step=3 tool=mock_heavy tokens=500 lockedPrice=0
-2026/03/29 20:55:58.234493 [PlanGate Reserved] session=sess-0188-cf9d6c4a step=1 tool=calculate tokens=500 lockedPrice=0
-2026/03/29 20:55:58.261740 [PlanGate Reserved] session=sess-0179-084b1acd step=2 tool=web_fetch tokens=500 lockedPrice=60
-2026/03/29 20:55:58.263151 [PlanGate Reserved] session=sess-0188-cf9d6c4a step=2 tool=mock_heavy tokens=500 lockedPrice=0
-2026/03/29 20:55:58.302010 [PlanGate Pre-flight] session=sess-0192-b08d6243 budget=500 totalCost=60 steps=7
-2026/03/29 20:55:58.302937 [PlanGate Budget Reserve] session=sess-0192-b08d6243 locked totalCost=60 prices=map[calculate:4 mock_heavy:20 web_fetch:4]
-2026/03/29 20:55:58.303615 [PlanGate Pre-flight] session=sess-0192-b08d6243 ADMITTED, reservation created
-2026/03/29 20:55:58.310914 [PlanGate Reserved] session=sess-0185-f48bc0fd step=3 tool=mock_heavy tokens=500 lockedPrice=0
-2026/03/29 20:55:58.314267 [PlanGate Reserved] session=sess-0191-ea1455a6 step=1 tool=web_fetch tokens=500 lockedPrice=0
-2026/03/29 20:55:58.317893 [PlanGate Reserved] session=sess-0190-d5d1da61 step=2 tool=calculate tokens=500 lockedPrice=0
-2026/03/29 20:55:58.320158 [PlanGate Reserved] session=sess-0147-1ce72199 step=5 tool=calculate tokens=500 lockedPrice=0
-2026/03/29 20:55:58.457049 [PlanGate Pre-flight] session=sess-0193-c6eb6e30 budget=500 totalCost=2700 steps=6
-2026/03/29 20:55:58.457843 [PlanGate Pre-flight] session=sess-0193-c6eb6e30 REJECTED (budget 500 < cost 2700)
-2026/03/29 20:55:58.476238 [PlanGate Reserved] session=sess-0191-ea1455a6 step=2 tool=web_fetch tokens=500 lockedPrice=0
-2026/03/29 20:55:58.525226 [PlanGate Pre-flight] session=sess-0194-b949e658 budget=500 totalCost=1350 steps=3
-2026/03/29 20:55:58.525962 [PlanGate Pre-flight] session=sess-0194-b949e658 REJECTED (budget 500 < cost 1350)
-2026/03/29 20:55:58.553688 [PlanGate Pre-flight] session=sess-0195-f644bbd0 budget=500 totalCost=3600 steps=4
-2026/03/29 20:55:58.554490 [PlanGate Pre-flight] session=sess-0195-f644bbd0 REJECTED (budget 500 < cost 3600)
-2026/03/29 20:55:58.583646 [PlanGate Pre-flight] session=sess-0196-e2f14c73 budget=500 totalCost=6750 steps=7
-2026/03/29 20:55:58.584467 [PlanGate Pre-flight] session=sess-0196-e2f14c73 REJECTED (budget 500 < cost 6750)
-2026/03/29 20:55:58.617974 [PlanGate Reserved] session=sess-0184-4e3777f3 step=1 tool=mock_heavy tokens=500 lockedPrice=0
-2026/03/29 20:55:58.635732 [PlanGate Reserved] session=sess-0191-ea1455a6 step=3 tool=web_fetch tokens=500 lockedPrice=0
-2026/03/29 20:55:58.670680 [PlanGate Pre-flight] session=sess-0197-4329ecbc budget=500 totalCost=3150 steps=3
-2026/03/29 20:55:58.671522 [PlanGate Pre-flight] session=sess-0197-4329ecbc REJECTED (budget 500 < cost 3150)
-2026/03/29 20:55:58.823728 [PlanGate Pre-flight] session=sess-0198-eeefd9b2 budget=500 totalCost=2800 steps=3
-2026/03/29 20:55:58.824459 [PlanGate Pre-flight] session=sess-0198-eeefd9b2 REJECTED (budget 500 < cost 2800)
-2026/03/29 20:55:58.826686 [PlanGate Reserved] session=sess-0187-dce13e48 step=1 tool=web_fetch tokens=500 lockedPrice=0
-2026/03/29 20:55:58.882964 [PlanGate Reserved] session=sess-0186-4f16dd6c step=3 tool=web_fetch tokens=500 lockedPrice=0
-2026/03/29 20:55:58.971090 [PlanGate Pre-flight] session=sess-0199-ee6c85df budget=500 totalCost=2000 steps=5
-2026/03/29 20:55:58.972039 [PlanGate Pre-flight] session=sess-0199-ee6c85df REJECTED (budget 500 < cost 2000)
-2026/03/29 20:55:58.986368 [PlanGate Reserved] session=sess-0187-dce13e48 step=2 tool=mock_heavy tokens=500 lockedPrice=0
-2026/03/29 20:55:59.035771 [PlanGate Reserved] session=sess-0189-78b329fb step=4 tool=mock_heavy tokens=500 lockedPrice=0
-2026/03/29 20:55:59.117578 [PlanGate Reserved] session=sess-0192-b08d6243 step=1 tool=calculate tokens=500 lockedPrice=4
-2026/03/29 20:55:59.125394 [PlanGate Reserved] session=sess-0185-f48bc0fd step=4 tool=calculate tokens=500 lockedPrice=0
-2026/03/29 20:55:59.127655 [PlanGate Reserved] session=sess-0192-b08d6243 step=2 tool=calculate tokens=500 lockedPrice=4
-2026/03/29 20:55:59.137019 [PlanGate Reserved] session=sess-0185-f48bc0fd step=5 tool=mock_heavy tokens=500 lockedPrice=0
-2026/03/29 20:55:59.138632 [PlanGate Reserved] session=sess-0192-b08d6243 step=3 tool=web_fetch tokens=500 lockedPrice=4
-2026/03/29 20:55:59.298119 [PlanGate Reserved] session=sess-0192-b08d6243 step=4 tool=mock_heavy tokens=500 lockedPrice=20
-2026/03/29 20:55:59.428734 [PlanGate Reserved] session=sess-0184-4e3777f3 step=2 tool=web_fetch tokens=500 lockedPrice=0
-2026/03/29 20:55:59.588034 [PlanGate Reserved] session=sess-0184-4e3777f3 step=3 tool=web_fetch tokens=500 lockedPrice=0
-2026/03/29 20:55:59.748003 [PlanGate Reserved] session=sess-0184-4e3777f3 step=4 tool=mock_heavy tokens=500 lockedPrice=0
-2026/03/29 20:55:59.845845 [PlanGate Reserved] session=sess-0189-78b329fb step=5 tool=mock_heavy tokens=500 lockedPrice=0
-2026/03/29 20:56:00.107099 [PlanGate Reserved] session=sess-0192-b08d6243 step=5 tool=calculate tokens=500 lockedPrice=4
-2026/03/29 20:56:00.113848 [PlanGate Reserved] session=sess-0192-b08d6243 step=6 tool=web_fetch tokens=500 lockedPrice=4
-2026/03/29 20:56:00.653588 [PlanGate Reserved] session=sess-0189-78b329fb step=6 tool=mock_heavy tokens=500 lockedPrice=0
+2026/04/01 13:39:20.441710 从后端获取到 3 个工具
+2026/04/01 13:39:20.443659   [plangate-full] 注册工具: calculate
+2026/04/01 13:39:20.444169   [plangate-full] 注册工具: web_fetch
+2026/04/01 13:39:20.444538   [plangate-full] 注册工具: mock_heavy
+2026/04/01 13:39:20.444876 ========================================
+2026/04/01 13:39:20.445223   MCP Gateway [mcpdp] 启动
+2026/04/01 13:39:20.445588   监听: http://127.0.0.1:9157
+2026/04/01 13:39:20.445922   后端: http://127.0.0.1:8080
+2026/04/01 13:39:20.446245 ========================================
+2026/04/01 13:39:21.237586 [PlanGate ReAct Step0] session=sess-0000-99890568 FREE PASS (ownPrice=0)
+2026/04/01 13:39:21.242760 [PlanGate ReAct Step0] session=sess-0000-99890568 ADMITTED, tracking started
+2026/04/01 13:39:21.270098 [PlanGate ReAct Step0] session=sess-0001-32714d07 FREE PASS (ownPrice=0)
+2026/04/01 13:39:21.472362 [PlanGate ReAct Step0] session=sess-0002-f02f0a51 FREE PASS (ownPrice=0)
+2026/04/01 13:39:21.477869 [PlanGate ReAct Step0] session=sess-0002-f02f0a51 ADMITTED, tracking started
+2026/04/01 13:39:21.559925 [PlanGate ReAct Step0] session=sess-0003-845fa486 FREE PASS (ownPrice=0)
+2026/04/01 13:39:21.622815 [PlanGate ReAct Step0] session=sess-0004-9985d092 FREE PASS (ownPrice=0)
+2026/04/01 13:39:21.635611 [PlanGate ReAct Step0] session=sess-0005-a80ab3aa FREE PASS (ownPrice=0)
+2026/04/01 13:39:21.639759 [PlanGate ReAct Step0] session=sess-0005-a80ab3aa ADMITTED, tracking started
+2026/04/01 13:39:21.646296 [PlanGate ReAct Step0] session=sess-0006-10542fac FREE PASS (ownPrice=0)
+2026/04/01 13:39:21.651342 [PlanGate ReAct Step0] session=sess-0007-c0e1f89e FREE PASS (ownPrice=0)
+2026/04/01 13:39:21.656546 [PlanGate ReAct Step0] session=sess-0007-c0e1f89e ADMITTED, tracking started
+2026/04/01 13:39:21.657868 [PlanGate ReAct Sunk-Cost] session=sess-0007-c0e1f89e step=1 tool=mock_heavy FREE PASS (ownPrice=0)
+2026/04/01 13:39:21.779356 [PlanGate ReAct Step0] session=sess-0004-9985d092 ADMITTED, tracking started
+2026/04/01 13:39:21.781462 [PlanGate ReAct Sunk-Cost] session=sess-0004-9985d092 step=1 tool=web_fetch FREE PASS (ownPrice=0)
+2026/04/01 13:39:21.786759 [PlanGate ReAct Step0] session=sess-0008-d973dd6c FREE PASS (ownPrice=0)
+2026/04/01 13:39:21.790581 [PlanGate ReAct Step0] session=sess-0008-d973dd6c ADMITTED, tracking started
+2026/04/01 13:39:21.793587 [PlanGate ReAct Sunk-Cost] session=sess-0008-d973dd6c step=1 tool=calculate FREE PASS (ownPrice=0)
+2026/04/01 13:39:21.798449 [PlanGate ReAct Sunk-Cost] session=sess-0008-d973dd6c step=2 tool=mock_heavy FREE PASS (ownPrice=0)
+2026/04/01 13:39:21.801845 [PlanGate ReAct Step0] session=sess-0006-10542fac ADMITTED, tracking started
+2026/04/01 13:39:21.803921 [PlanGate ReAct Sunk-Cost] session=sess-0006-10542fac step=1 tool=mock_heavy FREE PASS (ownPrice=0)
+2026/04/01 13:39:21.849977 [PlanGate ReAct Step0] session=sess-0009-4bee9831 FREE PASS (ownPrice=0)
+2026/04/01 13:39:21.934109 [PlanGate ReAct Step0] session=sess-0010-1a66e0e0 tool=calculate tokens=500 ownPrice=15 (relaxed, no weight)
+2026/04/01 13:39:21.935264 [PlanGate ReAct Step0] session=sess-0011-05710298 tool=web_fetch tokens=500 ownPrice=15 (relaxed, no weight)
+2026/04/01 13:39:21.937970 [PlanGate ReAct Sunk-Cost] session=sess-0004-9985d092 step=2 tool=web_fetch tokens=500 price=15 adjusted=5 ownPrice=15
+2026/04/01 13:39:21.943512 [PlanGate ReAct Step0] session=sess-0010-1a66e0e0 ADMITTED, tracking started
+2026/04/01 13:39:21.945858 [PlanGate ReAct Sunk-Cost] session=sess-0010-1a66e0e0 step=1 tool=calculate tokens=500 price=30 adjusted=20 ownPrice=30
+2026/04/01 13:39:21.952286 [PlanGate ReAct Sunk-Cost] session=sess-0010-1a66e0e0 step=2 tool=calculate tokens=500 price=30 adjusted=10 ownPrice=30
+2026/04/01 13:39:21.957270 [PlanGate ReAct Sunk-Cost] session=sess-0010-1a66e0e0 step=3 tool=mock_heavy tokens=500 price=150 adjusted=27 ownPrice=30
+2026/04/01 13:39:22.005814 [PlanGate ReAct Step0] session=sess-0009-4bee9831 ADMITTED, tracking started
+2026/04/01 13:39:22.007747 [PlanGate ReAct Sunk-Cost] session=sess-0009-4bee9831 step=1 tool=mock_heavy tokens=500 price=225 adjusted=150 ownPrice=45
+2026/04/01 13:39:22.076538 [PlanGate ReAct Step0] session=sess-0001-32714d07 ADMITTED, tracking started
+2026/04/01 13:39:22.079211 [PlanGate ReAct Sunk-Cost] session=sess-0001-32714d07 step=1 tool=calculate tokens=500 price=45 adjusted=30 ownPrice=45
+2026/04/01 13:39:22.086206 [PlanGate ReAct Sunk-Cost] session=sess-0001-32714d07 step=2 tool=mock_heavy tokens=500 price=225 adjusted=75 ownPrice=45
+2026/04/01 13:39:22.094197 [PlanGate ReAct Step0] session=sess-0011-05710298 ADMITTED, tracking started
+2026/04/01 13:39:22.097438 [PlanGate ReAct Sunk-Cost] session=sess-0011-05710298 step=1 tool=web_fetch tokens=500 price=45 adjusted=30 ownPrice=45
+2026/04/01 13:39:22.098931 [PlanGate ReAct Sunk-Cost] session=sess-0004-9985d092 step=3 tool=mock_heavy tokens=500 price=225 adjusted=40 ownPrice=45
+2026/04/01 13:39:22.173001 [PlanGate ReAct Step0] session=sess-0012-143443c4 tool=web_fetch tokens=500 ownPrice=45 (relaxed, no weight)
+2026/04/01 13:39:22.257391 [PlanGate ReAct Sunk-Cost] session=sess-0011-05710298 step=2 tool=calculate tokens=500 price=60 adjusted=20 ownPrice=60
+2026/04/01 13:39:22.263239 [PlanGate ReAct Sunk-Cost] session=sess-0011-05710298 step=3 tool=calculate tokens=500 price=60 adjusted=10 ownPrice=60
+2026/04/01 13:39:22.289986 [PlanGate ReAct Step0] session=sess-0013-927ed61b tool=web_fetch tokens=500 ownPrice=60 (relaxed, no weight)
+2026/04/01 13:39:22.307718 [PlanGate ReAct Step0] session=sess-0014-db45bbdb tool=calculate tokens=500 ownPrice=60 (relaxed, no weight)
+2026/04/01 13:39:22.322509 [PlanGate ReAct Step0] session=sess-0015-eab81567 tool=calculate tokens=500 ownPrice=75 (relaxed, no weight)
+2026/04/01 13:39:22.328903 [PlanGate ReAct Step0] session=sess-0012-143443c4 ADMITTED, tracking started
+2026/04/01 13:39:22.329606 [PlanGate ReAct Step0] session=sess-0014-db45bbdb ADMITTED, tracking started
+2026/04/01 13:39:22.331273 [PlanGate ReAct Sunk-Cost] session=sess-0012-143443c4 step=1 tool=mock_heavy tokens=500 price=375 adjusted=250 ownPrice=75
+2026/04/01 13:39:22.332985 [PlanGate ReAct Sunk-Cost] session=sess-0014-db45bbdb step=1 tool=calculate tokens=500 price=75 adjusted=50 ownPrice=75
+2026/04/01 13:39:22.332021 [PlanGate ReAct Step0] session=sess-0015-eab81567 ADMITTED, tracking started
+2026/04/01 13:39:22.336261 [PlanGate ReAct Step0] session=sess-0016-58c23b38 tool=calculate tokens=500 ownPrice=75 (relaxed, no weight)
+2026/04/01 13:39:22.337700 [PlanGate ReAct Sunk-Cost] session=sess-0015-eab81567 step=1 tool=mock_heavy tokens=500 price=375 adjusted=250 ownPrice=75
+2026/04/01 13:39:22.362200 [PlanGate ReAct Step0] session=sess-0017-915d5ef6 tool=calculate tokens=500 ownPrice=90 (relaxed, no weight)
+2026/04/01 13:39:22.368163 [PlanGate ReAct Step0] session=sess-0003-845fa486 ADMITTED, tracking started
+2026/04/01 13:39:22.370351 [PlanGate ReAct Sunk-Cost] session=sess-0003-845fa486 step=1 tool=web_fetch tokens=500 price=105 adjusted=70 ownPrice=105
+2026/04/01 13:39:22.371527 [PlanGate ReAct Sunk-Cost] session=sess-0014-db45bbdb step=2 tool=calculate tokens=500 price=105 adjusted=35 ownPrice=105
+2026/04/01 13:39:22.372400 [PlanGate ReAct Step0] session=sess-0016-58c23b38 ADMITTED, tracking started
+2026/04/01 13:39:22.374734 [PlanGate ReAct Sunk-Cost] session=sess-0016-58c23b38 step=1 tool=web_fetch tokens=500 price=105 adjusted=70 ownPrice=105
+2026/04/01 13:39:22.411651 [PlanGate ReAct Step0] session=sess-0018-93ee804c tool=mock_heavy tokens=500 ownPrice=550 (relaxed, no weight)
+2026/04/01 13:39:22.412302 [PlanGate ReAct Step0] session=sess-0018-93ee804c REJECTED (tokens 500 < ownPrice 550)
+2026/04/01 13:39:22.446565 [PlanGate ReAct Step0] session=sess-0013-927ed61b ADMITTED, tracking started
+2026/04/01 13:39:22.449345 [PlanGate ReAct Step0] session=sess-0019-0e138155 tool=calculate tokens=500 ownPrice=550 (relaxed, no weight)
+2026/04/01 13:39:22.449978 [PlanGate ReAct Step0] session=sess-0019-0e138155 REJECTED (tokens 500 < ownPrice 550)
+2026/04/01 13:39:22.450883 [PlanGate ReAct Step0] session=sess-0017-915d5ef6 ADMITTED, tracking started
+2026/04/01 13:39:22.468294 [PlanGate ReAct Sunk-Cost] session=sess-0014-db45bbdb step=3 tool=web_fetch tokens=500 price=550 adjusted=100 ownPrice=550
+2026/04/01 13:39:22.472764 [PlanGate ReAct Step0] session=sess-0020-459e65c6 tool=calculate tokens=500 ownPrice=550 (relaxed, no weight)
+2026/04/01 13:39:22.473420 [PlanGate ReAct Step0] session=sess-0020-459e65c6 REJECTED (tokens 500 < ownPrice 550)
+2026/04/01 13:39:22.536853 [PlanGate ReAct Step0] session=sess-0021-ee4fddab tool=mock_heavy tokens=500 ownPrice=550 (relaxed, no weight)
+2026/04/01 13:39:22.537484 [PlanGate ReAct Step0] session=sess-0021-ee4fddab REJECTED (tokens 500 < ownPrice 550)
+2026/04/01 13:39:22.547894 [PlanGate ReAct Step0] session=sess-0022-48b7ffc4 tool=mock_heavy tokens=500 ownPrice=550 (relaxed, no weight)
+2026/04/01 13:39:22.548693 [PlanGate ReAct Step0] session=sess-0022-48b7ffc4 REJECTED (tokens 500 < ownPrice 550)
+2026/04/01 13:39:22.572024 [PlanGate ReAct Step0] session=sess-0023-cf5feda2 tool=web_fetch tokens=500 ownPrice=550 (relaxed, no weight)
+2026/04/01 13:39:22.572711 [PlanGate ReAct Step0] session=sess-0023-cf5feda2 REJECTED (tokens 500 < ownPrice 550)
+2026/04/01 13:39:22.603046 [PlanGate ReAct Step0] session=sess-0024-93f8a854 tool=mock_heavy tokens=500 ownPrice=550 (relaxed, no weight)
+2026/04/01 13:39:22.603558 [PlanGate ReAct Step0] session=sess-0024-93f8a854 REJECTED (tokens 500 < ownPrice 550)
+2026/04/01 13:39:22.606669 [PlanGate ReAct Sunk-Cost] session=sess-0008-d973dd6c step=3 tool=web_fetch tokens=500 price=550 adjusted=100 ownPrice=550
+2026/04/01 13:39:22.607875 [PlanGate ReAct Sunk-Cost] session=sess-0003-845fa486 step=2 tool=mock_heavy tokens=500 price=2750 adjusted=916 ownPrice=550
+2026/04/01 13:39:22.610308 [PlanGate ReAct Sunk-Cost] session=sess-0006-10542fac step=2 tool=mock_heavy tokens=500 price=2750 adjusted=916 ownPrice=550
+2026/04/01 13:39:22.623846 [PlanGate ReAct Sunk-Cost] session=sess-0016-58c23b38 step=2 tool=web_fetch tokens=500 price=550 adjusted=183 ownPrice=550
+2026/04/01 13:39:22.644181 [PlanGate ReAct Step0] session=sess-0025-4d4bce56 tool=mock_heavy tokens=500 ownPrice=550 (relaxed, no weight)
+2026/04/01 13:39:22.644809 [PlanGate ReAct Step0] session=sess-0025-4d4bce56 REJECTED (tokens 500 < ownPrice 550)
+2026/04/01 13:39:22.748225 [PlanGate ReAct Step0] session=sess-0026-11c38c9f tool=web_fetch tokens=500 ownPrice=500 (relaxed, no weight)
+2026/04/01 13:39:22.758207 [PlanGate ReAct Sunk-Cost] session=sess-0014-db45bbdb step=4 tool=mock_heavy tokens=500 price=2500 adjusted=277 ownPrice=500
+2026/04/01 13:39:22.763719 [PlanGate ReAct Step0] session=sess-0027-d84a4781 tool=mock_heavy tokens=500 ownPrice=500 (relaxed, no weight)
+2026/04/01 13:39:22.766752 [PlanGate ReAct Sunk-Cost] session=sess-0008-d973dd6c step=4 tool=mock_heavy tokens=500 price=2500 adjusted=277 ownPrice=500
+2026/04/01 13:39:22.781614 [PlanGate ReAct Sunk-Cost] session=sess-0016-58c23b38 step=3 tool=web_fetch tokens=500 price=500 adjusted=90 ownPrice=500
+2026/04/01 13:39:22.812554 [PlanGate ReAct Step0] session=sess-0028-2edafcc3 tool=calculate tokens=500 ownPrice=500 (relaxed, no weight)
+2026/04/01 13:39:22.815350 [PlanGate ReAct Sunk-Cost] session=sess-0009-4bee9831 step=2 tool=mock_heavy tokens=500 price=2500 adjusted=833 ownPrice=500
+2026/04/01 13:39:22.817512 [PlanGate ReAct Step0] session=sess-0028-2edafcc3 ADMITTED, tracking started
+2026/04/01 13:39:22.819722 [PlanGate ReAct Sunk-Cost] session=sess-0028-2edafcc3 step=1 tool=mock_heavy tokens=500 price=2500 adjusted=1666 ownPrice=500
+2026/04/01 13:39:22.873238 [PlanGate ReAct Step0] session=sess-0029-48e44417 tool=web_fetch tokens=500 ownPrice=500 (relaxed, no weight)
+2026/04/01 13:39:22.876581 [PlanGate ReAct Step0] session=sess-0030-3b39c1da tool=mock_heavy tokens=500 ownPrice=500 (relaxed, no weight)
+2026/04/01 13:39:22.894938 [PlanGate ReAct Sunk-Cost] session=sess-0001-32714d07 step=3 tool=mock_heavy tokens=500 price=2500 adjusted=454 ownPrice=500
+2026/04/01 13:39:22.903925 [PlanGate ReAct Step0] session=sess-0026-11c38c9f ADMITTED, tracking started
+2026/04/01 13:39:22.906801 [PlanGate ReAct Sunk-Cost] session=sess-0026-11c38c9f step=1 tool=mock_heavy tokens=500 price=2500 adjusted=1666 ownPrice=500
+2026/04/01 13:39:22.908193 [PlanGate ReAct Sunk-Cost] session=sess-0004-9985d092 step=4 tool=web_fetch tokens=500 price=500 adjusted=55 ownPrice=500
+2026/04/01 13:39:22.939178 [PlanGate ReAct Sunk-Cost] session=sess-0016-58c23b38 step=4 tool=mock_heavy tokens=500 price=2500 adjusted=277 ownPrice=500
+2026/04/01 13:39:22.940269 [PlanGate ReAct Step0] session=sess-0031-c2538a0b tool=mock_heavy tokens=500 ownPrice=500 (relaxed, no weight)
+2026/04/01 13:39:22.953849 [PlanGate ReAct Step0] session=sess-0032-33c02b7c tool=mock_heavy tokens=500 ownPrice=500 (relaxed, no weight)
+2026/04/01 13:39:22.959309 [PlanGate ReAct Step0] session=sess-0033-c72ebc50 tool=mock_heavy tokens=500 ownPrice=500 (relaxed, no weight)
+2026/04/01 13:39:23.029699 [PlanGate ReAct Step0] session=sess-0029-48e44417 ADMITTED, tracking started
+2026/04/01 13:39:23.031767 [PlanGate ReAct Sunk-Cost] session=sess-0029-48e44417 step=1 tool=calculate tokens=500 price=500 adjusted=333 ownPrice=500
+2026/04/01 13:39:23.066222 [PlanGate ReAct Sunk-Cost] session=sess-0004-9985d092 step=5 tool=calculate tokens=500 price=500 adjusted=37 ownPrice=500
+2026/04/01 13:39:23.142027 [PlanGate ReAct Sunk-Cost] session=sess-0012-143443c4 step=2 tool=mock_heavy tokens=500 price=2500 adjusted=833 ownPrice=500
+2026/04/01 13:39:23.159351 [PlanGate ReAct Step0] session=sess-0034-6f3f19fd tool=calculate tokens=500 ownPrice=500 (relaxed, no weight)
+2026/04/01 13:39:23.176530 [PlanGate ReAct Sunk-Cost] session=sess-0015-eab81567 step=2 tool=mock_heavy tokens=500 price=2500 adjusted=833 ownPrice=500
+2026/04/01 13:39:23.179173 [PlanGate ReAct Sunk-Cost] session=sess-0029-48e44417 step=2 tool=web_fetch tokens=500 price=500 adjusted=166 ownPrice=500
+2026/04/01 13:39:23.183001 [PlanGate ReAct Sunk-Cost] session=sess-0004-9985d092 step=6 tool=mock_heavy tokens=500 price=2500 adjusted=131 ownPrice=500
+2026/04/01 13:39:23.186122 [PlanGate ReAct Step0] session=sess-0034-6f3f19fd ADMITTED, tracking started
+2026/04/01 13:39:23.188639 [PlanGate ReAct Sunk-Cost] session=sess-0034-6f3f19fd step=1 tool=calculate tokens=500 price=500 adjusted=333 ownPrice=500
+2026/04/01 13:39:23.337865 [PlanGate ReAct Sunk-Cost] session=sess-0029-48e44417 step=3 tool=calculate tokens=500 price=500 adjusted=90 ownPrice=500
+2026/04/01 13:39:23.384857 [PlanGate ReAct Step0] session=sess-0035-1a6d56a5 tool=web_fetch tokens=500 ownPrice=500 (relaxed, no weight)
+2026/04/01 13:39:23.496717 [PlanGate ReAct Step0] session=sess-0036-7b61bade tool=web_fetch tokens=500 ownPrice=500 (relaxed, no weight)
+2026/04/01 13:39:23.522169 [PlanGate ReAct Step0] session=sess-0037-23ea6ca9 tool=calculate tokens=500 ownPrice=550 (relaxed, no weight)
+2026/04/01 13:39:23.522947 [PlanGate ReAct Step0] session=sess-0037-23ea6ca9 REJECTED (tokens 500 < ownPrice 550)
+2026/04/01 13:39:23.529344 [PlanGate ReAct Step0] session=sess-0038-251bb60a tool=calculate tokens=500 ownPrice=550 (relaxed, no weight)
+2026/04/01 13:39:23.530090 [PlanGate ReAct Step0] session=sess-0038-251bb60a REJECTED (tokens 500 < ownPrice 550)
+2026/04/01 13:39:23.569898 [PlanGate ReAct Step0] session=sess-0027-d84a4781 ADMITTED, tracking started
+2026/04/01 13:39:23.570291 [PlanGate ReAct Sunk-Cost] session=sess-0034-6f3f19fd step=2 tool=calculate tokens=500 price=550 adjusted=183 ownPrice=550
+2026/04/01 13:39:23.572451 [PlanGate ReAct Sunk-Cost] session=sess-0027-d84a4781 step=1 tool=mock_heavy tokens=500 price=2750 adjusted=1833 ownPrice=550
+2026/04/01 13:39:23.574229 [PlanGate ReAct Sunk-Cost] session=sess-0008-d973dd6c step=5 tool=web_fetch tokens=500 price=550 adjusted=40 ownPrice=550
+2026/04/01 13:39:23.576940 [PlanGate ReAct Sunk-Cost] session=sess-0034-6f3f19fd step=3 tool=calculate tokens=500 price=550 adjusted=100 ownPrice=550
+2026/04/01 13:39:23.606842 [PlanGate ReAct Step0] session=sess-0039-5f2a11bc tool=web_fetch tokens=500 ownPrice=550 (relaxed, no weight)
+2026/04/01 13:39:23.607493 [PlanGate ReAct Step0] session=sess-0039-5f2a11bc REJECTED (tokens 500 < ownPrice 550)
+2026/04/01 13:39:23.647932 [PlanGate ReAct Step0] session=sess-0040-088fe80e tool=calculate tokens=500 ownPrice=550 (relaxed, no weight)
+2026/04/01 13:39:23.648861 [PlanGate ReAct Step0] session=sess-0040-088fe80e REJECTED (tokens 500 < ownPrice 550)
+2026/04/01 13:39:23.657383 [PlanGate ReAct Step0] session=sess-0041-6c3232b6 tool=web_fetch tokens=500 ownPrice=550 (relaxed, no weight)
+2026/04/01 13:39:23.658140 [PlanGate ReAct Step0] session=sess-0041-6c3232b6 REJECTED (tokens 500 < ownPrice 550)
+2026/04/01 13:39:23.695643 [PlanGate ReAct Step0] session=sess-0030-3b39c1da ADMITTED, tracking started
+2026/04/01 13:39:23.698418 [PlanGate ReAct Sunk-Cost] session=sess-0030-3b39c1da step=1 tool=calculate tokens=500 price=550 adjusted=366 ownPrice=550
+2026/04/01 13:39:23.699558 [PlanGate ReAct Sunk-Cost] session=sess-0034-6f3f19fd step=4 tool=calculate tokens=500 price=550 adjusted=61 ownPrice=550
+2026/04/01 13:39:23.704069 [PlanGate ReAct Step0] session=sess-0042-11034f15 tool=calculate tokens=500 ownPrice=550 (relaxed, no weight)
+2026/04/01 13:39:23.704573 [PlanGate ReAct Step0] session=sess-0042-11034f15 REJECTED (tokens 500 < ownPrice 550)
+2026/04/01 13:39:23.706846 [PlanGate ReAct Step0] session=sess-0043-e98ee6d1 tool=web_fetch tokens=500 ownPrice=550 (relaxed, no weight)
+2026/04/01 13:39:23.707375 [PlanGate ReAct Step0] session=sess-0043-e98ee6d1 REJECTED (tokens 500 < ownPrice 550)
+2026/04/01 13:39:23.708052 [PlanGate ReAct Sunk-Cost] session=sess-0001-32714d07 step=4 tool=web_fetch tokens=500 price=550 adjusted=61 ownPrice=550
+2026/04/01 13:39:23.709430 [PlanGate ReAct Sunk-Cost] session=sess-0034-6f3f19fd step=5 tool=calculate tokens=500 price=550 adjusted=40 ownPrice=550
+2026/04/01 13:39:23.723870 [PlanGate ReAct Step0] session=sess-0035-1a6d56a5 ADMITTED, tracking started
+2026/04/01 13:39:23.725899 [PlanGate ReAct Step0] session=sess-0036-7b61bade ADMITTED, tracking started
+2026/04/01 13:39:23.726481 [PlanGate ReAct Sunk-Cost] session=sess-0035-1a6d56a5 step=1 tool=calculate tokens=500 price=550 adjusted=366 ownPrice=550
+2026/04/01 13:39:23.728473 [PlanGate ReAct Sunk-Cost] session=sess-0036-7b61bade step=1 tool=calculate tokens=500 price=550 adjusted=366 ownPrice=550
+2026/04/01 13:39:23.735760 [PlanGate ReAct Sunk-Cost] session=sess-0035-1a6d56a5 step=2 tool=calculate tokens=500 price=550 adjusted=183 ownPrice=550
+2026/04/01 13:39:23.737419 [PlanGate ReAct Sunk-Cost] session=sess-0036-7b61bade step=2 tool=mock_heavy tokens=500 price=2750 adjusted=916 ownPrice=550
+2026/04/01 13:39:23.742290 [PlanGate ReAct Sunk-Cost] session=sess-0035-1a6d56a5 step=3 tool=calculate tokens=500 price=550 adjusted=100 ownPrice=550
+2026/04/01 13:39:23.750361 [PlanGate ReAct Sunk-Cost] session=sess-0035-1a6d56a5 step=4 tool=calculate tokens=500 price=550 adjusted=61 ownPrice=550
+2026/04/01 13:39:23.831643 [PlanGate ReAct Step0] session=sess-0031-c2538a0b ADMITTED, tracking started
+2026/04/01 13:39:23.834327 [PlanGate ReAct Sunk-Cost] session=sess-0031-c2538a0b step=1 tool=mock_heavy tokens=500 price=2500 adjusted=1666 ownPrice=500
+2026/04/01 13:39:23.865782 [PlanGate ReAct Sunk-Cost] session=sess-0001-32714d07 step=5 tool=mock_heavy tokens=500 price=525 adjusted=38 ownPrice=105
+2026/04/01 13:39:23.866037 [PlanGate ReAct Step0] session=sess-0032-33c02b7c ADMITTED, tracking started
+2026/04/01 13:39:23.868346 [PlanGate ReAct Step0] session=sess-0044-f73387b3 tool=calculate tokens=500 ownPrice=105 (relaxed, no weight)
+2026/04/01 13:39:23.875324 [PlanGate ReAct Step0] session=sess-0044-f73387b3 ADMITTED, tracking started
+2026/04/01 13:39:23.878145 [PlanGate ReAct Sunk-Cost] session=sess-0044-f73387b3 step=1 tool=calculate tokens=500 price=105 adjusted=70 ownPrice=105
+2026/04/01 13:39:23.885207 [PlanGate ReAct Sunk-Cost] session=sess-0044-f73387b3 step=2 tool=calculate tokens=500 price=105 adjusted=35 ownPrice=105
+2026/04/01 13:39:23.888803 [PlanGate ReAct Step0] session=sess-0045-6725c874 tool=web_fetch tokens=500 ownPrice=105 (relaxed, no weight)
+2026/04/01 13:39:23.894115 [PlanGate ReAct Sunk-Cost] session=sess-0044-f73387b3 step=3 tool=calculate tokens=500 price=105 adjusted=19 ownPrice=105
+2026/04/01 13:39:23.901139 [PlanGate ReAct Sunk-Cost] session=sess-0044-f73387b3 step=4 tool=mock_heavy tokens=500 price=525 adjusted=58 ownPrice=105
+2026/04/01 13:39:23.944294 [PlanGate ReAct Step0] session=sess-0033-c72ebc50 ADMITTED, tracking started
+2026/04/01 13:39:23.947082 [PlanGate ReAct Sunk-Cost] session=sess-0033-c72ebc50 step=1 tool=web_fetch tokens=500 price=90 adjusted=60 ownPrice=90
+2026/04/01 13:39:23.962746 [PlanGate ReAct Step0] session=sess-0046-d39d5977 tool=calculate tokens=500 ownPrice=90 (relaxed, no weight)
+2026/04/01 13:39:23.968117 [PlanGate ReAct Step0] session=sess-0046-d39d5977 ADMITTED, tracking started
+2026/04/01 13:39:23.970810 [PlanGate ReAct Sunk-Cost] session=sess-0046-d39d5977 step=1 tool=web_fetch tokens=500 price=90 adjusted=60 ownPrice=90
+2026/04/01 13:39:23.988376 [PlanGate ReAct Step0] session=sess-0047-5fa85ee0 tool=web_fetch tokens=500 ownPrice=90 (relaxed, no weight)
+2026/04/01 13:39:24.037984 [PlanGate ReAct Step0] session=sess-0048-b98ad541 tool=web_fetch tokens=500 ownPrice=90 (relaxed, no weight)
+2026/04/01 13:39:24.044407 [PlanGate ReAct Step0] session=sess-0045-6725c874 ADMITTED, tracking started
+2026/04/01 13:39:24.047154 [PlanGate ReAct Sunk-Cost] session=sess-0045-6725c874 step=1 tool=calculate tokens=500 price=90 adjusted=60 ownPrice=90
+2026/04/01 13:39:24.054064 [PlanGate ReAct Sunk-Cost] session=sess-0045-6725c874 step=2 tool=mock_heavy tokens=500 price=450 adjusted=150 ownPrice=90
+2026/04/01 13:39:24.093142 [PlanGate ReAct Step0] session=sess-0049-a8d7b304 tool=calculate tokens=500 ownPrice=90 (relaxed, no weight)
+2026/04/01 13:39:24.098790 [PlanGate ReAct Step0] session=sess-0049-a8d7b304 ADMITTED, tracking started
+2026/04/01 13:39:24.101494 [PlanGate ReAct Sunk-Cost] session=sess-0049-a8d7b304 step=1 tool=mock_heavy tokens=500 price=450 adjusted=300 ownPrice=90
+2026/04/01 13:39:24.104319 [PlanGate ReAct Sunk-Cost] session=sess-0033-c72ebc50 step=2 tool=calculate tokens=500 price=90 adjusted=30 ownPrice=90
+2026/04/01 13:39:24.106954 [PlanGate ReAct Step0] session=sess-0050-e924179b tool=web_fetch tokens=500 ownPrice=90 (relaxed, no weight)
+2026/04/01 13:39:24.144685 [PlanGate ReAct Step0] session=sess-0047-5fa85ee0 ADMITTED, tracking started
+2026/04/01 13:39:24.146209 [PlanGate ReAct Sunk-Cost] session=sess-0047-5fa85ee0 step=1 tool=web_fetch tokens=500 price=75 adjusted=50 ownPrice=75
+2026/04/01 13:39:24.194213 [PlanGate ReAct Step0] session=sess-0048-b98ad541 ADMITTED, tracking started
+2026/04/01 13:39:24.197311 [PlanGate ReAct Sunk-Cost] session=sess-0048-b98ad541 step=1 tool=web_fetch tokens=500 price=75 adjusted=50 ownPrice=75
+2026/04/01 13:39:24.263000 [PlanGate ReAct Step0] session=sess-0050-e924179b ADMITTED, tracking started
+2026/04/01 13:39:24.303262 [PlanGate ReAct Sunk-Cost] session=sess-0047-5fa85ee0 step=2 tool=web_fetch tokens=500 price=75 adjusted=25 ownPrice=75
+2026/04/01 13:39:24.342086 [PlanGate ReAct Step0] session=sess-0051-299b3477 tool=mock_heavy tokens=500 ownPrice=75 (relaxed, no weight)
+2026/04/01 13:39:24.355628 [PlanGate ReAct Sunk-Cost] session=sess-0048-b98ad541 step=2 tool=web_fetch tokens=500 price=75 adjusted=25 ownPrice=75
+2026/04/01 13:39:24.442396 [PlanGate ReAct Step0] session=sess-0052-2231f6d9 tool=web_fetch tokens=500 ownPrice=60 (relaxed, no weight)
+2026/04/01 13:39:24.461747 [PlanGate ReAct Sunk-Cost] session=sess-0047-5fa85ee0 step=3 tool=web_fetch tokens=500 price=60 adjusted=10 ownPrice=60
+2026/04/01 13:39:24.598461 [PlanGate ReAct Step0] session=sess-0052-2231f6d9 ADMITTED, tracking started
+2026/04/01 13:39:24.601773 [PlanGate ReAct Sunk-Cost] session=sess-0052-2231f6d9 step=1 tool=calculate tokens=500 price=60 adjusted=40 ownPrice=60
+2026/04/01 13:39:24.609429 [PlanGate ReAct Sunk-Cost] session=sess-0052-2231f6d9 step=2 tool=web_fetch tokens=500 price=60 adjusted=20 ownPrice=60
+2026/04/01 13:39:24.620024 [PlanGate ReAct Sunk-Cost] session=sess-0047-5fa85ee0 step=4 tool=calculate tokens=500 price=60 adjusted=6 ownPrice=60
+2026/04/01 13:39:24.629471 [PlanGate ReAct Step0] session=sess-0053-b31ab879 tool=web_fetch tokens=500 ownPrice=60 (relaxed, no weight)
+2026/04/01 13:39:24.709861 [PlanGate ReAct Sunk-Cost] session=sess-0044-f73387b3 step=5 tool=calculate tokens=500 price=60 adjusted=4 ownPrice=60
+2026/04/01 13:39:24.767964 [PlanGate ReAct Sunk-Cost] session=sess-0052-2231f6d9 step=3 tool=calculate FREE PASS (ownPrice=0)
+2026/04/01 13:39:24.781017 [PlanGate ReAct Step0] session=sess-0054-bd65c455 FREE PASS (ownPrice=0)
+2026/04/01 13:39:24.786592 [PlanGate ReAct Step0] session=sess-0053-b31ab879 ADMITTED, tracking started
+2026/04/01 13:39:24.787083 [PlanGate ReAct Step0] session=sess-0054-bd65c455 ADMITTED, tracking started
+2026/04/01 13:39:24.789246 [PlanGate ReAct Sunk-Cost] session=sess-0053-b31ab879 step=1 tool=web_fetch FREE PASS (ownPrice=0)
+2026/04/01 13:39:24.790408 [PlanGate ReAct Sunk-Cost] session=sess-0054-bd65c455 step=1 tool=web_fetch FREE PASS (ownPrice=0)
+2026/04/01 13:39:24.842173 [PlanGate ReAct Step0] session=sess-0055-c92021a1 FREE PASS (ownPrice=0)
+2026/04/01 13:39:24.846575 [PlanGate ReAct Step0] session=sess-0055-c92021a1 ADMITTED, tracking started
+2026/04/01 13:39:24.849483 [PlanGate ReAct Sunk-Cost] session=sess-0055-c92021a1 step=1 tool=calculate FREE PASS (ownPrice=0)
+2026/04/01 13:39:24.856093 [PlanGate ReAct Sunk-Cost] session=sess-0055-c92021a1 step=2 tool=web_fetch FREE PASS (ownPrice=0)
+2026/04/01 13:39:24.863148 [PlanGate ReAct Sunk-Cost] session=sess-0045-6725c874 step=3 tool=calculate FREE PASS (ownPrice=0)
+2026/04/01 13:39:24.870521 [PlanGate ReAct Sunk-Cost] session=sess-0045-6725c874 step=4 tool=calculate FREE PASS (ownPrice=0)
+2026/04/01 13:39:24.877852 [PlanGate ReAct Sunk-Cost] session=sess-0045-6725c874 step=5 tool=mock_heavy FREE PASS (ownPrice=0)
+2026/04/01 13:39:24.908714 [PlanGate ReAct Sunk-Cost] session=sess-0049-a8d7b304 step=2 tool=calculate FREE PASS (ownPrice=0)
+2026/04/01 13:39:24.947292 [PlanGate ReAct Sunk-Cost] session=sess-0053-b31ab879 step=2 tool=calculate FREE PASS (ownPrice=0)
+2026/04/01 13:39:24.948027 [PlanGate ReAct Sunk-Cost] session=sess-0054-bd65c455 step=2 tool=web_fetch FREE PASS (ownPrice=0)
+2026/04/01 13:39:24.953719 [PlanGate ReAct Sunk-Cost] session=sess-0053-b31ab879 step=3 tool=calculate FREE PASS (ownPrice=0)
+2026/04/01 13:39:24.959968 [PlanGate ReAct Sunk-Cost] session=sess-0053-b31ab879 step=4 tool=mock_heavy FREE PASS (ownPrice=0)
+2026/04/01 13:39:25.012917 [PlanGate ReAct Step0] session=sess-0056-73d8920b FREE PASS (ownPrice=0)
+2026/04/01 13:39:25.014186 [PlanGate ReAct Sunk-Cost] session=sess-0055-c92021a1 step=3 tool=mock_heavy FREE PASS (ownPrice=0)
+2026/04/01 13:39:25.019655 [PlanGate ReAct Step0] session=sess-0057-82670e69 FREE PASS (ownPrice=0)
+2026/04/01 13:39:25.022823 [PlanGate ReAct Step0] session=sess-0057-82670e69 ADMITTED, tracking started
+2026/04/01 13:39:25.024231 [PlanGate ReAct Sunk-Cost] session=sess-0057-82670e69 step=1 tool=calculate FREE PASS (ownPrice=0)
+2026/04/01 13:39:25.029291 [PlanGate ReAct Sunk-Cost] session=sess-0057-82670e69 step=2 tool=calculate FREE PASS (ownPrice=0)
+2026/04/01 13:39:25.034036 [PlanGate ReAct Step0] session=sess-0058-1ff82b73 FREE PASS (ownPrice=0)
+2026/04/01 13:39:25.037628 [PlanGate ReAct Step0] session=sess-0059-03406ab5 FREE PASS (ownPrice=0)
+2026/04/01 13:39:25.041313 [PlanGate ReAct Step0] session=sess-0059-03406ab5 ADMITTED, tracking started
+2026/04/01 13:39:25.042919 [PlanGate ReAct Sunk-Cost] session=sess-0059-03406ab5 step=1 tool=mock_heavy FREE PASS (ownPrice=0)
+2026/04/01 13:39:25.065278 [PlanGate ReAct Step0] session=sess-0060-0ca7956d FREE PASS (ownPrice=0)
+2026/04/01 13:39:25.098228 [PlanGate ReAct Step0] session=sess-0061-6ce3a80e FREE PASS (ownPrice=0)
+2026/04/01 13:39:25.120039 [PlanGate ReAct Step0] session=sess-0062-2612d0c5 tool=web_fetch tokens=500 ownPrice=2 (relaxed, no weight)
+2026/04/01 13:39:25.147217 [PlanGate ReAct Step0] session=sess-0051-299b3477 ADMITTED, tracking started
+2026/04/01 13:39:25.148703 [PlanGate ReAct Sunk-Cost] session=sess-0051-299b3477 step=1 tool=calculate tokens=500 price=2 adjusted=1 ownPrice=2
+2026/04/01 13:39:25.152475 [PlanGate ReAct Sunk-Cost] session=sess-0051-299b3477 step=2 tool=web_fetch tokens=500 price=2 adjusted=0 ownPrice=2
+2026/04/01 13:39:25.188398 [PlanGate ReAct Step0] session=sess-0058-1ff82b73 ADMITTED, tracking started
+2026/04/01 13:39:25.220773 [PlanGate ReAct Step0] session=sess-0060-0ca7956d ADMITTED, tracking started
+2026/04/01 13:39:25.223941 [PlanGate ReAct Sunk-Cost] session=sess-0060-0ca7956d step=1 tool=web_fetch tokens=500 price=2 adjusted=1 ownPrice=2
+2026/04/01 13:39:25.238759 [PlanGate ReAct Step0] session=sess-0063-8a110bc6 tool=web_fetch tokens=500 ownPrice=2 (relaxed, no weight)
+2026/04/01 13:39:25.253092 [PlanGate ReAct Step0] session=sess-0061-6ce3a80e ADMITTED, tracking started
+2026/04/01 13:39:25.256085 [PlanGate ReAct Sunk-Cost] session=sess-0061-6ce3a80e step=1 tool=web_fetch tokens=500 price=2 adjusted=1 ownPrice=2
+2026/04/01 13:39:25.269155 [PlanGate ReAct Step0] session=sess-0064-8f39a51b tool=mock_heavy tokens=500 ownPrice=2 (relaxed, no weight)
+2026/04/01 13:39:25.274385 [PlanGate ReAct Step0] session=sess-0062-2612d0c5 ADMITTED, tracking started
+2026/04/01 13:39:25.276115 [PlanGate ReAct Sunk-Cost] session=sess-0062-2612d0c5 step=1 tool=web_fetch tokens=500 price=4 adjusted=2 ownPrice=4
+2026/04/01 13:39:25.292631 [PlanGate ReAct Step0] session=sess-0065-ca1a5cb1 tool=mock_heavy tokens=500 ownPrice=4 (relaxed, no weight)
+2026/04/01 13:39:25.308288 [PlanGate ReAct Sunk-Cost] session=sess-0051-299b3477 step=3 tool=web_fetch tokens=500 price=6 adjusted=1 ownPrice=6
+2026/04/01 13:39:25.346902 [PlanGate ReAct Step0] session=sess-0066-bd123d17 tool=web_fetch tokens=500 ownPrice=6 (relaxed, no weight)
+2026/04/01 13:39:25.358625 [PlanGate ReAct Step0] session=sess-0067-6fd7244a tool=web_fetch tokens=500 ownPrice=8 (relaxed, no weight)
+2026/04/01 13:39:25.382659 [PlanGate ReAct Sunk-Cost] session=sess-0060-0ca7956d step=2 tool=mock_heavy tokens=500 price=50 adjusted=16 ownPrice=10
+2026/04/01 13:39:25.394975 [PlanGate ReAct Step0] session=sess-0063-8a110bc6 ADMITTED, tracking started
+2026/04/01 13:39:25.397957 [PlanGate ReAct Sunk-Cost] session=sess-0063-8a110bc6 step=1 tool=web_fetch tokens=500 price=120 adjusted=80 ownPrice=120
+2026/04/01 13:39:25.414433 [PlanGate ReAct Sunk-Cost] session=sess-0061-6ce3a80e step=2 tool=mock_heavy tokens=500 price=600 adjusted=200 ownPrice=120
+2026/04/01 13:39:25.459699 [PlanGate ReAct Sunk-Cost] session=sess-0062-2612d0c5 step=2 tool=calculate tokens=500 price=120 adjusted=40 ownPrice=120
+2026/04/01 13:39:25.466698 [PlanGate ReAct Step0] session=sess-0068-2af8a776 tool=calculate tokens=500 ownPrice=120 (relaxed, no weight)
+2026/04/01 13:39:25.472754 [PlanGate ReAct Step0] session=sess-0069-221baf35 tool=calculate tokens=500 ownPrice=120 (relaxed, no weight)
+2026/04/01 13:39:25.566104 [PlanGate ReAct Step0] session=sess-0066-bd123d17 ADMITTED, tracking started
+2026/04/01 13:39:25.568239 [PlanGate ReAct Sunk-Cost] session=sess-0066-bd123d17 step=1 tool=web_fetch tokens=500 price=150 adjusted=100 ownPrice=150
+2026/04/01 13:39:25.615088 [PlanGate ReAct Step0] session=sess-0067-6fd7244a ADMITTED, tracking started
+2026/04/01 13:39:25.618280 [PlanGate ReAct Sunk-Cost] session=sess-0067-6fd7244a step=1 tool=calculate tokens=500 price=150 adjusted=100 ownPrice=150
+2026/04/01 13:39:25.690182 [PlanGate ReAct Sunk-Cost] session=sess-0062-2612d0c5 step=3 tool=calculate tokens=500 price=150 adjusted=27 ownPrice=150
+2026/04/01 13:39:25.695172 [PlanGate ReAct Step0] session=sess-0068-2af8a776 ADMITTED, tracking started
+2026/04/01 13:39:25.703529 [PlanGate ReAct Step0] session=sess-0069-221baf35 ADMITTED, tracking started
+2026/04/01 13:39:25.705276 [PlanGate ReAct Sunk-Cost] session=sess-0069-221baf35 step=1 tool=web_fetch tokens=500 price=150 adjusted=100 ownPrice=150
+2026/04/01 13:39:25.723390 [PlanGate ReAct Sunk-Cost] session=sess-0063-8a110bc6 step=2 tool=calculate tokens=500 price=150 adjusted=50 ownPrice=150
+2026/04/01 13:39:25.729196 [PlanGate ReAct Sunk-Cost] session=sess-0067-6fd7244a step=2 tool=mock_heavy tokens=500 price=750 adjusted=250 ownPrice=150
+2026/04/01 13:39:25.734836 [PlanGate ReAct Sunk-Cost] session=sess-0062-2612d0c5 step=4 tool=mock_heavy tokens=500 price=750 adjusted=83 ownPrice=150
+2026/04/01 13:39:25.763965 [PlanGate ReAct Step0] session=sess-0070-99aa2cc3 tool=mock_heavy tokens=500 ownPrice=150 (relaxed, no weight)
+2026/04/01 13:39:25.768875 [PlanGate ReAct Sunk-Cost] session=sess-0053-b31ab879 step=5 tool=mock_heavy tokens=500 price=750 adjusted=55 ownPrice=150
+2026/04/01 13:39:25.771878 [PlanGate ReAct Sunk-Cost] session=sess-0063-8a110bc6 step=3 tool=web_fetch tokens=500 price=150 adjusted=27 ownPrice=150
+2026/04/01 13:39:25.820920 [PlanGate ReAct Step0] session=sess-0056-73d8920b ADMITTED, tracking started
+2026/04/01 13:39:25.824171 [PlanGate ReAct Sunk-Cost] session=sess-0056-73d8920b step=1 tool=calculate tokens=500 price=150 adjusted=100 ownPrice=150
+2026/04/01 13:39:25.825279 [PlanGate ReAct Sunk-Cost] session=sess-0055-c92021a1 step=4 tool=calculate tokens=500 price=150 adjusted=16 ownPrice=150
+2026/04/01 13:39:25.850629 [PlanGate ReAct Sunk-Cost] session=sess-0059-03406ab5 step=2 tool=mock_heavy tokens=500 price=750 adjusted=250 ownPrice=150
+2026/04/01 13:39:25.861990 [PlanGate ReAct Sunk-Cost] session=sess-0066-bd123d17 step=2 tool=calculate tokens=500 price=150 adjusted=50 ownPrice=150
+2026/04/01 13:39:25.863147 [PlanGate ReAct Step0] session=sess-0071-9e9cc768 tool=mock_heavy tokens=500 ownPrice=150 (relaxed, no weight)
+2026/04/01 13:39:25.878930 [PlanGate ReAct Step0] session=sess-0072-93337af6 tool=calculate tokens=500 ownPrice=150 (relaxed, no weight)
+2026/04/01 13:39:25.881149 [PlanGate ReAct Step0] session=sess-0073-f8aecb0a tool=calculate tokens=500 ownPrice=150 (relaxed, no weight)
+2026/04/01 13:39:25.926248 [PlanGate ReAct Sunk-Cost] session=sess-0069-221baf35 step=2 tool=web_fetch tokens=500 price=700 adjusted=233 ownPrice=700
+2026/04/01 13:39:25.933844 [PlanGate ReAct Sunk-Cost] session=sess-0055-c92021a1 step=5 tool=calculate tokens=500 price=700 adjusted=51 ownPrice=700
+2026/04/01 13:39:25.993810 [PlanGate ReAct Step0] session=sess-0074-4ba0c04b tool=mock_heavy tokens=500 ownPrice=700 (relaxed, no weight)
+2026/04/01 13:39:25.994690 [PlanGate ReAct Step0] session=sess-0074-4ba0c04b REJECTED (tokens 500 < ownPrice 700)
+2026/04/01 13:39:26.020083 [PlanGate ReAct Sunk-Cost] session=sess-0066-bd123d17 step=3 tool=mock_heavy tokens=500 price=3500 adjusted=636 ownPrice=700
+2026/04/01 13:39:26.076642 [PlanGate ReAct Step0] session=sess-0064-8f39a51b ADMITTED, tracking started
+2026/04/01 13:39:26.076947 [PlanGate ReAct Step0] session=sess-0075-54a07998 tool=web_fetch tokens=500 ownPrice=700 (relaxed, no weight)
+2026/04/01 13:39:26.077617 [PlanGate ReAct Step0] session=sess-0075-54a07998 REJECTED (tokens 500 < ownPrice 700)
+2026/04/01 13:39:26.078108 [PlanGate ReAct Sunk-Cost] session=sess-0064-8f39a51b step=1 tool=calculate tokens=500 price=700 adjusted=466 ownPrice=700
+2026/04/01 13:39:26.084568 [PlanGate ReAct Step0] session=sess-0072-93337af6 ADMITTED, tracking started
+2026/04/01 13:39:26.086548 [PlanGate ReAct Sunk-Cost] session=sess-0072-93337af6 step=1 tool=mock_heavy tokens=500 price=3500 adjusted=2333 ownPrice=700
+2026/04/01 13:39:26.094471 [PlanGate ReAct Step0] session=sess-0073-f8aecb0a ADMITTED, tracking started
+2026/04/01 13:39:26.096473 [PlanGate ReAct Sunk-Cost] session=sess-0073-f8aecb0a step=1 tool=mock_heavy tokens=500 price=3500 adjusted=2333 ownPrice=700
+2026/04/01 13:39:26.164603 [PlanGate ReAct Step0] session=sess-0076-0b6be1e2 tool=calculate tokens=500 ownPrice=700 (relaxed, no weight)
+2026/04/01 13:39:26.165302 [PlanGate ReAct Step0] session=sess-0076-0b6be1e2 REJECTED (tokens 500 < ownPrice 700)
+2026/04/01 13:39:26.183068 [PlanGate ReAct Step0] session=sess-0065-ca1a5cb1 ADMITTED, tracking started
+2026/04/01 13:39:26.186024 [PlanGate ReAct Sunk-Cost] session=sess-0065-ca1a5cb1 step=1 tool=web_fetch tokens=500 price=700 adjusted=466 ownPrice=700
+2026/04/01 13:39:26.193688 [PlanGate ReAct Sunk-Cost] session=sess-0055-c92021a1 step=6 tool=mock_heavy tokens=500 price=3500 adjusted=184 ownPrice=700
+2026/04/01 13:39:26.199250 [PlanGate ReAct Sunk-Cost] session=sess-0064-8f39a51b step=2 tool=mock_heavy tokens=500 price=3250 adjusted=1083 ownPrice=650
+2026/04/01 13:39:26.255716 [PlanGate ReAct Sunk-Cost] session=sess-0069-221baf35 step=3 tool=mock_heavy tokens=500 price=3250 adjusted=590 ownPrice=650
+2026/04/01 13:39:26.263229 [PlanGate ReAct Step0] session=sess-0077-42329b84 tool=web_fetch tokens=500 ownPrice=650 (relaxed, no weight)
+2026/04/01 13:39:26.264604 [PlanGate ReAct Step0] session=sess-0077-42329b84 REJECTED (tokens 500 < ownPrice 650)
+2026/04/01 13:39:26.269594 [PlanGate ReAct Step0] session=sess-0078-7fdfbe14 tool=calculate tokens=500 ownPrice=650 (relaxed, no weight)
+2026/04/01 13:39:26.270176 [PlanGate ReAct Step0] session=sess-0078-7fdfbe14 REJECTED (tokens 500 < ownPrice 650)
+2026/04/01 13:39:26.300321 [PlanGate ReAct Step0] session=sess-0079-b725f01d tool=web_fetch tokens=500 ownPrice=650 (relaxed, no weight)
+2026/04/01 13:39:26.301106 [PlanGate ReAct Step0] session=sess-0079-b725f01d REJECTED (tokens 500 < ownPrice 650)
+2026/04/01 13:39:26.309339 [PlanGate ReAct Step0] session=sess-0080-6754aaa8 tool=calculate tokens=500 ownPrice=650 (relaxed, no weight)
+2026/04/01 13:39:26.310149 [PlanGate ReAct Step0] session=sess-0080-6754aaa8 REJECTED (tokens 500 < ownPrice 650)
+2026/04/01 13:39:26.352191 [PlanGate ReAct Sunk-Cost] session=sess-0065-ca1a5cb1 step=2 tool=calculate tokens=500 price=650 adjusted=216 ownPrice=650
+2026/04/01 13:39:26.354398 [PlanGate ReAct Sunk-Cost] session=sess-0060-0ca7956d step=3 tool=mock_heavy tokens=500 price=3250 adjusted=590 ownPrice=650
+2026/04/01 13:39:26.357854 [PlanGate ReAct Sunk-Cost] session=sess-0065-ca1a5cb1 step=3 tool=mock_heavy tokens=500 price=3250 adjusted=590 ownPrice=650
+2026/04/01 13:39:26.443809 [PlanGate ReAct Step0] session=sess-0081-22a56348 tool=mock_heavy tokens=500 ownPrice=135 (relaxed, no weight)
+2026/04/01 13:39:26.509569 [PlanGate ReAct Step0] session=sess-0082-90c3011d tool=web_fetch tokens=500 ownPrice=135 (relaxed, no weight)
+2026/04/01 13:39:26.537968 [PlanGate ReAct Step0] session=sess-0083-6e304475 tool=mock_heavy tokens=500 ownPrice=120 (relaxed, no weight)
+2026/04/01 13:39:26.539362 [PlanGate ReAct Sunk-Cost] session=sess-0067-6fd7244a step=3 tool=mock_heavy tokens=500 price=600 adjusted=109 ownPrice=120
+2026/04/01 13:39:26.542931 [PlanGate ReAct Step0] session=sess-0084-c0f7cfe3 tool=calculate tokens=500 ownPrice=120 (relaxed, no weight)
+2026/04/01 13:39:26.568951 [PlanGate ReAct Step0] session=sess-0085-9173894f tool=web_fetch tokens=500 ownPrice=120 (relaxed, no weight)
+2026/04/01 13:39:26.595470 [PlanGate ReAct Step0] session=sess-0086-aa4fe623 tool=calculate tokens=500 ownPrice=120 (relaxed, no weight)
+2026/04/01 13:39:26.626648 [PlanGate ReAct Step0] session=sess-0084-c0f7cfe3 ADMITTED, tracking started
+2026/04/01 13:39:26.627534 [PlanGate ReAct Step0] session=sess-0070-99aa2cc3 ADMITTED, tracking started
+2026/04/01 13:39:26.629194 [PlanGate ReAct Sunk-Cost] session=sess-0084-c0f7cfe3 step=1 tool=web_fetch tokens=500 price=120 adjusted=80 ownPrice=120
+2026/04/01 13:39:26.629525 [PlanGate ReAct Step0] session=sess-0086-aa4fe623 ADMITTED, tracking started
+2026/04/01 13:39:26.631086 [PlanGate ReAct Sunk-Cost] session=sess-0070-99aa2cc3 step=1 tool=web_fetch tokens=500 price=120 adjusted=80 ownPrice=120
+2026/04/01 13:39:26.633565 [PlanGate ReAct Sunk-Cost] session=sess-0086-aa4fe623 step=1 tool=calculate tokens=500 price=120 adjusted=80 ownPrice=120
+2026/04/01 13:39:26.666666 [PlanGate ReAct Step0] session=sess-0082-90c3011d ADMITTED, tracking started
+2026/04/01 13:39:26.669537 [PlanGate ReAct Sunk-Cost] session=sess-0082-90c3011d step=1 tool=web_fetch tokens=500 price=120 adjusted=80 ownPrice=120
+2026/04/01 13:39:26.670711 [PlanGate ReAct Sunk-Cost] session=sess-0086-aa4fe623 step=2 tool=calculate tokens=500 price=120 adjusted=40 ownPrice=120
+2026/04/01 13:39:26.683350 [PlanGate ReAct Step0] session=sess-0087-3207ff56 tool=mock_heavy tokens=500 ownPrice=120 (relaxed, no weight)
+2026/04/01 13:39:26.739433 [PlanGate ReAct Sunk-Cost] session=sess-0059-03406ab5 step=3 tool=calculate tokens=500 price=120 adjusted=21 ownPrice=120
+2026/04/01 13:39:26.751315 [PlanGate ReAct Step0] session=sess-0088-ecf49143 tool=calculate tokens=500 ownPrice=120 (relaxed, no weight)
+2026/04/01 13:39:26.778212 [PlanGate ReAct Step0] session=sess-0085-9173894f ADMITTED, tracking started
+2026/04/01 13:39:26.781134 [PlanGate ReAct Sunk-Cost] session=sess-0085-9173894f step=1 tool=web_fetch tokens=500 price=120 adjusted=80 ownPrice=120
+2026/04/01 13:39:26.781301 [PlanGate ReAct Step0] session=sess-0088-ecf49143 ADMITTED, tracking started
+2026/04/01 13:39:26.784592 [PlanGate ReAct Sunk-Cost] session=sess-0088-ecf49143 step=1 tool=calculate tokens=500 price=120 adjusted=80 ownPrice=120
+2026/04/01 13:39:26.788091 [PlanGate ReAct Sunk-Cost] session=sess-0084-c0f7cfe3 step=2 tool=mock_heavy tokens=500 price=600 adjusted=200 ownPrice=120
+2026/04/01 13:39:26.792009 [PlanGate ReAct Sunk-Cost] session=sess-0088-ecf49143 step=2 tool=mock_heavy tokens=500 price=600 adjusted=200 ownPrice=120
+2026/04/01 13:39:26.805788 [PlanGate ReAct Sunk-Cost] session=sess-0070-99aa2cc3 step=2 tool=mock_heavy tokens=500 price=600 adjusted=200 ownPrice=120
+2026/04/01 13:39:26.827314 [PlanGate ReAct Step0] session=sess-0071-9e9cc768 ADMITTED, tracking started
+2026/04/01 13:39:26.828007 [PlanGate ReAct Sunk-Cost] session=sess-0082-90c3011d step=2 tool=web_fetch tokens=500 price=120 adjusted=40 ownPrice=120
+2026/04/01 13:39:26.829315 [PlanGate ReAct Sunk-Cost] session=sess-0071-9e9cc768 step=1 tool=calculate tokens=500 price=120 adjusted=80 ownPrice=120
+2026/04/01 13:39:26.899447 [PlanGate ReAct Step0] session=sess-0089-fcab842a tool=calculate tokens=500 ownPrice=120 (relaxed, no weight)
+2026/04/01 13:39:26.940358 [PlanGate ReAct Sunk-Cost] session=sess-0085-9173894f step=2 tool=web_fetch tokens=500 price=120 adjusted=40 ownPrice=120
+2026/04/01 13:39:26.940593 [PlanGate ReAct Step0] session=sess-0089-fcab842a ADMITTED, tracking started
+2026/04/01 13:39:26.941392 [PlanGate ReAct Sunk-Cost] session=sess-0071-9e9cc768 step=2 tool=calculate tokens=500 price=120 adjusted=40 ownPrice=120
+2026/04/01 13:39:26.942429 [PlanGate ReAct Step0] session=sess-0090-334246d7 tool=calculate tokens=500 ownPrice=120 (relaxed, no weight)
+2026/04/01 13:39:26.943420 [PlanGate ReAct Sunk-Cost] session=sess-0089-fcab842a step=1 tool=mock_heavy tokens=500 price=600 adjusted=400 ownPrice=120
+2026/04/01 13:39:26.952136 [PlanGate ReAct Step0] session=sess-0091-d96f8cdb tool=mock_heavy tokens=500 ownPrice=120 (relaxed, no weight)
+2026/04/01 13:39:26.986715 [PlanGate ReAct Sunk-Cost] session=sess-0082-90c3011d step=3 tool=web_fetch tokens=500 price=120 adjusted=21 ownPrice=120
+2026/04/01 13:39:26.987143 [PlanGate ReAct Step0] session=sess-0090-334246d7 ADMITTED, tracking started
+2026/04/01 13:39:26.987988 [PlanGate ReAct Sunk-Cost] session=sess-0071-9e9cc768 step=3 tool=calculate tokens=500 price=120 adjusted=21 ownPrice=120
+2026/04/01 13:39:26.988954 [PlanGate ReAct Sunk-Cost] session=sess-0090-334246d7 step=1 tool=web_fetch tokens=500 price=120 adjusted=80 ownPrice=120
+2026/04/01 13:39:27.037084 [PlanGate ReAct Step0] session=sess-0092-2b190348 tool=calculate tokens=500 ownPrice=120 (relaxed, no weight)
+2026/04/01 13:39:27.098318 [PlanGate ReAct Sunk-Cost] session=sess-0085-9173894f step=3 tool=web_fetch tokens=500 price=135 adjusted=24 ownPrice=135
+2026/04/01 13:39:27.133107 [PlanGate ReAct Step0] session=sess-0093-595ea92f tool=calculate tokens=500 ownPrice=135 (relaxed, no weight)
+2026/04/01 13:39:27.189099 [PlanGate ReAct Step0] session=sess-0094-68d448af tool=mock_heavy tokens=500 ownPrice=135 (relaxed, no weight)
+2026/04/01 13:39:27.251135 [PlanGate ReAct Step0] session=sess-0081-22a56348 ADMITTED, tracking started
+2026/04/01 13:39:27.251629 [PlanGate ReAct Sunk-Cost] session=sess-0082-90c3011d step=4 tool=web_fetch tokens=500 price=650 adjusted=72 ownPrice=650
+2026/04/01 13:39:27.253592 [PlanGate ReAct Sunk-Cost] session=sess-0081-22a56348 step=1 tool=web_fetch tokens=500 price=650 adjusted=433 ownPrice=650
+2026/04/01 13:39:27.258495 [PlanGate ReAct Step0] session=sess-0092-2b190348 ADMITTED, tracking started
+2026/04/01 13:39:27.261062 [PlanGate ReAct Sunk-Cost] session=sess-0092-2b190348 step=1 tool=web_fetch tokens=500 price=650 adjusted=433 ownPrice=650
+2026/04/01 13:39:27.288078 [PlanGate ReAct Step0] session=sess-0095-59b78ce9 tool=web_fetch tokens=500 ownPrice=650 (relaxed, no weight)
+2026/04/01 13:39:27.288717 [PlanGate ReAct Step0] session=sess-0095-59b78ce9 REJECTED (tokens 500 < ownPrice 650)
+2026/04/01 13:39:27.334056 [PlanGate ReAct Step0] session=sess-0096-f9c287eb tool=calculate tokens=500 ownPrice=650 (relaxed, no weight)
+2026/04/01 13:39:27.334805 [PlanGate ReAct Step0] session=sess-0096-f9c287eb REJECTED (tokens 500 < ownPrice 650)
+2026/04/01 13:39:27.346486 [PlanGate ReAct Step0] session=sess-0083-6e304475 ADMITTED, tracking started
+2026/04/01 13:39:27.349680 [PlanGate ReAct Sunk-Cost] session=sess-0083-6e304475 step=1 tool=mock_heavy tokens=500 price=3250 adjusted=2166 ownPrice=650
+2026/04/01 13:39:27.350545 [PlanGate ReAct Sunk-Cost] session=sess-0067-6fd7244a step=4 tool=calculate tokens=500 price=650 adjusted=72 ownPrice=650
+2026/04/01 13:39:27.353177 [PlanGate ReAct Step0] session=sess-0093-595ea92f ADMITTED, tracking started
+2026/04/01 13:39:27.355659 [PlanGate ReAct Sunk-Cost] session=sess-0093-595ea92f step=1 tool=calculate tokens=500 price=650 adjusted=433 ownPrice=650
+2026/04/01 13:39:27.384787 [PlanGate ReAct Step0] session=sess-0097-289e4021 tool=mock_heavy tokens=500 ownPrice=650 (relaxed, no weight)
+2026/04/01 13:39:27.385571 [PlanGate ReAct Step0] session=sess-0097-289e4021 REJECTED (tokens 500 < ownPrice 650)
+2026/04/01 13:39:27.408100 [PlanGate ReAct Sunk-Cost] session=sess-0090-334246d7 step=2 tool=mock_heavy tokens=500 price=3250 adjusted=1083 ownPrice=650
+2026/04/01 13:39:27.415847 [PlanGate ReAct Sunk-Cost] session=sess-0085-9173894f step=4 tool=web_fetch tokens=500 price=650 adjusted=72 ownPrice=650
+2026/04/01 13:39:27.422372 [PlanGate ReAct Step0] session=sess-0098-74481b7b tool=web_fetch tokens=500 ownPrice=650 (relaxed, no weight)
+2026/04/01 13:39:27.423118 [PlanGate ReAct Step0] session=sess-0098-74481b7b REJECTED (tokens 500 < ownPrice 650)
+2026/04/01 13:39:27.424666 [PlanGate ReAct Step0] session=sess-0099-b1c92c36 tool=web_fetch tokens=500 ownPrice=650 (relaxed, no weight)
+2026/04/01 13:39:27.425332 [PlanGate ReAct Step0] session=sess-0099-b1c92c36 REJECTED (tokens 500 < ownPrice 650)
+2026/04/01 13:39:27.433474 [PlanGate ReAct Step0] session=sess-0100-b90a55d6 tool=calculate tokens=500 ownPrice=650 (relaxed, no weight)
+2026/04/01 13:39:27.434130 [PlanGate ReAct Step0] session=sess-0100-b90a55d6 REJECTED (tokens 500 < ownPrice 650)
+2026/04/01 13:39:27.436966 [PlanGate ReAct Step0] session=sess-0101-478c43a2 tool=web_fetch tokens=500 ownPrice=650 (relaxed, no weight)
+2026/04/01 13:39:27.437505 [PlanGate ReAct Step0] session=sess-0101-478c43a2 REJECTED (tokens 500 < ownPrice 650)
+2026/04/01 13:39:27.505595 [PlanGate ReAct Step0] session=sess-0102-bf927b21 tool=web_fetch tokens=500 ownPrice=650 (relaxed, no weight)
+2026/04/01 13:39:27.506352 [PlanGate ReAct Step0] session=sess-0102-bf927b21 REJECTED (tokens 500 < ownPrice 650)
+2026/04/01 13:39:27.509685 [PlanGate ReAct Sunk-Cost] session=sess-0082-90c3011d step=5 tool=web_fetch tokens=500 price=650 adjusted=48 ownPrice=650
+2026/04/01 13:39:27.517371 [PlanGate ReAct Sunk-Cost] session=sess-0093-595ea92f step=2 tool=web_fetch tokens=500 price=650 adjusted=216 ownPrice=650
+2026/04/01 13:39:27.532834 [PlanGate ReAct Step0] session=sess-0103-7c414f64 tool=web_fetch tokens=500 ownPrice=650 (relaxed, no weight)
+2026/04/01 13:39:27.533580 [PlanGate ReAct Step0] session=sess-0103-7c414f64 REJECTED (tokens 500 < ownPrice 650)
+2026/04/01 13:39:27.541590 [PlanGate ReAct Step0] session=sess-0087-3207ff56 ADMITTED, tracking started
+2026/04/01 13:39:27.544328 [PlanGate ReAct Sunk-Cost] session=sess-0087-3207ff56 step=1 tool=mock_heavy tokens=500 price=3250 adjusted=2166 ownPrice=650
+2026/04/01 13:39:27.564974 [PlanGate ReAct Sunk-Cost] session=sess-0081-22a56348 step=2 tool=calculate tokens=500 price=650 adjusted=216 ownPrice=650
+2026/04/01 13:39:27.574065 [PlanGate ReAct Sunk-Cost] session=sess-0092-2b190348 step=2 tool=mock_heavy tokens=500 price=3250 adjusted=1083 ownPrice=650
+2026/04/01 13:39:27.575301 [PlanGate ReAct Sunk-Cost] session=sess-0081-22a56348 step=3 tool=calculate tokens=500 price=650 adjusted=118 ownPrice=650
+2026/04/01 13:39:27.581486 [PlanGate ReAct Step0] session=sess-0104-5b3473f4 tool=calculate tokens=500 ownPrice=650 (relaxed, no weight)
+2026/04/01 13:39:27.582146 [PlanGate ReAct Step0] session=sess-0104-5b3473f4 REJECTED (tokens 500 < ownPrice 650)
+2026/04/01 13:39:27.582811 [PlanGate ReAct Sunk-Cost] session=sess-0081-22a56348 step=4 tool=calculate tokens=500 price=650 adjusted=72 ownPrice=650
+2026/04/01 13:39:27.589609 [PlanGate ReAct Sunk-Cost] session=sess-0081-22a56348 step=5 tool=web_fetch tokens=500 price=650 adjusted=48 ownPrice=650
+2026/04/01 13:39:27.596352 [PlanGate ReAct Sunk-Cost] session=sess-0084-c0f7cfe3 step=3 tool=mock_heavy tokens=500 price=3250 adjusted=590 ownPrice=650
+2026/04/01 13:39:27.607105 [PlanGate ReAct Sunk-Cost] session=sess-0088-ecf49143 step=3 tool=calculate tokens=500 price=600 adjusted=109 ownPrice=600
+2026/04/01 13:39:27.629194 [PlanGate ReAct Sunk-Cost] session=sess-0070-99aa2cc3 step=3 tool=mock_heavy tokens=500 price=3000 adjusted=545 ownPrice=600
+2026/04/01 13:39:27.670772 [PlanGate ReAct Sunk-Cost] session=sess-0085-9173894f step=5 tool=calculate tokens=500 price=600 adjusted=44 ownPrice=600
+2026/04/01 13:39:27.677165 [PlanGate ReAct Sunk-Cost] session=sess-0085-9173894f step=6 tool=calculate tokens=500 price=600 adjusted=31 ownPrice=600
+2026/04/01 13:39:27.696246 [PlanGate ReAct Sunk-Cost] session=sess-0082-90c3011d step=6 tool=web_fetch tokens=500 price=600 adjusted=31 ownPrice=600
+2026/04/01 13:39:27.717425 [PlanGate ReAct Sunk-Cost] session=sess-0093-595ea92f step=3 tool=mock_heavy tokens=500 price=3000 adjusted=545 ownPrice=600
+2026/04/01 13:39:27.741907 [PlanGate ReAct Step0] session=sess-0105-5ce1c38b tool=calculate tokens=500 ownPrice=550 (relaxed, no weight)
+2026/04/01 13:39:27.742619 [PlanGate ReAct Step0] session=sess-0105-5ce1c38b REJECTED (tokens 500 < ownPrice 550)
+2026/04/01 13:39:27.761497 [PlanGate ReAct Step0] session=sess-0106-41c23659 tool=web_fetch tokens=500 ownPrice=120 (relaxed, no weight)
+2026/04/01 13:39:27.793427 [PlanGate ReAct Sunk-Cost] session=sess-0089-fcab842a step=2 tool=web_fetch tokens=500 price=120 adjusted=40 ownPrice=120
+2026/04/01 13:39:27.797719 [PlanGate ReAct Step0] session=sess-0107-984b3fb9 tool=calculate tokens=500 ownPrice=120 (relaxed, no weight)
+2026/04/01 13:39:27.802323 [PlanGate ReAct Step0] session=sess-0107-984b3fb9 ADMITTED, tracking started
+2026/04/01 13:39:27.805099 [PlanGate ReAct Sunk-Cost] session=sess-0107-984b3fb9 step=1 tool=mock_heavy tokens=500 price=600 adjusted=400 ownPrice=120
+2026/04/01 13:39:27.860662 [PlanGate ReAct Step0] session=sess-0091-d96f8cdb ADMITTED, tracking started
+2026/04/01 13:39:27.863083 [PlanGate ReAct Sunk-Cost] session=sess-0091-d96f8cdb step=1 tool=mock_heavy tokens=500 price=525 adjusted=350 ownPrice=105
+2026/04/01 13:39:27.893191 [PlanGate ReAct Step0] session=sess-0108-186fc8a2 tool=calculate tokens=500 ownPrice=105 (relaxed, no weight)
+2026/04/01 13:39:27.898554 [PlanGate ReAct Step0] session=sess-0108-186fc8a2 ADMITTED, tracking started
+2026/04/01 13:39:27.901524 [PlanGate ReAct Sunk-Cost] session=sess-0108-186fc8a2 step=1 tool=web_fetch tokens=500 price=105 adjusted=70 ownPrice=105
+2026/04/01 13:39:27.910620 [PlanGate ReAct Step0] session=sess-0109-7969f4a0 tool=web_fetch tokens=500 ownPrice=105 (relaxed, no weight)
+2026/04/01 13:39:27.916931 [PlanGate ReAct Step0] session=sess-0106-41c23659 ADMITTED, tracking started
+2026/04/01 13:39:27.917404 [PlanGate ReAct Step0] session=sess-0110-80e524c2 tool=mock_heavy tokens=500 ownPrice=105 (relaxed, no weight)
+2026/04/01 13:39:27.919594 [PlanGate ReAct Sunk-Cost] session=sess-0106-41c23659 step=1 tool=calculate tokens=500 price=105 adjusted=70 ownPrice=105
+2026/04/01 13:39:27.926400 [PlanGate ReAct Sunk-Cost] session=sess-0106-41c23659 step=2 tool=mock_heavy tokens=500 price=525 adjusted=175 ownPrice=105
+2026/04/01 13:39:27.941258 [PlanGate ReAct Step0] session=sess-0111-a478447b tool=web_fetch tokens=500 ownPrice=105 (relaxed, no weight)
+2026/04/01 13:39:27.950087 [PlanGate ReAct Sunk-Cost] session=sess-0089-fcab842a step=3 tool=web_fetch tokens=500 price=105 adjusted=19 ownPrice=105
+2026/04/01 13:39:27.953667 [PlanGate ReAct Step0] session=sess-0112-393d4e01 tool=web_fetch tokens=500 ownPrice=105 (relaxed, no weight)
+2026/04/01 13:39:28.059678 [PlanGate ReAct Sunk-Cost] session=sess-0108-186fc8a2 step=2 tool=calculate tokens=500 price=105 adjusted=35 ownPrice=105
+2026/04/01 13:39:28.066461 [PlanGate ReAct Step0] session=sess-0109-7969f4a0 ADMITTED, tracking started
+2026/04/01 13:39:28.067647 [PlanGate ReAct Sunk-Cost] session=sess-0108-186fc8a2 step=3 tool=calculate tokens=500 price=105 adjusted=19 ownPrice=105
+2026/04/01 13:39:28.096857 [PlanGate ReAct Step0] session=sess-0111-a478447b ADMITTED, tracking started
+2026/04/01 13:39:28.099591 [PlanGate ReAct Sunk-Cost] session=sess-0111-a478447b step=1 tool=web_fetch tokens=500 price=90 adjusted=60 ownPrice=90
+2026/04/01 13:39:28.108436 [PlanGate ReAct Step0] session=sess-0112-393d4e01 ADMITTED, tracking started
+2026/04/01 13:39:28.110999 [PlanGate ReAct Sunk-Cost] session=sess-0112-393d4e01 step=1 tool=web_fetch tokens=500 price=90 adjusted=60 ownPrice=90
+2026/04/01 13:39:28.132638 [PlanGate ReAct Step0] session=sess-0113-a2cbf2cb tool=mock_heavy tokens=500 ownPrice=90 (relaxed, no weight)
+2026/04/01 13:39:28.156886 [PlanGate ReAct Step0] session=sess-0094-68d448af ADMITTED, tracking started
+2026/04/01 13:39:28.159541 [PlanGate ReAct Sunk-Cost] session=sess-0094-68d448af step=1 tool=web_fetch tokens=500 price=90 adjusted=60 ownPrice=90
+2026/04/01 13:39:28.243688 [PlanGate ReAct Step0] session=sess-0114-4e404e7b tool=calculate tokens=500 ownPrice=90 (relaxed, no weight)
+2026/04/01 13:39:28.248716 [PlanGate ReAct Step0] session=sess-0114-4e404e7b ADMITTED, tracking started
+2026/04/01 13:39:28.251576 [PlanGate ReAct Sunk-Cost] session=sess-0114-4e404e7b step=1 tool=mock_heavy tokens=500 price=450 adjusted=300 ownPrice=90
+2026/04/01 13:39:28.258478 [PlanGate ReAct Sunk-Cost] session=sess-0111-a478447b step=2 tool=mock_heavy tokens=500 price=450 adjusted=150 ownPrice=90
+2026/04/01 13:39:28.268865 [PlanGate ReAct Sunk-Cost] session=sess-0112-393d4e01 step=2 tool=web_fetch tokens=500 price=90 adjusted=30 ownPrice=90
+2026/04/01 13:39:28.311502 [PlanGate ReAct Step0] session=sess-0115-51ade29b tool=web_fetch tokens=500 ownPrice=90 (relaxed, no weight)
+2026/04/01 13:39:28.449430 [PlanGate ReAct Step0] session=sess-0116-8ea3754a tool=mock_heavy tokens=500 ownPrice=75 (relaxed, no weight)
+2026/04/01 13:39:28.467714 [PlanGate ReAct Step0] session=sess-0115-51ade29b ADMITTED, tracking started
+2026/04/01 13:39:28.470822 [PlanGate ReAct Sunk-Cost] session=sess-0115-51ade29b step=1 tool=calculate tokens=500 price=75 adjusted=50 ownPrice=75
+2026/04/01 13:39:28.478129 [PlanGate ReAct Sunk-Cost] session=sess-0115-51ade29b step=2 tool=web_fetch tokens=500 price=75 adjusted=25 ownPrice=75
+2026/04/01 13:39:28.558922 [PlanGate ReAct Step0] session=sess-0117-ddbae4a9 tool=calculate tokens=500 ownPrice=75 (relaxed, no weight)
+2026/04/01 13:39:28.564391 [PlanGate ReAct Step0] session=sess-0117-ddbae4a9 ADMITTED, tracking started
+2026/04/01 13:39:28.567468 [PlanGate ReAct Sunk-Cost] session=sess-0117-ddbae4a9 step=1 tool=web_fetch tokens=500 price=75 adjusted=50 ownPrice=75
+2026/04/01 13:39:28.573926 [PlanGate ReAct Step0] session=sess-0118-4e024bbf tool=calculate tokens=500 ownPrice=75 (relaxed, no weight)
+2026/04/01 13:39:28.612092 [PlanGate ReAct Step0] session=sess-0118-4e024bbf ADMITTED, tracking started
+2026/04/01 13:39:28.614372 [PlanGate ReAct Sunk-Cost] session=sess-0118-4e024bbf step=1 tool=mock_heavy tokens=500 price=375 adjusted=250 ownPrice=75
+2026/04/01 13:39:28.636812 [PlanGate ReAct Sunk-Cost] session=sess-0115-51ade29b step=3 tool=calculate tokens=500 price=75 adjusted=13 ownPrice=75
+2026/04/01 13:39:28.671226 [PlanGate ReAct Sunk-Cost] session=sess-0091-d96f8cdb step=2 tool=web_fetch tokens=500 price=75 adjusted=25 ownPrice=75
+2026/04/01 13:39:28.723888 [PlanGate ReAct Step0] session=sess-0119-6000edf2 tool=mock_heavy tokens=500 ownPrice=75 (relaxed, no weight)
+2026/04/01 13:39:28.725145 [PlanGate ReAct Sunk-Cost] session=sess-0117-ddbae4a9 step=2 tool=mock_heavy tokens=500 price=375 adjusted=125 ownPrice=75
+2026/04/01 13:39:28.725166 [PlanGate ReAct Step0] session=sess-0110-80e524c2 ADMITTED, tracking started
+2026/04/01 13:39:28.734213 [PlanGate ReAct Sunk-Cost] session=sess-0106-41c23659 step=3 tool=web_fetch tokens=500 price=75 adjusted=13 ownPrice=75
+2026/04/01 13:39:28.776958 [PlanGate ReAct Step0] session=sess-0120-1d2e899c tool=web_fetch tokens=500 ownPrice=75 (relaxed, no weight)
+2026/04/01 13:39:28.886544 [PlanGate ReAct Step0] session=sess-0121-cc9cbcb3 tool=web_fetch tokens=500 ownPrice=4 (relaxed, no weight)
+2026/04/01 13:39:28.893033 [PlanGate ReAct Sunk-Cost] session=sess-0106-41c23659 step=4 tool=calculate tokens=500 price=4 adjusted=0 ownPrice=4
+2026/04/01 13:39:28.898535 [PlanGate ReAct Sunk-Cost] session=sess-0106-41c23659 step=5 tool=calculate tokens=500 price=4 adjusted=0 ownPrice=4
+2026/04/01 13:39:28.904806 [PlanGate ReAct Sunk-Cost] session=sess-0106-41c23659 step=6 tool=mock_heavy tokens=500 price=20 adjusted=1 ownPrice=4
+2026/04/01 13:39:28.932377 [PlanGate ReAct Step0] session=sess-0120-1d2e899c ADMITTED, tracking started
+2026/04/01 13:39:28.934299 [PlanGate ReAct Sunk-Cost] session=sess-0120-1d2e899c step=1 tool=calculate tokens=500 price=4 adjusted=2 ownPrice=4
+2026/04/01 13:39:28.939402 [PlanGate ReAct Step0] session=sess-0113-a2cbf2cb ADMITTED, tracking started
+2026/04/01 13:39:28.941288 [PlanGate ReAct Sunk-Cost] session=sess-0113-a2cbf2cb step=1 tool=calculate tokens=500 price=4 adjusted=2 ownPrice=4
+2026/04/01 13:39:28.941827 [PlanGate ReAct Sunk-Cost] session=sess-0120-1d2e899c step=2 tool=calculate tokens=500 price=4 adjusted=1 ownPrice=4
+2026/04/01 13:39:28.948766 [PlanGate ReAct Sunk-Cost] session=sess-0113-a2cbf2cb step=2 tool=web_fetch tokens=500 price=4 adjusted=1 ownPrice=4
+2026/04/01 13:39:28.950063 [PlanGate ReAct Sunk-Cost] session=sess-0120-1d2e899c step=3 tool=calculate tokens=500 price=4 adjusted=0 ownPrice=4
+2026/04/01 13:39:29.038993 [PlanGate ReAct Step0] session=sess-0122-7f801752 tool=web_fetch tokens=500 ownPrice=4 (relaxed, no weight)
+2026/04/01 13:39:29.043914 [PlanGate ReAct Step0] session=sess-0121-cc9cbcb3 ADMITTED, tracking started
+2026/04/01 13:39:29.045622 [PlanGate ReAct Sunk-Cost] session=sess-0121-cc9cbcb3 step=1 tool=mock_heavy tokens=500 price=20 adjusted=13 ownPrice=4
+2026/04/01 13:39:29.059497 [PlanGate ReAct Sunk-Cost] session=sess-0114-4e404e7b step=2 tool=mock_heavy tokens=500 price=20 adjusted=6 ownPrice=4
+2026/04/01 13:39:29.065004 [PlanGate ReAct Step0] session=sess-0123-e0099a2a tool=calculate tokens=500 ownPrice=4 (relaxed, no weight)
+2026/04/01 13:39:29.066361 [PlanGate ReAct Sunk-Cost] session=sess-0111-a478447b step=3 tool=calculate tokens=500 price=4 adjusted=0 ownPrice=4
+2026/04/01 13:39:29.070256 [PlanGate ReAct Step0] session=sess-0123-e0099a2a ADMITTED, tracking started
+2026/04/01 13:39:29.072547 [PlanGate ReAct Sunk-Cost] session=sess-0123-e0099a2a step=1 tool=web_fetch tokens=500 price=4 adjusted=2 ownPrice=4
+2026/04/01 13:39:29.073964 [PlanGate ReAct Step0] session=sess-0124-fd98b1ec tool=web_fetch tokens=500 ownPrice=4 (relaxed, no weight)
+2026/04/01 13:39:29.093003 [PlanGate ReAct Step0] session=sess-0125-e2569508 tool=calculate tokens=500 ownPrice=4 (relaxed, no weight)
+2026/04/01 13:39:29.107524 [PlanGate ReAct Sunk-Cost] session=sess-0113-a2cbf2cb step=3 tool=calculate tokens=500 price=6 adjusted=1 ownPrice=6
+2026/04/01 13:39:29.130899 [PlanGate ReAct Step0] session=sess-0126-6136ccd4 tool=web_fetch tokens=500 ownPrice=6 (relaxed, no weight)
+2026/04/01 13:39:29.195032 [PlanGate ReAct Step0] session=sess-0122-7f801752 ADMITTED, tracking started
+2026/04/01 13:39:29.196704 [PlanGate ReAct Step0] session=sess-0125-e2569508 ADMITTED, tracking started
+2026/04/01 13:39:29.199350 [PlanGate ReAct Sunk-Cost] session=sess-0125-e2569508 step=1 tool=web_fetch tokens=500 price=8 adjusted=5 ownPrice=8
+2026/04/01 13:39:29.200862 [PlanGate ReAct Sunk-Cost] session=sess-0113-a2cbf2cb step=4 tool=web_fetch tokens=500 price=8 adjusted=0 ownPrice=8
+2026/04/01 13:39:29.230813 [PlanGate ReAct Sunk-Cost] session=sess-0123-e0099a2a step=2 tool=mock_heavy tokens=500 price=40 adjusted=13 ownPrice=8
+2026/04/01 13:39:29.246349 [PlanGate ReAct Step0] session=sess-0127-a5a48c98 tool=mock_heavy tokens=500 ownPrice=8 (relaxed, no weight)
+2026/04/01 13:39:29.256797 [PlanGate ReAct Step0] session=sess-0116-8ea3754a ADMITTED, tracking started
+2026/04/01 13:39:29.257856 [PlanGate ReAct Step0] session=sess-0124-fd98b1ec ADMITTED, tracking started
+2026/04/01 13:39:29.259648 [PlanGate ReAct Sunk-Cost] session=sess-0116-8ea3754a step=1 tool=web_fetch tokens=500 price=8 adjusted=5 ownPrice=8
+2026/04/01 13:39:29.260981 [PlanGate ReAct Sunk-Cost] session=sess-0124-fd98b1ec step=1 tool=web_fetch tokens=500 price=8 adjusted=5 ownPrice=8
+2026/04/01 13:39:29.352500 [PlanGate ReAct Step0] session=sess-0126-6136ccd4 ADMITTED, tracking started
+2026/04/01 13:39:29.355263 [PlanGate ReAct Sunk-Cost] session=sess-0126-6136ccd4 step=1 tool=calculate tokens=500 price=8 adjusted=5 ownPrice=8
+2026/04/01 13:39:29.378915 [PlanGate ReAct Step0] session=sess-0128-f8928d00 tool=web_fetch tokens=500 ownPrice=8 (relaxed, no weight)
+2026/04/01 13:39:29.381084 [PlanGate ReAct Step0] session=sess-0129-368fc0c9 tool=web_fetch tokens=500 ownPrice=8 (relaxed, no weight)
+2026/04/01 13:39:29.382311 [PlanGate ReAct Sunk-Cost] session=sess-0125-e2569508 step=2 tool=calculate tokens=500 price=8 adjusted=2 ownPrice=8
+2026/04/01 13:39:29.411642 [PlanGate ReAct Sunk-Cost] session=sess-0113-a2cbf2cb step=5 tool=web_fetch tokens=500 price=12 adjusted=0 ownPrice=12
+2026/04/01 13:39:29.423110 [PlanGate ReAct Sunk-Cost] session=sess-0118-4e024bbf step=2 tool=web_fetch tokens=500 price=12 adjusted=4 ownPrice=12
+2026/04/01 13:39:29.428768 [PlanGate ReAct Step0] session=sess-0130-781045b3 tool=calculate tokens=500 ownPrice=12 (relaxed, no weight)
+2026/04/01 13:39:29.465279 [PlanGate ReAct Step0] session=sess-0131-858c2c44 tool=calculate tokens=500 ownPrice=12 (relaxed, no weight)
+2026/04/01 13:39:29.482903 [PlanGate ReAct Step0] session=sess-0132-98e0c053 tool=calculate tokens=500 ownPrice=14 (relaxed, no weight)
+2026/04/01 13:39:29.493634 [PlanGate ReAct Step0] session=sess-0133-9c195d43 tool=web_fetch tokens=500 ownPrice=14 (relaxed, no weight)
+2026/04/01 13:39:29.521347 [PlanGate ReAct Step0] session=sess-0134-ef3779bd tool=web_fetch tokens=500 ownPrice=750 (relaxed, no weight)
+2026/04/01 13:39:29.521938 [PlanGate ReAct Step0] session=sess-0134-ef3779bd REJECTED (tokens 500 < ownPrice 750)
+2026/04/01 13:39:29.529607 [PlanGate ReAct Step0] session=sess-0119-6000edf2 ADMITTED, tracking started
+2026/04/01 13:39:29.531555 [PlanGate ReAct Sunk-Cost] session=sess-0119-6000edf2 step=1 tool=web_fetch tokens=500 price=750 adjusted=500 ownPrice=750
+2026/04/01 13:39:29.532419 [PlanGate ReAct Sunk-Cost] session=sess-0117-ddbae4a9 step=3 tool=web_fetch tokens=500 price=750 adjusted=136 ownPrice=750
+2026/04/01 13:39:29.533664 [PlanGate ReAct Sunk-Cost] session=sess-0116-8ea3754a step=2 tool=mock_heavy tokens=500 price=3750 adjusted=1250 ownPrice=750
+2026/04/01 13:39:29.538920 [PlanGate ReAct Sunk-Cost] session=sess-0125-e2569508 step=3 tool=calculate tokens=500 price=750 adjusted=136 ownPrice=750
+2026/04/01 13:39:29.565161 [PlanGate ReAct Sunk-Cost] session=sess-0124-fd98b1ec step=2 tool=mock_heavy tokens=500 price=3750 adjusted=1250 ownPrice=750
+2026/04/01 13:39:29.568857 [PlanGate ReAct Step0] session=sess-0130-781045b3 ADMITTED, tracking started
+2026/04/01 13:39:29.570798 [PlanGate ReAct Sunk-Cost] session=sess-0130-781045b3 step=1 tool=calculate tokens=500 price=750 adjusted=500 ownPrice=750
+2026/04/01 13:39:29.577348 [PlanGate ReAct Step0] session=sess-0131-858c2c44 ADMITTED, tracking started
+2026/04/01 13:39:29.578086 [PlanGate ReAct Step0] session=sess-0128-f8928d00 ADMITTED, tracking started
+2026/04/01 13:39:29.579110 [PlanGate ReAct Sunk-Cost] session=sess-0131-858c2c44 step=1 tool=calculate tokens=500 price=750 adjusted=500 ownPrice=750
+2026/04/01 13:39:29.579653 [PlanGate ReAct Sunk-Cost] session=sess-0128-f8928d00 step=1 tool=web_fetch tokens=500 price=750 adjusted=500 ownPrice=750
+2026/04/01 13:39:29.586262 [PlanGate ReAct Step0] session=sess-0132-98e0c053 ADMITTED, tracking started
+2026/04/01 13:39:29.685497 [PlanGate ReAct Step0] session=sess-0129-368fc0c9 ADMITTED, tracking started
+2026/04/01 13:39:29.693623 [PlanGate ReAct Sunk-Cost] session=sess-0118-4e024bbf step=3 tool=web_fetch tokens=500 price=750 adjusted=136 ownPrice=750
+2026/04/01 13:39:29.699063 [PlanGate ReAct Sunk-Cost] session=sess-0125-e2569508 step=4 tool=mock_heavy tokens=500 price=3750 adjusted=416 ownPrice=750
+2026/04/01 13:39:29.702403 [PlanGate ReAct Sunk-Cost] session=sess-0130-781045b3 step=2 tool=web_fetch tokens=500 price=750 adjusted=250 ownPrice=750
+2026/04/01 13:39:29.706805 [PlanGate ReAct Sunk-Cost] session=sess-0131-858c2c44 step=2 tool=web_fetch tokens=500 price=750 adjusted=250 ownPrice=750
+2026/04/01 13:39:29.711538 [PlanGate ReAct Step0] session=sess-0135-df2b4628 tool=calculate tokens=500 ownPrice=750 (relaxed, no weight)
+2026/04/01 13:39:29.712009 [PlanGate ReAct Step0] session=sess-0135-df2b4628 REJECTED (tokens 500 < ownPrice 750)
+2026/04/01 13:39:29.740073 [PlanGate ReAct Step0] session=sess-0136-a05215d5 tool=calculate tokens=500 ownPrice=700 (relaxed, no weight)
+2026/04/01 13:39:29.740538 [PlanGate ReAct Step0] session=sess-0136-a05215d5 REJECTED (tokens 500 < ownPrice 700)
+2026/04/01 13:39:29.740545 [PlanGate ReAct Step0] session=sess-0133-9c195d43 ADMITTED, tracking started
+2026/04/01 13:39:29.743985 [PlanGate ReAct Sunk-Cost] session=sess-0133-9c195d43 step=1 tool=calculate tokens=500 price=700 adjusted=466 ownPrice=700
+2026/04/01 13:39:29.788683 [PlanGate ReAct Step0] session=sess-0137-b592ffb7 tool=web_fetch tokens=500 ownPrice=700 (relaxed, no weight)
+2026/04/01 13:39:29.789378 [PlanGate ReAct Step0] session=sess-0137-b592ffb7 REJECTED (tokens 500 < ownPrice 700)
+2026/04/01 13:39:29.847517 [PlanGate ReAct Sunk-Cost] session=sess-0117-ddbae4a9 step=4 tool=web_fetch tokens=500 price=700 adjusted=77 ownPrice=700
+2026/04/01 13:39:29.848207 [PlanGate ReAct Sunk-Cost] session=sess-0133-9c195d43 step=2 tool=web_fetch tokens=500 price=700 adjusted=233 ownPrice=700
+2026/04/01 13:39:29.855103 [PlanGate ReAct Sunk-Cost] session=sess-0121-cc9cbcb3 step=2 tool=calculate tokens=500 price=700 adjusted=233 ownPrice=700
+2026/04/01 13:39:29.858876 [PlanGate ReAct Sunk-Cost] session=sess-0118-4e024bbf step=4 tool=web_fetch tokens=500 price=700 adjusted=77 ownPrice=700
+2026/04/01 13:39:29.862259 [PlanGate ReAct Sunk-Cost] session=sess-0128-f8928d00 step=2 tool=web_fetch tokens=500 price=700 adjusted=233 ownPrice=700
+2026/04/01 13:39:29.866895 [PlanGate ReAct Sunk-Cost] session=sess-0121-cc9cbcb3 step=3 tool=mock_heavy tokens=500 price=3500 adjusted=636 ownPrice=700
+2026/04/01 13:39:29.868087 [PlanGate ReAct Sunk-Cost] session=sess-0114-4e404e7b step=3 tool=web_fetch tokens=500 price=700 adjusted=127 ownPrice=700
+2026/04/01 13:39:29.869491 [PlanGate ReAct Step0] session=sess-0138-d48fe9dc tool=mock_heavy tokens=500 ownPrice=700 (relaxed, no weight)
+2026/04/01 13:39:29.870020 [PlanGate ReAct Step0] session=sess-0138-d48fe9dc REJECTED (tokens 500 < ownPrice 700)
+2026/04/01 13:39:29.900834 [PlanGate ReAct Sunk-Cost] session=sess-0131-858c2c44 step=3 tool=calculate tokens=500 price=700 adjusted=127 ownPrice=700
+2026/04/01 13:39:29.901966 [PlanGate ReAct Step0] session=sess-0139-8b3771d5 tool=calculate tokens=500 ownPrice=700 (relaxed, no weight)
+2026/04/01 13:39:29.902422 [PlanGate ReAct Step0] session=sess-0139-8b3771d5 REJECTED (tokens 500 < ownPrice 700)
+2026/04/01 13:39:29.906745 [PlanGate ReAct Sunk-Cost] session=sess-0131-858c2c44 step=4 tool=web_fetch tokens=500 price=650 adjusted=72 ownPrice=650
+2026/04/01 13:39:30.005041 [PlanGate ReAct Sunk-Cost] session=sess-0117-ddbae4a9 step=5 tool=mock_heavy tokens=500 price=750 adjusted=55 ownPrice=150
+2026/04/01 13:39:30.007261 [PlanGate ReAct Sunk-Cost] session=sess-0133-9c195d43 step=3 tool=web_fetch tokens=500 price=150 adjusted=27 ownPrice=150
+2026/04/01 13:39:30.016035 [PlanGate ReAct Sunk-Cost] session=sess-0118-4e024bbf step=5 tool=calculate tokens=500 price=150 adjusted=11 ownPrice=150
+2026/04/01 13:39:30.021788 [PlanGate ReAct Sunk-Cost] session=sess-0128-f8928d00 step=3 tool=web_fetch tokens=500 price=150 adjusted=27 ownPrice=150
+2026/04/01 13:39:30.023949 [PlanGate ReAct Sunk-Cost] session=sess-0114-4e404e7b step=4 tool=calculate tokens=500 price=150 adjusted=16 ownPrice=150
+2026/04/01 13:39:30.030173 [PlanGate ReAct Sunk-Cost] session=sess-0114-4e404e7b step=5 tool=web_fetch tokens=500 price=150 adjusted=11 ownPrice=150
+2026/04/01 13:39:30.062466 [PlanGate ReAct Sunk-Cost] session=sess-0123-e0099a2a step=3 tool=web_fetch tokens=500 price=135 adjusted=24 ownPrice=135
+2026/04/01 13:39:30.140991 [PlanGate ReAct Step0] session=sess-0140-1cd19d7a tool=web_fetch tokens=500 ownPrice=135 (relaxed, no weight)
+2026/04/01 13:39:30.156407 [PlanGate ReAct Step0] session=sess-0127-a5a48c98 ADMITTED, tracking started
+2026/04/01 13:39:30.159110 [PlanGate ReAct Sunk-Cost] session=sess-0127-a5a48c98 step=1 tool=calculate tokens=500 price=135 adjusted=90 ownPrice=135
+2026/04/01 13:39:30.164938 [PlanGate ReAct Sunk-Cost] session=sess-0133-9c195d43 step=4 tool=calculate tokens=500 price=135 adjusted=15 ownPrice=135
+2026/04/01 13:39:30.171048 [PlanGate ReAct Sunk-Cost] session=sess-0133-9c195d43 step=5 tool=web_fetch tokens=500 price=135 adjusted=10 ownPrice=135
+2026/04/01 13:39:30.180596 [PlanGate ReAct Sunk-Cost] session=sess-0128-f8928d00 step=4 tool=mock_heavy tokens=500 price=675 adjusted=75 ownPrice=135
+2026/04/01 13:39:30.296004 [PlanGate ReAct Step0] session=sess-0140-1cd19d7a ADMITTED, tracking started
+2026/04/01 13:39:30.298994 [PlanGate ReAct Sunk-Cost] session=sess-0140-1cd19d7a step=1 tool=web_fetch tokens=500 price=120 adjusted=80 ownPrice=120
+2026/04/01 13:39:30.360601 [PlanGate ReAct Step0] session=sess-0141-12d5c21b tool=web_fetch tokens=500 ownPrice=105 (relaxed, no weight)
+2026/04/01 13:39:30.381620 [PlanGate ReAct Step0] session=sess-0142-7017a1f9 tool=web_fetch tokens=500 ownPrice=105 (relaxed, no weight)
+2026/04/01 13:39:30.428657 [PlanGate ReAct Step0] session=sess-0143-d4880b54 tool=calculate tokens=500 ownPrice=105 (relaxed, no weight)
+2026/04/01 13:39:30.433798 [PlanGate ReAct Step0] session=sess-0143-d4880b54 ADMITTED, tracking started
+2026/04/01 13:39:30.453322 [PlanGate ReAct Step0] session=sess-0144-529a5baf tool=mock_heavy tokens=500 ownPrice=90 (relaxed, no weight)
+2026/04/01 13:39:30.456611 [PlanGate ReAct Sunk-Cost] session=sess-0140-1cd19d7a step=2 tool=mock_heavy tokens=500 price=450 adjusted=150 ownPrice=90
+2026/04/01 13:39:30.477246 [PlanGate ReAct Step0] session=sess-0145-d382c947 tool=calculate tokens=500 ownPrice=90 (relaxed, no weight)
+2026/04/01 13:39:30.480516 [PlanGate ReAct Step0] session=sess-0146-99872f1d tool=web_fetch tokens=500 ownPrice=90 (relaxed, no weight)
+2026/04/01 13:39:30.482741 [PlanGate ReAct Step0] session=sess-0145-d382c947 ADMITTED, tracking started
+2026/04/01 13:39:30.516287 [PlanGate ReAct Step0] session=sess-0141-12d5c21b ADMITTED, tracking started
+2026/04/01 13:39:30.518862 [PlanGate ReAct Sunk-Cost] session=sess-0141-12d5c21b step=1 tool=calculate tokens=500 price=90 adjusted=60 ownPrice=90
+2026/04/01 13:39:30.525131 [PlanGate ReAct Sunk-Cost] session=sess-0141-12d5c21b step=2 tool=calculate tokens=500 price=90 adjusted=30 ownPrice=90
+2026/04/01 13:39:30.536670 [PlanGate ReAct Step0] session=sess-0142-7017a1f9 ADMITTED, tracking started
+2026/04/01 13:39:30.543307 [PlanGate ReAct Step0] session=sess-0147-d8b900c2 tool=mock_heavy tokens=500 ownPrice=90 (relaxed, no weight)
+2026/04/01 13:39:30.591644 [PlanGate ReAct Step0] session=sess-0148-6ac482f1 tool=calculate tokens=500 ownPrice=90 (relaxed, no weight)
+2026/04/01 13:39:30.595716 [PlanGate ReAct Step0] session=sess-0149-2e2a0cb5 tool=mock_heavy tokens=500 ownPrice=90 (relaxed, no weight)
+2026/04/01 13:39:30.596748 [PlanGate ReAct Step0] session=sess-0148-6ac482f1 ADMITTED, tracking started
+2026/04/01 13:39:30.598078 [PlanGate ReAct Sunk-Cost] session=sess-0148-6ac482f1 step=1 tool=calculate tokens=500 price=90 adjusted=60 ownPrice=90
+2026/04/01 13:39:30.603945 [PlanGate ReAct Sunk-Cost] session=sess-0148-6ac482f1 step=2 tool=mock_heavy tokens=500 price=450 adjusted=150 ownPrice=90
+2026/04/01 13:39:30.618463 [PlanGate ReAct Step0] session=sess-0150-2b6daf67 tool=calculate tokens=500 ownPrice=90 (relaxed, no weight)
+2026/04/01 13:39:30.623051 [PlanGate ReAct Step0] session=sess-0150-2b6daf67 ADMITTED, tracking started
+2026/04/01 13:39:30.624628 [PlanGate ReAct Sunk-Cost] session=sess-0150-2b6daf67 step=1 tool=calculate tokens=500 price=90 adjusted=60 ownPrice=90
+2026/04/01 13:39:30.630441 [PlanGate ReAct Sunk-Cost] session=sess-0150-2b6daf67 step=2 tool=web_fetch tokens=500 price=90 adjusted=30 ownPrice=90
+2026/04/01 13:39:30.635913 [PlanGate ReAct Step0] session=sess-0146-99872f1d ADMITTED, tracking started
+2026/04/01 13:39:30.779910 [PlanGate ReAct Step0] session=sess-0151-79aa138d tool=calculate tokens=500 ownPrice=75 (relaxed, no weight)
+2026/04/01 13:39:30.786899 [PlanGate ReAct Step0] session=sess-0151-79aa138d ADMITTED, tracking started
+2026/04/01 13:39:30.787356 [PlanGate ReAct Sunk-Cost] session=sess-0150-2b6daf67 step=3 tool=web_fetch tokens=500 price=75 adjusted=13 ownPrice=75
+2026/04/01 13:39:30.788932 [PlanGate ReAct Sunk-Cost] session=sess-0151-79aa138d step=1 tool=web_fetch tokens=500 price=75 adjusted=50 ownPrice=75
+2026/04/01 13:39:30.798353 [PlanGate ReAct Step0] session=sess-0152-520ce82e tool=mock_heavy tokens=500 ownPrice=75 (relaxed, no weight)
+2026/04/01 13:39:30.809924 [PlanGate ReAct Step0] session=sess-0153-e3254cb9 tool=web_fetch tokens=500 ownPrice=75 (relaxed, no weight)
+2026/04/01 13:39:30.812215 [PlanGate ReAct Sunk-Cost] session=sess-0117-ddbae4a9 step=6 tool=web_fetch tokens=500 price=75 adjusted=3 ownPrice=75
+2026/04/01 13:39:30.855129 [PlanGate ReAct Step0] session=sess-0154-4ebe8374 tool=web_fetch tokens=500 ownPrice=75 (relaxed, no weight)
+2026/04/01 13:39:30.945250 [PlanGate ReAct Sunk-Cost] session=sess-0150-2b6daf67 step=4 tool=mock_heavy tokens=500 price=450 adjusted=50 ownPrice=90
+2026/04/01 13:39:30.946055 [PlanGate ReAct Sunk-Cost] session=sess-0151-79aa138d step=2 tool=mock_heavy tokens=500 price=450 adjusted=150 ownPrice=90
+2026/04/01 13:39:30.965010 [PlanGate ReAct Step0] session=sess-0153-e3254cb9 ADMITTED, tracking started
+2026/04/01 13:39:30.966930 [PlanGate ReAct Sunk-Cost] session=sess-0153-e3254cb9 step=1 tool=web_fetch tokens=500 price=90 adjusted=60 ownPrice=90
+2026/04/01 13:39:30.987162 [PlanGate ReAct Sunk-Cost] session=sess-0128-f8928d00 step=5 tool=web_fetch tokens=500 price=450 adjusted=33 ownPrice=450
+2026/04/01 13:39:31.096708 [PlanGate ReAct Step0] session=sess-0154-4ebe8374 ADMITTED, tracking started
+2026/04/01 13:39:31.099061 [PlanGate ReAct Sunk-Cost] session=sess-0154-4ebe8374 step=1 tool=mock_heavy tokens=500 price=2250 adjusted=1500 ownPrice=450
+2026/04/01 13:39:31.139882 [PlanGate ReAct Step0] session=sess-0155-615df06a tool=web_fetch tokens=500 ownPrice=450 (relaxed, no weight)
+2026/04/01 13:39:31.159542 [PlanGate ReAct Step0] session=sess-0156-363918fb tool=web_fetch tokens=500 ownPrice=450 (relaxed, no weight)
+2026/04/01 13:39:31.235405 [PlanGate ReAct Step0] session=sess-0157-b2f30356 tool=calculate tokens=500 ownPrice=450 (relaxed, no weight)
+2026/04/01 13:39:31.251447 [PlanGate ReAct Sunk-Cost] session=sess-0153-e3254cb9 step=2 tool=calculate tokens=500 price=500 adjusted=166 ownPrice=500
+2026/04/01 13:39:31.252974 [PlanGate ReAct Sunk-Cost] session=sess-0128-f8928d00 step=6 tool=calculate tokens=500 price=500 adjusted=26 ownPrice=500
+2026/04/01 13:39:31.259932 [PlanGate ReAct Step0] session=sess-0144-529a5baf ADMITTED, tracking started
+2026/04/01 13:39:31.262316 [PlanGate ReAct Sunk-Cost] session=sess-0144-529a5baf step=1 tool=calculate tokens=500 price=500 adjusted=333 ownPrice=500
+2026/04/01 13:39:31.262994 [PlanGate ReAct Step0] session=sess-0157-b2f30356 ADMITTED, tracking started
+2026/04/01 13:39:31.264163 [PlanGate ReAct Sunk-Cost] session=sess-0140-1cd19d7a step=3 tool=web_fetch tokens=500 price=500 adjusted=90 ownPrice=500
+2026/04/01 13:39:31.265455 [PlanGate ReAct Sunk-Cost] session=sess-0157-b2f30356 step=1 tool=web_fetch tokens=500 price=500 adjusted=333 ownPrice=500
+2026/04/01 13:39:31.266797 [PlanGate ReAct Sunk-Cost] session=sess-0153-e3254cb9 step=3 tool=mock_heavy tokens=500 price=2500 adjusted=454 ownPrice=500
+2026/04/01 13:39:31.274833 [PlanGate ReAct Sunk-Cost] session=sess-0144-529a5baf step=2 tool=calculate tokens=500 price=500 adjusted=166 ownPrice=500
+2026/04/01 13:39:31.331926 [PlanGate ReAct Step0] session=sess-0158-db8a9d91 tool=calculate tokens=500 ownPrice=500 (relaxed, no weight)
+2026/04/01 13:39:31.349922 [PlanGate ReAct Step0] session=sess-0147-d8b900c2 ADMITTED, tracking started
+2026/04/01 13:39:31.350093 [PlanGate ReAct Step0] session=sess-0159-962131e8 tool=web_fetch tokens=500 ownPrice=500 (relaxed, no weight)
+2026/04/01 13:39:31.352017 [PlanGate ReAct Sunk-Cost] session=sess-0147-d8b900c2 step=1 tool=calculate tokens=500 price=500 adjusted=333 ownPrice=500
+2026/04/01 13:39:31.402184 [PlanGate ReAct Step0] session=sess-0155-615df06a ADMITTED, tracking started
+2026/04/01 13:39:31.403129 [PlanGate ReAct Step0] session=sess-0149-2e2a0cb5 ADMITTED, tracking started
+2026/04/01 13:39:31.404696 [PlanGate ReAct Sunk-Cost] session=sess-0155-615df06a step=1 tool=calculate tokens=500 price=550 adjusted=366 ownPrice=550
+2026/04/01 13:39:31.404879 [PlanGate ReAct Step0] session=sess-0156-363918fb ADMITTED, tracking started
+2026/04/01 13:39:31.406219 [PlanGate ReAct Sunk-Cost] session=sess-0149-2e2a0cb5 step=1 tool=mock_heavy tokens=500 price=2750 adjusted=1833 ownPrice=550
+2026/04/01 13:39:31.407328 [PlanGate ReAct Step0] session=sess-0158-db8a9d91 ADMITTED, tracking started
+2026/04/01 13:39:31.408288 [PlanGate ReAct Sunk-Cost] session=sess-0156-363918fb step=1 tool=calculate tokens=500 price=550 adjusted=366 ownPrice=550
+2026/04/01 13:39:31.408296 [PlanGate ReAct Sunk-Cost] session=sess-0144-529a5baf step=3 tool=calculate tokens=500 price=550 adjusted=100 ownPrice=550
+2026/04/01 13:39:31.410766 [PlanGate ReAct Sunk-Cost] session=sess-0158-db8a9d91 step=1 tool=calculate tokens=500 price=550 adjusted=366 ownPrice=550
+2026/04/01 13:39:31.417679 [PlanGate ReAct Sunk-Cost] session=sess-0148-6ac482f1 step=3 tool=web_fetch tokens=500 price=550 adjusted=100 ownPrice=550
+2026/04/01 13:39:31.419133 [PlanGate ReAct Sunk-Cost] session=sess-0155-615df06a step=2 tool=web_fetch tokens=500 price=550 adjusted=183 ownPrice=550
+2026/04/01 13:39:31.423303 [PlanGate ReAct Sunk-Cost] session=sess-0156-363918fb step=2 tool=web_fetch tokens=500 price=550 adjusted=183 ownPrice=550
+2026/04/01 13:39:31.425713 [PlanGate ReAct Sunk-Cost] session=sess-0144-529a5baf step=4 tool=web_fetch tokens=500 price=550 adjusted=61 ownPrice=550
+2026/04/01 13:39:31.426589 [PlanGate ReAct Sunk-Cost] session=sess-0158-db8a9d91 step=2 tool=web_fetch tokens=500 price=550 adjusted=183 ownPrice=550
+2026/04/01 13:39:31.431002 [PlanGate ReAct Sunk-Cost] session=sess-0140-1cd19d7a step=4 tool=calculate tokens=500 price=550 adjusted=61 ownPrice=550
+2026/04/01 13:39:31.432067 [PlanGate ReAct Sunk-Cost] session=sess-0157-b2f30356 step=2 tool=web_fetch tokens=500 price=550 adjusted=183 ownPrice=550
+2026/04/01 13:39:31.436557 [PlanGate ReAct Step0] session=sess-0160-f801664d tool=calculate tokens=500 ownPrice=550 (relaxed, no weight)
+2026/04/01 13:39:31.436862 [PlanGate ReAct Step0] session=sess-0160-f801664d REJECTED (tokens 500 < ownPrice 550)
+2026/04/01 13:39:31.469374 [PlanGate ReAct Step0] session=sess-0161-fd5e5304 tool=mock_heavy tokens=500 ownPrice=550 (relaxed, no weight)
+2026/04/01 13:39:31.470141 [PlanGate ReAct Step0] session=sess-0161-fd5e5304 REJECTED (tokens 500 < ownPrice 550)
+2026/04/01 13:39:31.537559 [PlanGate ReAct Step0] session=sess-0162-8c9eda55 tool=mock_heavy tokens=500 ownPrice=550 (relaxed, no weight)
+2026/04/01 13:39:31.538201 [PlanGate ReAct Step0] session=sess-0162-8c9eda55 REJECTED (tokens 500 < ownPrice 550)
+2026/04/01 13:39:31.557494 [PlanGate ReAct Step0] session=sess-0159-962131e8 ADMITTED, tracking started
+2026/04/01 13:39:31.559416 [PlanGate ReAct Sunk-Cost] session=sess-0159-962131e8 step=1 tool=calculate tokens=500 price=120 adjusted=80 ownPrice=120
+2026/04/01 13:39:31.559681 [PlanGate ReAct Sunk-Cost] session=sess-0140-1cd19d7a step=5 tool=web_fetch tokens=500 price=120 adjusted=8 ownPrice=120
+2026/04/01 13:39:31.581528 [PlanGate ReAct Sunk-Cost] session=sess-0159-962131e8 step=2 tool=web_fetch tokens=500 price=120 adjusted=40 ownPrice=120
+2026/04/01 13:39:31.582170 [PlanGate ReAct Sunk-Cost] session=sess-0155-615df06a step=3 tool=web_fetch tokens=500 price=120 adjusted=21 ownPrice=120
+2026/04/01 13:39:31.584828 [PlanGate ReAct Sunk-Cost] session=sess-0156-363918fb step=3 tool=mock_heavy tokens=500 price=600 adjusted=109 ownPrice=120
+2026/04/01 13:39:31.586740 [PlanGate ReAct Sunk-Cost] session=sess-0144-529a5baf step=5 tool=web_fetch tokens=500 price=120 adjusted=8 ownPrice=120
+2026/04/01 13:39:31.591381 [PlanGate ReAct Sunk-Cost] session=sess-0158-db8a9d91 step=3 tool=mock_heavy tokens=500 price=600 adjusted=109 ownPrice=120
+2026/04/01 13:39:31.604163 [PlanGate ReAct Step0] session=sess-0152-520ce82e ADMITTED, tracking started
+2026/04/01 13:39:31.605836 [PlanGate ReAct Sunk-Cost] session=sess-0152-520ce82e step=1 tool=web_fetch tokens=500 price=120 adjusted=80 ownPrice=120
+2026/04/01 13:39:31.605945 [PlanGate ReAct Step0] session=sess-0163-c22cbc4f tool=web_fetch tokens=500 ownPrice=120 (relaxed, no weight)
+2026/04/01 13:39:31.657981 [PlanGate ReAct Step0] session=sess-0164-324f63e2 tool=mock_heavy tokens=500 ownPrice=120 (relaxed, no weight)
+2026/04/01 13:39:31.665595 [PlanGate ReAct Step0] session=sess-0165-4a9e90c0 tool=web_fetch tokens=500 ownPrice=120 (relaxed, no weight)
+2026/04/01 13:39:31.712872 [PlanGate ReAct Sunk-Cost] session=sess-0157-b2f30356 step=3 tool=mock_heavy tokens=500 price=600 adjusted=109 ownPrice=120
+2026/04/01 13:39:31.741020 [PlanGate ReAct Sunk-Cost] session=sess-0159-962131e8 step=3 tool=web_fetch tokens=500 price=120 adjusted=21 ownPrice=120
+2026/04/01 13:39:31.747246 [PlanGate ReAct Sunk-Cost] session=sess-0144-529a5baf step=6 tool=mock_heavy tokens=500 price=600 adjusted=31 ownPrice=120
+2026/04/01 13:39:31.768572 [PlanGate ReAct Sunk-Cost] session=sess-0150-2b6daf67 step=5 tool=mock_heavy tokens=500 price=600 adjusted=44 ownPrice=120
+2026/04/01 13:39:31.786964 [PlanGate ReAct Step0] session=sess-0166-eea81526 tool=calculate tokens=500 ownPrice=120 (relaxed, no weight)
+2026/04/01 13:39:31.792134 [PlanGate ReAct Sunk-Cost] session=sess-0151-79aa138d step=3 tool=web_fetch tokens=500 price=120 adjusted=21 ownPrice=120
+2026/04/01 13:39:31.813114 [PlanGate ReAct Step0] session=sess-0167-81767ec8 tool=calculate tokens=500 ownPrice=120 (relaxed, no weight)
+2026/04/01 13:39:31.829189 [PlanGate ReAct Step0] session=sess-0168-a43d960f tool=mock_heavy tokens=500 ownPrice=120 (relaxed, no weight)
+2026/04/01 13:39:31.831847 [PlanGate ReAct Step0] session=sess-0169-4ffbc6c2 tool=calculate tokens=500 ownPrice=120 (relaxed, no weight)
+2026/04/01 13:39:31.866080 [PlanGate ReAct Sunk-Cost] session=sess-0152-520ce82e step=2 tool=mock_heavy tokens=500 price=750 adjusted=250 ownPrice=150
+2026/04/01 13:39:31.886270 [PlanGate ReAct Step0] session=sess-0163-c22cbc4f ADMITTED, tracking started
+2026/04/01 13:39:31.888453 [PlanGate ReAct Step0] session=sess-0166-eea81526 ADMITTED, tracking started
+2026/04/01 13:39:31.889855 [PlanGate ReAct Sunk-Cost] session=sess-0166-eea81526 step=1 tool=calculate tokens=500 price=150 adjusted=100 ownPrice=150
+2026/04/01 13:39:31.891583 [PlanGate ReAct Step0] session=sess-0170-fb6683a5 tool=mock_heavy tokens=500 ownPrice=150 (relaxed, no weight)
+2026/04/01 13:39:31.898424 [PlanGate ReAct Step0] session=sess-0165-4a9e90c0 ADMITTED, tracking started
+2026/04/01 13:39:31.899924 [PlanGate ReAct Sunk-Cost] session=sess-0165-4a9e90c0 step=1 tool=web_fetch tokens=500 price=150 adjusted=100 ownPrice=150
+2026/04/01 13:39:31.903910 [PlanGate ReAct Step0] session=sess-0167-81767ec8 ADMITTED, tracking started
+2026/04/01 13:39:31.905350 [PlanGate ReAct Sunk-Cost] session=sess-0167-81767ec8 step=1 tool=web_fetch tokens=500 price=150 adjusted=100 ownPrice=150
+2026/04/01 13:39:31.919233 [PlanGate ReAct Sunk-Cost] session=sess-0159-962131e8 step=4 tool=mock_heavy tokens=500 price=750 adjusted=83 ownPrice=150
+2026/04/01 13:39:31.925883 [PlanGate ReAct Step0] session=sess-0169-4ffbc6c2 ADMITTED, tracking started
+2026/04/01 13:39:31.927330 [PlanGate ReAct Sunk-Cost] session=sess-0169-4ffbc6c2 step=1 tool=mock_heavy tokens=500 price=750 adjusted=500 ownPrice=150
+2026/04/01 13:39:31.969437 [PlanGate ReAct Step0] session=sess-0171-9224c63b tool=web_fetch tokens=500 ownPrice=150 (relaxed, no weight)
+2026/04/01 13:39:31.970641 [PlanGate ReAct Step0] session=sess-0172-67e85070 tool=web_fetch tokens=500 ownPrice=150 (relaxed, no weight)
+2026/04/01 13:39:32.019389 [PlanGate ReAct Step0] session=sess-0173-6455545f tool=calculate tokens=500 ownPrice=180 (relaxed, no weight)
+2026/04/01 13:39:32.038261 [PlanGate ReAct Step0] session=sess-0174-98c02c22 tool=mock_heavy tokens=500 ownPrice=195 (relaxed, no weight)
+2026/04/01 13:39:32.045684 [PlanGate ReAct Sunk-Cost] session=sess-0151-79aa138d step=4 tool=web_fetch tokens=500 price=195 adjusted=21 ownPrice=195
+2026/04/01 13:39:32.107478 [PlanGate ReAct Step0] session=sess-0175-fa748f2b tool=calculate tokens=500 ownPrice=195 (relaxed, no weight)
+2026/04/01 13:39:32.153883 [PlanGate ReAct Sunk-Cost] session=sess-0153-e3254cb9 step=4 tool=mock_heavy tokens=500 price=1050 adjusted=116 ownPrice=210
+2026/04/01 13:39:32.312687 [PlanGate ReAct Sunk-Cost] session=sess-0165-4a9e90c0 step=2 tool=mock_heavy tokens=500 price=4250 adjusted=1416 ownPrice=850
+2026/04/01 13:39:32.315330 [PlanGate ReAct Step0] session=sess-0176-243e1238 tool=calculate tokens=500 ownPrice=850 (relaxed, no weight)
+2026/04/01 13:39:32.316110 [PlanGate ReAct Step0] session=sess-0176-243e1238 REJECTED (tokens 500 < ownPrice 850)
+2026/04/01 13:39:32.318764 [PlanGate ReAct Step0] session=sess-0177-aa3123b5 tool=mock_heavy tokens=500 ownPrice=850 (relaxed, no weight)
+2026/04/01 13:39:32.319278 [PlanGate ReAct Step0] session=sess-0177-aa3123b5 REJECTED (tokens 500 < ownPrice 850)
+2026/04/01 13:39:32.321608 [PlanGate ReAct Step0] session=sess-0178-be0cc598 tool=mock_heavy tokens=500 ownPrice=850 (relaxed, no weight)
+2026/04/01 13:39:32.322196 [PlanGate ReAct Step0] session=sess-0178-be0cc598 REJECTED (tokens 500 < ownPrice 850)
+2026/04/01 13:39:32.394579 [PlanGate ReAct Sunk-Cost] session=sess-0156-363918fb step=4 tool=web_fetch tokens=500 price=850 adjusted=94 ownPrice=850
+2026/04/01 13:39:32.408663 [PlanGate ReAct Sunk-Cost] session=sess-0158-db8a9d91 step=4 tool=mock_heavy tokens=500 price=4250 adjusted=472 ownPrice=850
+2026/04/01 13:39:32.420667 [PlanGate ReAct Step0] session=sess-0179-14137a40 tool=web_fetch tokens=500 ownPrice=850 (relaxed, no weight)
+2026/04/01 13:39:32.421247 [PlanGate ReAct Step0] session=sess-0179-14137a40 REJECTED (tokens 500 < ownPrice 850)
+2026/04/01 13:39:32.430015 [PlanGate ReAct Step0] session=sess-0180-45a6f45a tool=calculate tokens=500 ownPrice=850 (relaxed, no weight)
+2026/04/01 13:39:32.430414 [PlanGate ReAct Step0] session=sess-0180-45a6f45a REJECTED (tokens 500 < ownPrice 850)
+2026/04/01 13:39:32.460367 [PlanGate ReAct Step0] session=sess-0181-7dda9e34 tool=web_fetch tokens=500 ownPrice=850 (relaxed, no weight)
+2026/04/01 13:39:32.460803 [PlanGate ReAct Step0] session=sess-0181-7dda9e34 REJECTED (tokens 500 < ownPrice 850)
+2026/04/01 13:39:32.468657 [PlanGate ReAct Step0] session=sess-0182-2b982068 tool=calculate tokens=500 ownPrice=850 (relaxed, no weight)
+2026/04/01 13:39:32.468931 [PlanGate ReAct Step0] session=sess-0182-2b982068 REJECTED (tokens 500 < ownPrice 850)
+2026/04/01 13:39:32.543975 [PlanGate ReAct Step0] session=sess-0164-324f63e2 ADMITTED, tracking started
+2026/04/01 13:39:32.546383 [PlanGate ReAct Sunk-Cost] session=sess-0164-324f63e2 step=1 tool=mock_heavy tokens=500 price=4250 adjusted=2833 ownPrice=850
+2026/04/01 13:39:32.563367 [PlanGate ReAct Step0] session=sess-0173-6455545f ADMITTED, tracking started
+2026/04/01 13:39:32.566153 [PlanGate ReAct Sunk-Cost] session=sess-0173-6455545f step=1 tool=web_fetch tokens=500 price=850 adjusted=566 ownPrice=850
+2026/04/01 13:39:32.629035 [PlanGate ReAct Step0] session=sess-0171-9224c63b ADMITTED, tracking started
+2026/04/01 13:39:32.632085 [PlanGate ReAct Sunk-Cost] session=sess-0171-9224c63b step=1 tool=mock_heavy tokens=500 price=4250 adjusted=2833 ownPrice=850
+2026/04/01 13:39:32.642583 [PlanGate ReAct Step0] session=sess-0183-c5e8280f tool=calculate tokens=500 ownPrice=850 (relaxed, no weight)
+2026/04/01 13:39:32.643229 [PlanGate ReAct Step0] session=sess-0183-c5e8280f REJECTED (tokens 500 < ownPrice 850)
+2026/04/01 13:39:32.644944 [PlanGate ReAct Step0] session=sess-0175-fa748f2b ADMITTED, tracking started
+2026/04/01 13:39:32.647690 [PlanGate ReAct Sunk-Cost] session=sess-0175-fa748f2b step=1 tool=web_fetch tokens=500 price=850 adjusted=566 ownPrice=850
+2026/04/01 13:39:32.667155 [PlanGate ReAct Sunk-Cost] session=sess-0150-2b6daf67 step=6 tool=web_fetch tokens=500 price=850 adjusted=44 ownPrice=850
+2026/04/01 13:39:32.705773 [PlanGate ReAct Step0] session=sess-0172-67e85070 ADMITTED, tracking started
+2026/04/01 13:39:32.707549 [PlanGate ReAct Sunk-Cost] session=sess-0172-67e85070 step=1 tool=web_fetch tokens=500 price=195 adjusted=130 ownPrice=195
+2026/04/01 13:39:32.711571 [PlanGate ReAct Step0] session=sess-0168-a43d960f ADMITTED, tracking started
+2026/04/01 13:39:32.714150 [PlanGate ReAct Sunk-Cost] session=sess-0168-a43d960f step=1 tool=mock_heavy tokens=500 price=975 adjusted=650 ownPrice=195
+2026/04/01 13:39:32.783239 [PlanGate ReAct Step0] session=sess-0184-0517ded1 tool=mock_heavy tokens=500 ownPrice=195 (relaxed, no weight)
+2026/04/01 13:39:32.804028 [PlanGate ReAct Step0] session=sess-0185-031cf4f8 tool=web_fetch tokens=500 ownPrice=180 (relaxed, no weight)
+2026/04/01 13:39:32.833466 [PlanGate ReAct Sunk-Cost] session=sess-0156-363918fb step=5 tool=web_fetch tokens=500 price=180 adjusted=13 ownPrice=180
+2026/04/01 13:39:32.859075 [PlanGate ReAct Step0] session=sess-0170-fb6683a5 ADMITTED, tracking started
+2026/04/01 13:39:32.861817 [PlanGate ReAct Sunk-Cost] session=sess-0170-fb6683a5 step=1 tool=mock_heavy tokens=500 price=900 adjusted=600 ownPrice=180
+2026/04/01 13:39:32.876116 [PlanGate ReAct Step0] session=sess-0186-96cb5e4c tool=web_fetch tokens=500 ownPrice=180 (relaxed, no weight)
+2026/04/01 13:39:32.889377 [PlanGate ReAct Sunk-Cost] session=sess-0172-67e85070 step=2 tool=web_fetch tokens=500 price=180 adjusted=60 ownPrice=180
+2026/04/01 13:39:32.983327 [PlanGate ReAct Step0] session=sess-0185-031cf4f8 ADMITTED, tracking started
+2026/04/01 13:39:32.986182 [PlanGate ReAct Sunk-Cost] session=sess-0185-031cf4f8 step=1 tool=calculate tokens=500 price=165 adjusted=110 ownPrice=165
+2026/04/01 13:39:32.990535 [PlanGate ReAct Step0] session=sess-0187-ab474d89 tool=web_fetch tokens=500 ownPrice=165 (relaxed, no weight)
+2026/04/01 13:39:32.993330 [PlanGate ReAct Sunk-Cost] session=sess-0185-031cf4f8 step=2 tool=web_fetch tokens=500 price=165 adjusted=55 ownPrice=165
+2026/04/01 13:39:33.030819 [PlanGate ReAct Step0] session=sess-0186-96cb5e4c ADMITTED, tracking started
+2026/04/01 13:39:33.033513 [PlanGate ReAct Sunk-Cost] session=sess-0186-96cb5e4c step=1 tool=calculate tokens=500 price=165 adjusted=110 ownPrice=165
+2026/04/01 13:39:33.045193 [PlanGate ReAct Step0] session=sess-0188-fbebea90 tool=web_fetch tokens=500 ownPrice=165 (relaxed, no weight)
+2026/04/01 13:39:33.046522 [PlanGate ReAct Sunk-Cost] session=sess-0172-67e85070 step=3 tool=web_fetch tokens=500 price=165 adjusted=30 ownPrice=165
+2026/04/01 13:39:33.096254 [PlanGate ReAct Step0] session=sess-0189-ed16d531 tool=calculate tokens=500 ownPrice=150 (relaxed, no weight)
+2026/04/01 13:39:33.117073 [PlanGate ReAct Step0] session=sess-0190-06dbb027 tool=calculate tokens=500 ownPrice=150 (relaxed, no weight)
+2026/04/01 13:39:33.124082 [PlanGate ReAct Step0] session=sess-0191-c7020a45 tool=calculate tokens=500 ownPrice=150 (relaxed, no weight)
+2026/04/01 13:39:33.146697 [PlanGate ReAct Step0] session=sess-0187-ab474d89 ADMITTED, tracking started
+2026/04/01 13:39:33.147699 [PlanGate ReAct Step0] session=sess-0189-ed16d531 ADMITTED, tracking started
+2026/04/01 13:39:33.149144 [PlanGate ReAct Sunk-Cost] session=sess-0187-ab474d89 step=1 tool=web_fetch tokens=500 price=150 adjusted=100 ownPrice=150
+2026/04/01 13:39:33.149431 [PlanGate ReAct Step0] session=sess-0190-06dbb027 ADMITTED, tracking started
+2026/04/01 13:39:33.150696 [PlanGate ReAct Sunk-Cost] session=sess-0189-ed16d531 step=1 tool=calculate tokens=500 price=150 adjusted=100 ownPrice=150
+2026/04/01 13:39:33.152007 [PlanGate ReAct Sunk-Cost] session=sess-0190-06dbb027 step=1 tool=web_fetch tokens=500 price=150 adjusted=100 ownPrice=150
+2026/04/01 13:39:33.154448 [PlanGate ReAct Step0] session=sess-0191-c7020a45 ADMITTED, tracking started
+2026/04/01 13:39:33.155569 [PlanGate ReAct Sunk-Cost] session=sess-0191-c7020a45 step=1 tool=calculate tokens=500 price=150 adjusted=100 ownPrice=150
+2026/04/01 13:39:33.163735 [PlanGate ReAct Sunk-Cost] session=sess-0185-031cf4f8 step=3 tool=web_fetch tokens=500 price=150 adjusted=27 ownPrice=150
+2026/04/01 13:39:33.164474 [PlanGate ReAct Sunk-Cost] session=sess-0189-ed16d531 step=2 tool=mock_heavy tokens=500 price=750 adjusted=250 ownPrice=150
+2026/04/01 13:39:33.199444 [PlanGate ReAct Step0] session=sess-0188-fbebea90 ADMITTED, tracking started
+2026/04/01 13:39:33.202095 [PlanGate ReAct Sunk-Cost] session=sess-0188-fbebea90 step=1 tool=mock_heavy tokens=500 price=750 adjusted=500 ownPrice=150
+2026/04/01 13:39:33.204394 [PlanGate ReAct Sunk-Cost] session=sess-0159-962131e8 step=5 tool=mock_heavy tokens=500 price=750 adjusted=55 ownPrice=150
+2026/04/01 13:39:33.277942 [PlanGate ReAct Step0] session=sess-0192-6f3dd389 tool=mock_heavy tokens=500 ownPrice=150 (relaxed, no weight)
+2026/04/01 13:39:33.307766 [PlanGate ReAct Sunk-Cost] session=sess-0187-ab474d89 step=2 tool=mock_heavy tokens=500 price=750 adjusted=250 ownPrice=150
+2026/04/01 13:39:33.317465 [PlanGate ReAct Sunk-Cost] session=sess-0190-06dbb027 step=2 tool=calculate tokens=500 price=150 adjusted=50 ownPrice=150
+2026/04/01 13:39:33.356929 [PlanGate ReAct Sunk-Cost] session=sess-0185-031cf4f8 step=4 tool=calculate tokens=500 price=135 adjusted=15 ownPrice=135
+2026/04/01 13:39:33.357995 [PlanGate ReAct Sunk-Cost] session=sess-0190-06dbb027 step=3 tool=calculate tokens=500 price=135 adjusted=24 ownPrice=135
+2026/04/01 13:39:33.364819 [PlanGate ReAct Sunk-Cost] session=sess-0185-031cf4f8 step=5 tool=web_fetch tokens=500 price=135 adjusted=10 ownPrice=135
+2026/04/01 13:39:33.378171 [PlanGate ReAct Step0] session=sess-0174-98c02c22 ADMITTED, tracking started
+2026/04/01 13:39:33.381140 [PlanGate ReAct Sunk-Cost] session=sess-0174-98c02c22 step=1 tool=mock_heavy tokens=500 price=675 adjusted=450 ownPrice=135
+2026/04/01 13:39:33.432893 [PlanGate ReAct Step0] session=sess-0193-f47d0480 tool=web_fetch tokens=500 ownPrice=135 (relaxed, no weight)
+2026/04/01 13:39:33.463240 [PlanGate ReAct Sunk-Cost] session=sess-0153-e3254cb9 step=5 tool=mock_heavy tokens=500 price=675 adjusted=50 ownPrice=135
+2026/04/01 13:39:33.501608 [PlanGate ReAct Step0] session=sess-0194-3a88a922 tool=calculate tokens=500 ownPrice=135 (relaxed, no weight)
+2026/04/01 13:39:33.523563 [PlanGate ReAct Step0] session=sess-0194-3a88a922 ADMITTED, tracking started
+2026/04/01 13:39:33.524512 [PlanGate ReAct Sunk-Cost] session=sess-0158-db8a9d91 step=5 tool=calculate tokens=500 price=135 adjusted=10 ownPrice=135
+2026/04/01 13:39:33.526084 [PlanGate ReAct Sunk-Cost] session=sess-0194-3a88a922 step=1 tool=mock_heavy tokens=500 price=675 adjusted=450 ownPrice=135
+2026/04/01 13:39:33.530481 [PlanGate ReAct Step0] session=sess-0195-80c91c79 tool=mock_heavy tokens=500 ownPrice=135 (relaxed, no weight)
+2026/04/01 13:39:33.560780 [PlanGate ReAct Step0] session=sess-0196-47afcb17 tool=calculate tokens=500 ownPrice=135 (relaxed, no weight)
+2026/04/01 13:39:33.589715 [PlanGate ReAct Step0] session=sess-0184-0517ded1 ADMITTED, tracking started
+2026/04/01 13:39:33.592560 [PlanGate ReAct Sunk-Cost] session=sess-0184-0517ded1 step=1 tool=web_fetch tokens=500 price=135 adjusted=90 ownPrice=135
+2026/04/01 13:39:33.613752 [PlanGate ReAct Step0] session=sess-0193-f47d0480 ADMITTED, tracking started
+2026/04/01 13:39:33.615130 [PlanGate ReAct Step0] session=sess-0196-47afcb17 ADMITTED, tracking started
+2026/04/01 13:39:33.616563 [PlanGate ReAct Sunk-Cost] session=sess-0193-f47d0480 step=1 tool=calculate tokens=500 price=120 adjusted=80 ownPrice=120
+2026/04/01 13:39:33.617777 [PlanGate ReAct Sunk-Cost] session=sess-0196-47afcb17 step=1 tool=web_fetch tokens=500 price=120 adjusted=80 ownPrice=120
+2026/04/01 13:39:33.646753 [PlanGate ReAct Step0] session=sess-0197-836f3d7c tool=calculate tokens=500 ownPrice=10 (relaxed, no weight)
+2026/04/01 13:39:33.770808 [PlanGate ReAct Sunk-Cost] session=sess-0184-0517ded1 step=2 tool=mock_heavy tokens=500 price=50 adjusted=16 ownPrice=10
+2026/04/01 13:39:33.772360 [PlanGate ReAct Sunk-Cost] session=sess-0193-f47d0480 step=2 tool=web_fetch tokens=500 price=10 adjusted=3 ownPrice=10
+2026/04/01 13:39:33.801216 [PlanGate ReAct Step0] session=sess-0198-1855604c tool=calculate tokens=500 ownPrice=10 (relaxed, no weight)
+2026/04/01 13:39:33.923478 [PlanGate ReAct Sunk-Cost] session=sess-0196-47afcb17 step=2 tool=web_fetch tokens=500 price=10 adjusted=3 ownPrice=10
+2026/04/01 13:39:33.927088 [PlanGate ReAct Step0] session=sess-0197-836f3d7c ADMITTED, tracking started
+2026/04/01 13:39:33.928940 [PlanGate ReAct Sunk-Cost] session=sess-0197-836f3d7c step=1 tool=web_fetch tokens=500 price=10 adjusted=6 ownPrice=10
+2026/04/01 13:39:33.946397 [PlanGate ReAct Step0] session=sess-0199-b5999e75 tool=mock_heavy tokens=500 ownPrice=10 (relaxed, no weight)
+2026/04/01 13:39:34.009949 [PlanGate ReAct Sunk-Cost] session=sess-0189-ed16d531 step=3 tool=calculate tokens=500 price=12 adjusted=2 ownPrice=12
+2026/04/01 13:39:34.011307 [PlanGate ReAct Sunk-Cost] session=sess-0188-fbebea90 step=2 tool=web_fetch tokens=500 price=12 adjusted=4 ownPrice=12
+2026/04/01 13:39:34.013685 [PlanGate ReAct Step0] session=sess-0198-1855604c ADMITTED, tracking started
+2026/04/01 13:39:34.015881 [PlanGate ReAct Sunk-Cost] session=sess-0198-1855604c step=1 tool=calculate tokens=500 price=12 adjusted=8 ownPrice=12
+2026/04/01 13:39:34.109009 [PlanGate ReAct Step0] session=sess-0192-6f3dd389 ADMITTED, tracking started
+2026/04/01 13:39:34.112093 [PlanGate ReAct Sunk-Cost] session=sess-0192-6f3dd389 step=1 tool=web_fetch tokens=500 price=12 adjusted=8 ownPrice=12
+2026/04/01 13:39:34.119367 [PlanGate ReAct Sunk-Cost] session=sess-0187-ab474d89 step=3 tool=web_fetch tokens=500 price=12 adjusted=2 ownPrice=12
+2026/04/01 13:39:34.124350 [PlanGate ReAct Sunk-Cost] session=sess-0189-ed16d531 step=4 tool=calculate tokens=500 price=12 adjusted=1 ownPrice=12
+2026/04/01 13:39:34.162851 [PlanGate ReAct Sunk-Cost] session=sess-0193-f47d0480 step=3 tool=mock_heavy tokens=500 price=60 adjusted=10 ownPrice=12
+2026/04/01 13:39:34.170770 [PlanGate ReAct Sunk-Cost] session=sess-0198-1855604c step=2 tool=web_fetch tokens=500 price=12 adjusted=4 ownPrice=12
+2026/04/01 13:39:34.173663 [PlanGate ReAct Sunk-Cost] session=sess-0197-836f3d7c step=2 tool=calculate tokens=500 price=12 adjusted=4 ownPrice=12
+2026/04/01 13:39:34.178531 [PlanGate ReAct Sunk-Cost] session=sess-0189-ed16d531 step=5 tool=mock_heavy tokens=500 price=60 adjusted=4 ownPrice=12
+2026/04/01 13:39:34.188233 [PlanGate ReAct Sunk-Cost] session=sess-0174-98c02c22 step=2 tool=web_fetch tokens=500 price=12 adjusted=4 ownPrice=12
+2026/04/01 13:39:34.278764 [PlanGate ReAct Sunk-Cost] session=sess-0188-fbebea90 step=3 tool=web_fetch tokens=500 price=12 adjusted=2 ownPrice=12
+2026/04/01 13:39:34.280838 [PlanGate ReAct Sunk-Cost] session=sess-0197-836f3d7c step=3 tool=mock_heavy tokens=500 price=60 adjusted=10 ownPrice=12
+2026/04/01 13:39:34.325731 [PlanGate ReAct Sunk-Cost] session=sess-0153-e3254cb9 step=6 tool=web_fetch tokens=500 price=12 adjusted=0 ownPrice=12
+2026/04/01 13:39:34.327046 [PlanGate ReAct Sunk-Cost] session=sess-0192-6f3dd389 step=2 tool=calculate tokens=500 price=12 adjusted=4 ownPrice=12
+2026/04/01 13:39:34.336371 [PlanGate ReAct Sunk-Cost] session=sess-0194-3a88a922 step=2 tool=web_fetch tokens=500 price=12 adjusted=4 ownPrice=12
+2026/04/01 13:39:34.342779 [PlanGate ReAct Sunk-Cost] session=sess-0198-1855604c step=3 tool=mock_heavy tokens=500 price=60 adjusted=10 ownPrice=12
+2026/04/01 13:39:34.345427 [PlanGate ReAct Sunk-Cost] session=sess-0192-6f3dd389 step=3 tool=web_fetch tokens=500 price=12 adjusted=2 ownPrice=12
+2026/04/01 13:39:34.391290 [PlanGate ReAct Step0] session=sess-0195-80c91c79 ADMITTED, tracking started
+2026/04/01 13:39:34.393860 [PlanGate ReAct Sunk-Cost] session=sess-0195-80c91c79 step=1 tool=calculate tokens=500 price=12 adjusted=8 ownPrice=12
+2026/04/01 13:39:34.478522 [PlanGate ReAct Sunk-Cost] session=sess-0188-fbebea90 step=4 tool=mock_heavy tokens=500 price=60 adjusted=6 ownPrice=12
+2026/04/01 13:39:34.479614 [PlanGate ReAct Sunk-Cost] session=sess-0174-98c02c22 step=3 tool=mock_heavy tokens=500 price=60 adjusted=10 ownPrice=12
+2026/04/01 13:39:34.480632 [PlanGate ReAct Sunk-Cost] session=sess-0195-80c91c79 step=2 tool=mock_heavy tokens=500 price=60 adjusted=20 ownPrice=12
+2026/04/01 13:39:34.632490 [PlanGate ReAct Sunk-Cost] session=sess-0192-6f3dd389 step=4 tool=calculate tokens=500 price=10 adjusted=1 ownPrice=10
+2026/04/01 13:39:34.639340 [PlanGate ReAct Sunk-Cost] session=sess-0192-6f3dd389 step=5 tool=mock_heavy tokens=500 price=50 adjusted=3 ownPrice=10
+2026/04/01 13:39:34.732067 [PlanGate ReAct Sunk-Cost] session=sess-0184-0517ded1 step=3 tool=web_fetch tokens=500 price=10 adjusted=1 ownPrice=10
+2026/04/01 13:39:34.890414 [PlanGate ReAct Sunk-Cost] session=sess-0184-0517ded1 step=4 tool=calculate tokens=500 price=8 adjusted=0 ownPrice=8
+2026/04/01 13:39:34.897806 [PlanGate ReAct Sunk-Cost] session=sess-0184-0517ded1 step=5 tool=calculate tokens=500 price=8 adjusted=0 ownPrice=8
+2026/04/01 13:39:34.915811 [PlanGate ReAct Step0] session=sess-0199-b5999e75 ADMITTED, tracking started
+2026/04/01 13:39:34.918036 [PlanGate ReAct Sunk-Cost] session=sess-0199-b5999e75 step=1 tool=mock_heavy tokens=500 price=40 adjusted=26 ownPrice=8
+2026/04/01 13:39:34.976320 [PlanGate ReAct Sunk-Cost] session=sess-0193-f47d0480 step=4 tool=web_fetch tokens=500 price=8 adjusted=0 ownPrice=8
+2026/04/01 13:39:35.134748 [PlanGate ReAct Sunk-Cost] session=sess-0193-f47d0480 step=5 tool=calculate tokens=500 price=6 adjusted=0 ownPrice=6
+2026/04/01 13:39:35.135881 [PlanGate ReAct Sunk-Cost] session=sess-0197-836f3d7c step=4 tool=web_fetch tokens=500 price=6 adjusted=0 ownPrice=6
+2026/04/01 13:39:35.195666 [PlanGate ReAct Sunk-Cost] session=sess-0198-1855604c step=4 tool=mock_heavy tokens=500 price=30 adjusted=3 ownPrice=6
+2026/04/01 13:39:35.287150 [PlanGate ReAct Sunk-Cost] session=sess-0188-fbebea90 step=5 tool=web_fetch tokens=500 price=6 adjusted=0 ownPrice=6
+2026/04/01 13:39:35.295260 [PlanGate ReAct Sunk-Cost] session=sess-0197-836f3d7c step=5 tool=web_fetch tokens=500 price=6 adjusted=0 ownPrice=6
+2026/04/01 13:39:35.301543 [PlanGate ReAct Sunk-Cost] session=sess-0195-80c91c79 step=3 tool=mock_heavy tokens=500 price=30 adjusted=5 ownPrice=6
+2026/04/01 13:39:35.445358 [PlanGate ReAct Sunk-Cost] session=sess-0188-fbebea90 step=6 tool=mock_heavy tokens=500 price=20 adjusted=1 ownPrice=4
+2026/04/01 13:39:35.446558 [PlanGate ReAct Sunk-Cost] session=sess-0192-6f3dd389 step=6 tool=web_fetch tokens=500 price=4 adjusted=0 ownPrice=4
+2026/04/01 13:39:37.922893 [PlanGate ReAct Sunk-Cost] session=sess-0195-80c91c79 step=4 tool=web_fetch tokens=500 price=15 adjusted=1 ownPrice=15
+2026/04/01 13:39:38.081076 [PlanGate ReAct Sunk-Cost] session=sess-0195-80c91c79 step=5 tool=calculate tokens=500 price=15 adjusted=1 ownPrice=15

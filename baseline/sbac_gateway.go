@@ -221,7 +221,7 @@ func (gw *SBACGateway) handleToolsCall(ctx context.Context, r *http.Request, req
 		return gw.execTool(ctx, req, handler, sessID)
 
 	} else if sessionIDHeader != "" {
-		// ── Step N：已准入的 Session 无条件放行 ──────────────────────────────
+		// ── Step N 或 ReAct 首步：已准入 Session 无条件放行 / 新 Session 动态准入 ──
 		gw.sessionsMu.Lock()
 		sess, exists := gw.sessions[sessionIDHeader]
 		if exists {
@@ -230,11 +230,27 @@ func (gw *SBACGateway) handleToolsCall(ctx context.Context, r *http.Request, req
 		gw.sessionsMu.Unlock()
 
 		if !exists {
-			// 未知 Session（可能已超时）→ 拒绝
-			atomic.AddInt64(&gw.stats.RejectedRequests, 1)
-			return mcpgov.NewErrorResponse(req.ID, -32001,
-				fmt.Sprintf("SBAC: Session %s 未注册或已超时，被 %s 拒绝", sessionIDHeader, gw.nodeName),
-				map[string]string{"price": "0", "name": gw.nodeName})
+			// ReAct 模式首步：无 X-Plan-DAG 但有 X-Session-ID → 尝试准入新 Session
+			for {
+				cur := atomic.LoadInt64(&gw.activeSessions)
+				if cur >= gw.maxSessions {
+					atomic.AddInt64(&gw.stats.RejectedRequests, 1)
+					return mcpgov.NewErrorResponse(req.ID, -32001,
+						fmt.Sprintf("SBAC: 并发会话已满 (active=%d, max=%d)", cur, gw.maxSessions),
+						map[string]string{"price": strconv.FormatInt(gw.maxSessions, 10), "name": gw.nodeName})
+				}
+				if atomic.CompareAndSwapInt64(&gw.activeSessions, cur, cur+1) {
+					break
+				}
+			}
+			// 注册 ReAct Session（步数未知，设默认 5 步防 slot 泄漏）
+			gw.sessionsMu.Lock()
+			gw.sessions[sessionIDHeader] = &sbacSession{
+				totalSteps:   5,
+				lastActivity: time.Now(),
+			}
+			gw.sessionsMu.Unlock()
+			return gw.execTool(ctx, req, handler, sessionIDHeader)
 		}
 		return gw.execTool(ctx, req, handler, sessionIDHeader)
 

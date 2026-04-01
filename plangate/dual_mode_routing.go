@@ -171,6 +171,146 @@ func (s *MCPDPServer) handleReActMode(ctx context.Context, req *mcpgov.JSONRPCRe
 	return s.governor.HandleToolCall(ctx, req, handler)
 }
 
+// handleReActFirstStep 处理 ReAct 会话首步 (Step 0)：宽松准入 + 创建会话跟踪
+// 优化 3 (Relaxed Step0 Pre-screening):
+//   - 零负载时（ownPrice==0）直接放行，不走 MCPGovernor 标准准入
+//   - 有负载时仅做轻量级价格对比（使用基础价格，不含工具权重），降低首步拒绝率
+//
+// 注意：ReAct 不占用 sessionCap（因为无法预知会话何时结束，会导致 slot 泄漏）
+func (s *MCPDPServer) handleReActFirstStep(
+	ctx context.Context, req *mcpgov.JSONRPCRequest, sessionID string,
+) *mcpgov.JSONRPCResponse {
+	// 1. 解析参数
+	var params mcpgov.MCPToolCallParams
+	if err := json.Unmarshal(req.Params, &params); err != nil {
+		return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeInvalidParams, "无效的工具调用参数", err.Error())
+	}
+	handler, ok := s.handlers[params.Name]
+	if !ok {
+		return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeMethodNotFound,
+			fmt.Sprintf("工具 '%s' 未注册", params.Name), nil)
+	}
+
+	// 2. 优化 1+3: Zero-Load Free Pass + Relaxed Step0
+	ownPrice := s.governor.GetOwnPrice()
+	if ownPrice == 0 {
+		// 系统空闲 → 直接执行，不做任何价格检查
+		log.Printf("[PlanGate ReAct Step0] session=%s FREE PASS (ownPrice=0)", sessionID)
+	} else {
+		// 有负载 → 宽松检查：仅用基础 ownPrice（不含工具权重）对比 tokens
+		tokens := int64(0)
+		if params.Meta != nil {
+			tokens = params.Meta.Tokens
+		}
+		log.Printf("[PlanGate ReAct Step0] session=%s tool=%s tokens=%d ownPrice=%d (relaxed, no weight)",
+			sessionID, params.Name, tokens, ownPrice)
+		if tokens < ownPrice {
+			log.Printf("[PlanGate ReAct Step0] session=%s REJECTED (tokens %d < ownPrice %d)", sessionID, tokens, ownPrice)
+			return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeOverloaded,
+				fmt.Sprintf("ReAct step0 relaxed: tokens %d < ownPrice %d", tokens, ownPrice),
+				map[string]interface{}{
+					"session_id":  sessionID,
+					"own_price":   ownPrice,
+					"mode":        "react_step0_relaxed",
+					"rejected_at": "step_0",
+				})
+		}
+	}
+
+	// 3. 执行首步（绕过 LoadShedding）
+	result, err := handler(ctx, params)
+	if err != nil {
+		return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeInternalError, err.Error(), nil)
+	}
+
+	// 4. 准入成功 → 创建 ReAct 会话跟踪
+	s.reactSessions.Create(sessionID, nil)
+	s.reactSessions.Advance(sessionID) // step 0 完成 → CurrentStep = 1
+
+	// 5. 附加元数据
+	if result.Meta == nil {
+		result.Meta = &mcpgov.ResponseMeta{}
+	}
+	result.Meta.Name = s.serverInfo.Name
+	result.Meta.Price = strconv.FormatInt(ownPrice, 10)
+
+	log.Printf("[PlanGate ReAct Step0] session=%s ADMITTED, tracking started", sessionID)
+	return mcpgov.NewSuccessResponse(req.ID, result)
+}
+
+// handleReActSunkCostStep 处理 ReAct 会话后续步骤 (Step K≥1)：沉没成本递减价格
+// 优化 1 (Zero-Load Free Pass): ownPrice==0 时直接放行，不做价格检查
+// 优化 2 (Aggressive Sunk-Cost): adjustedPrice = toolPrice / (1 + K² × α)，二次方衰减
+func (s *MCPDPServer) handleReActSunkCostStep(
+	ctx context.Context, req *mcpgov.JSONRPCRequest, rState *ReactSessionState,
+) *mcpgov.JSONRPCResponse {
+	// 1. 解析参数
+	var params mcpgov.MCPToolCallParams
+	if err := json.Unmarshal(req.Params, &params); err != nil {
+		return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeInvalidParams, "无效的工具调用参数", err.Error())
+	}
+	handler, ok := s.handlers[params.Name]
+	if !ok {
+		return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeMethodNotFound,
+			fmt.Sprintf("工具 '%s' 未注册", params.Name), nil)
+	}
+
+	tokens := int64(0)
+	if params.Meta != nil {
+		tokens = params.Meta.Tokens
+	}
+
+	K := rState.CurrentStep
+
+	// 2. 优化 1: Zero-Load Free Pass — 系统空闲时绕过所有价格检查
+	ownPrice := s.governor.GetOwnPrice()
+	if ownPrice == 0 {
+		log.Printf("[PlanGate ReAct Sunk-Cost] session=%s step=%d tool=%s FREE PASS (ownPrice=0)",
+			rState.SessionID, K, params.Name)
+	} else {
+		// 3. 优化 2: Aggressive Sunk-Cost — 二次方衰减公式
+		toolPrice := s.governor.GetToolEffectivePrice(params.Name)
+		adjustedPrice := int64(float64(toolPrice) / (1.0 + float64(K)*float64(K)*s.sunkCostAlpha))
+
+		log.Printf("[PlanGate ReAct Sunk-Cost] session=%s step=%d tool=%s tokens=%d price=%d adjusted=%d ownPrice=%d",
+			rState.SessionID, K, params.Name, tokens, toolPrice, adjustedPrice, ownPrice)
+
+		if tokens < adjustedPrice {
+			// 沉没成本准入失败 → 释放会话
+			s.reactSessions.ReleaseAndDelete(rState.SessionID)
+			return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeOverloaded,
+				fmt.Sprintf("ReAct sunk-cost: tokens %d < adjusted price %d (orig %d, step %d)",
+					tokens, adjustedPrice, toolPrice, K),
+				map[string]interface{}{
+					"session_id":     rState.SessionID,
+					"adjusted_price": adjustedPrice,
+					"original_price": toolPrice,
+					"step":           K,
+					"mode":           "react_sunk_cost",
+				})
+		}
+	}
+
+	// 4. 价格通过 → 直接执行工具调用（绕过 LoadShedding）
+	result, err := handler(ctx, params)
+	if err != nil {
+		s.reactSessions.ReleaseAndDelete(rState.SessionID)
+		return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeInternalError, err.Error(), nil)
+	}
+
+	// 5. 推进步骤
+	s.reactSessions.Advance(rState.SessionID)
+
+	// 6. 附加元数据
+	if result.Meta == nil {
+		result.Meta = &mcpgov.ResponseMeta{}
+	}
+	result.Meta.Name = s.serverInfo.Name
+	result.Meta.Price = strconv.FormatInt(ownPrice, 10)
+
+	return mcpgov.NewSuccessResponse(req.ID, result)
+}
+
 // executeStepDirect 直接执行工具调用（绕过 LoadShedding）
 func (s *MCPDPServer) executeStepDirect(ctx context.Context, req *mcpgov.JSONRPCRequest, sessionID string) *mcpgov.JSONRPCResponse {
 	var params mcpgov.MCPToolCallParams

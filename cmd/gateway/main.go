@@ -110,6 +110,8 @@ func main() {
 		"PlanGate (Full): 并发会话上限（<=0 表示不限制）")
 	plangatePriceStep := flag.Int64("plangate-price-step", 40,
 		"PlanGate: 过载涨价步长")
+	plangateSunkCostAlpha := flag.Float64("plangate-sunk-cost-alpha", 0.5,
+		"PlanGate: ReAct 沉没成本系数 (0=禁用)")
 
 	flag.Parse()
 
@@ -136,18 +138,21 @@ func main() {
 			name: "plangate-full", priceStep: *plangatePriceStep,
 			maxConcurrentSessions: *plangateMaxSessions,
 			disableBudgetLock: false,
+			sunkCostAlpha: *plangateSunkCostAlpha,
 		})
 	case "mcpdp-no-budgetlock":
 		handler = setupMCPDPVariant(tools, *backendURL, mcpdpVariant{
 			name: "plangate-wo-budgetlock", priceStep: *plangatePriceStep,
 			maxConcurrentSessions: *plangateMaxSessions,
 			disableBudgetLock: true,
+			sunkCostAlpha: *plangateSunkCostAlpha,
 		})
 	case "mcpdp-no-sessioncap":
 		handler = setupMCPDPVariant(tools, *backendURL, mcpdpVariant{
 			name: "plangate-wo-sessioncap", priceStep: *plangatePriceStep,
 			maxConcurrentSessions: 0,
 			disableBudgetLock: false,
+			sunkCostAlpha: *plangateSunkCostAlpha,
 		})
 	case "rajomon":
 		handler = setupRajomon(tools, *backendURL, *rajomonPriceStep)
@@ -424,8 +429,9 @@ func setupDPNoRegime(tools []mcpgov.MCPTool, backendURL string) http.Handler {
 type mcpdpVariant struct {
 	name                  string
 	priceStep             int64
-	maxConcurrentSessions int  // 有效并发会话上限 (0=不限制)
-	disableBudgetLock     bool // 是否禁用预算锁
+	maxConcurrentSessions int     // 有效并发会话上限 (0=不限制)
+	disableBudgetLock     bool    // 是否禁用预算锁
+	sunkCostAlpha         float64 // ReAct 沉没成本系数 (0=禁用)
 }
 
 func setupMCPDPVariant(tools []mcpgov.MCPTool, backendURL string, v mcpdpVariant) http.Handler {
@@ -467,9 +473,9 @@ func setupMCPDPVariant(tools []mcpgov.MCPTool, backendURL string, v mcpdpVariant
 
 	var server *plangate.MCPDPServer
 	if v.disableBudgetLock {
-		server = plangate.NewMCPDPServerNoLock(v.name, gov, 60*time.Second, v.maxConcurrentSessions)
+		server = plangate.NewMCPDPServerNoLock(v.name, gov, 60*time.Second, v.maxConcurrentSessions, v.sunkCostAlpha)
 	} else {
-		server = plangate.NewMCPDPServer(v.name, gov, 60*time.Second, v.maxConcurrentSessions)
+		server = plangate.NewMCPDPServer(v.name, gov, 60*time.Second, v.maxConcurrentSessions, v.sunkCostAlpha)
 	}
 
 	detector := &proxyOverloadDetector{

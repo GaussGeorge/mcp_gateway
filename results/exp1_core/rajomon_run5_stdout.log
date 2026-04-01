@@ -12,43 +12,43 @@
 ============================================================
   总会话数:        500
   ├─ SUCCESS:      2  (0.4%)
-  ├─ REJECTED@S0:  440  (88.0%)
-  ├─ CASCADE_FAIL: 58  (11.6%)
+  ├─ REJECTED@S0:  437  (87.4%)
+  ├─ CASCADE_FAIL: 61  (12.2%)
   └─ PENDING:      0
 
-  [Plan-and-Solve]  total=500  success=2  rejected@s0=440  cascade=58
+  [Plan-and-Solve]  total=500  success=2  rejected@s0=437  cascade=61
   [ReAct]           total=0  success=0  rejected@s0=0  cascade=0
 
   ── Goodput 指标 ──
-  Raw Goodput (单步累加):       186.0
+  Raw Goodput (单步累加):       184.0
   Effective Goodput (全链路):    14.0
-  Raw Goodput/s:                17.54
-  Effective Goodput/s:          1.32
+  Raw Goodput/s:                15.21
+  Effective Goodput/s:          1.16
 
   ── 步骤级统计 ──
-  总步骤数:          584
-  步骤成功数:        86  (14.7%)
-  会话吞吐量:        47.1 sessions/s
+  总步骤数:          582
+  步骤成功数:        84  (14.4%)
+  会话吞吐量:        41.3 sessions/s
 
   ── 延迟 (ms) ──
   P50:   2.3
-  P95:   1376.9
-  P99:   2001.0
-  Mean:  434.1
+  P95:   2514.4
+  P99:   3012.7
+  Mean:  605.8
 
   ── 会话端到端延迟 (ms, 仅成功会话) ──
-  E2E_P50:   1901.4
-  E2E_P95:   1901.4
-  E2E_P99:   1901.4
-  E2E_Mean:  1442.0
+  E2E_P50:   983.8
+  E2E_P95:   983.8
+  E2E_P99:   983.8
+  E2E_Mean:  951.7
 
   ── 客户端预测准入 (Shadow Mode) ──
-  总检查次数:        584
-  Client 拒绝次数:   76  (13.0%)
-  Client→网关命中:   76  (命中率=100.0%)
-  Client_Saved_Requests: 76
+  总检查次数:        582
+  Client 拒绝次数:   94  (16.2%)
+  Client→网关命中:   94  (命中率=100.0%)
+  Client_Saved_Requests: 94
 ============================================================
 
 [DAG发压机] 步骤级数据: /mnt/d/mcp-governance-main/scripts/../results/exp1_core/rajomon_run5.csv
 [DAG发压机] 会话级数据: /mnt/d/mcp-governance-main/scripts/../results/exp1_core/rajomon_run5_sessions.csv
-[DAG发压机] 总记录: 584 步 / 500 会话
+[DAG发压机] 总记录: 582 步 / 500 会话

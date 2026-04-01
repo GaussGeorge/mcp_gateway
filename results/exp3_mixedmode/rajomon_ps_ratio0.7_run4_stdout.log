@@ -11,44 +11,44 @@
   DAG 会话发压机 — 统计摘要
 ============================================================
   总会话数:        200
-  ├─ SUCCESS:      27  (13.5%)
-  ├─ REJECTED@S0:  159  (79.5%)
-  ├─ CASCADE_FAIL: 14  (7.0%)
+  ├─ SUCCESS:      41  (20.5%)
+  ├─ REJECTED@S0:  143  (71.5%)
+  ├─ CASCADE_FAIL: 16  (8.0%)
   └─ PENDING:      0
 
-  [Plan-and-Solve]  total=145  success=23  rejected@s0=113  cascade=9
-  [ReAct]           total=55  success=4  rejected@s0=46  cascade=5
+  [Plan-and-Solve]  total=145  success=31  rejected@s0=100  cascade=14
+  [ReAct]           total=55  success=10  rejected@s0=43  cascade=2
 
   ── Goodput 指标 ──
-  Raw Goodput (单步累加):       381.0
-  Effective Goodput (全链路):    277.0
-  Raw Goodput/s:                29.65
-  Effective Goodput/s:          21.56
+  Raw Goodput (单步累加):       497.0
+  Effective Goodput (全链路):    404.0
+  Raw Goodput/s:                38.71
+  Effective Goodput/s:          31.47
 
   ── 步骤级统计 ──
-  总步骤数:          342
-  步骤成功数:        169  (49.4%)
+  总步骤数:          384
+  步骤成功数:        225  (58.6%)
   会话吞吐量:        15.6 sessions/s
 
   ── 延迟 (ms) ──
-  P50:   4.6
-  P95:   1123.3
-  P99:   1338.1
-  Mean:  271.3
+  P50:   216.1
+  P95:   1125.0
+  P99:   1434.9
+  Mean:  319.5
 
   ── 会话端到端延迟 (ms, 仅成功会话) ──
-  E2E_P50:   2350.5
-  E2E_P95:   4717.8
-  E2E_P99:   5130.3
-  E2E_Mean:  2480.6
+  E2E_P50:   2368.4
+  E2E_P95:   4508.4
+  E2E_P99:   5021.0
+  E2E_Mean:  2455.1
 
   ── 客户端预测准入 (Shadow Mode) ──
-  总检查次数:        342
-  Client 拒绝次数:   60  (17.5%)
-  Client→网关命中:   58  (命中率=96.7%)
-  Client_Saved_Requests: 60
+  总检查次数:        384
+  Client 拒绝次数:   73  (19.0%)
+  Client→网关命中:   64  (命中率=87.7%)
+  Client_Saved_Requests: 73
 ============================================================
 
 [DAG发压机] 步骤级数据: /mnt/d/mcp-governance-main/scripts/../results/exp3_mixedmode/rajomon_ps_ratio0.7_run4.csv
 [DAG发压机] 会话级数据: /mnt/d/mcp-governance-main/scripts/../results/exp3_mixedmode/rajomon_ps_ratio0.7_run4_sessions.csv
-[DAG发压机] 总记录: 342 步 / 200 会话
+[DAG发压机] 总记录: 384 步 / 200 会话

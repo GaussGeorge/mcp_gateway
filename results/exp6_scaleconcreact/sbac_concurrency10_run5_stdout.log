@@ -1,0 +1,54 @@
+[DAG发压机] 客户端价格预测: ON (TTL=1.0s, Shadow Mode)
+[DAG发压机] 目标: http://127.0.0.1:9125
+[DAG发压机] 总会话: 200  (P&S=0, ReAct=200)
+[DAG发压机] 总步骤: 803
+[DAG发压机] 预算: 500
+[DAG发压机] 重载比: 30%
+[DAG发压机] 并发: 10
+[DAG发压机] 种子: 42
+
+============================================================
+  DAG 会话发压机 — 统计摘要
+============================================================
+  总会话数:        200
+  ├─ SUCCESS:      172  (86.0%)
+  ├─ REJECTED@S0:  28  (14.0%)
+  ├─ CASCADE_FAIL: 0  (0.0%)
+  └─ PENDING:      0
+
+  [Plan-and-Solve]  total=0  success=0  rejected@s0=0  cascade=0
+  [ReAct]           total=200  success=172  rejected@s0=28  cascade=0
+
+  ── Goodput 指标 ──
+  Raw Goodput (单步累加):       1421.0
+  Effective Goodput (全链路):    1421.0
+  Raw Goodput/s:                62.31
+  Effective Goodput/s:          62.31
+
+  ── 步骤级统计 ──
+  总步骤数:          709
+  步骤成功数:        681  (96.1%)
+  会话吞吐量:        8.8 sessions/s
+
+  ── 延迟 (ms) ──
+  P50:   157.9
+  P95:   809.7
+  P99:   1618.0
+  Mean:  295.4
+
+  ── 会话端到端延迟 (ms, 仅成功会话) ──
+  E2E_P50:   1123.4
+  E2E_P95:   3248.8
+  E2E_P99:   4394.7
+  E2E_Mean:  1218.2
+
+  ── 客户端预测准入 (Shadow Mode) ──
+  总检查次数:        709
+  Client 拒绝次数:   63  (8.9%)
+  Client→网关命中:   7  (命中率=11.1%)
+  Client_Saved_Requests: 63
+============================================================
+
+[DAG发压机] 步骤级数据: /mnt/d/mcp-governance-main/scripts/../results/exp6_scaleconcreact/sbac_concurrency10_run5.csv
+[DAG发压机] 会话级数据: /mnt/d/mcp-governance-main/scripts/../results/exp6_scaleconcreact/sbac_concurrency10_run5_sessions.csv
+[DAG发压机] 总记录: 709 步 / 200 会话

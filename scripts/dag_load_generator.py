@@ -295,9 +295,11 @@ async def send_tool_call(
 
     headers = {"Content-Type": "application/json"}
 
-    # P&S 模式: 首步带完整 DAG, 后续步骤仅带 Session-ID
+    # 所有模式均发送 Session-ID（ReAct 模式需要用于沉没成本会话跟踪）
+    headers["X-Session-ID"] = plan.session_id
+
+    # P&S 模式: 首步额外带完整 DAG
     if plan.mode == AgentMode.PLAN_AND_SOLVE:
-        headers["X-Session-ID"] = plan.session_id
         if step_idx == 0:
             dag_json = {
                 "session_id": plan.session_id,

@@ -11,44 +11,44 @@
   DAG 会话发压机 — 统计摘要
 ============================================================
   总会话数:        200
-  ├─ SUCCESS:      77  (38.5%)
-  ├─ REJECTED@S0:  88  (44.0%)
-  ├─ CASCADE_FAIL: 35  (17.5%)
+  ├─ SUCCESS:      96  (48.0%)
+  ├─ REJECTED@S0:  82  (41.0%)
+  ├─ CASCADE_FAIL: 22  (11.0%)
   └─ PENDING:      0
 
-  [Plan-and-Solve]  total=98  success=31  rejected@s0=67  cascade=0
-  [ReAct]           total=102  success=46  rejected@s0=21  cascade=35
+  [Plan-and-Solve]  total=98  success=32  rejected@s0=66  cascade=0
+  [ReAct]           total=102  success=64  rejected@s0=16  cascade=22
 
   ── Goodput 指标 ──
-  Raw Goodput (单步累加):       736.0
-  Effective Goodput (全链路):    562.0
-  Raw Goodput/s:                55.77
-  Effective Goodput/s:          42.59
+  Raw Goodput (单步累加):       887.0
+  Effective Goodput (全链路):    802.0
+  Raw Goodput/s:                52.06
+  Effective Goodput/s:          47.07
 
   ── 步骤级统计 ──
-  总步骤数:          499
-  步骤成功数:        376  (75.4%)
-  会话吞吐量:        15.2 sessions/s
+  总步骤数:          547
+  步骤成功数:        443  (81.0%)
+  会话吞吐量:        11.7 sessions/s
 
   ── 延迟 (ms) ──
-  P50:   125.7
-  P95:   811.1
-  P99:   926.3
-  Mean:  208.3
+  P50:   158.1
+  P95:   911.4
+  P99:   1636.4
+  Mean:  280.5
 
   ── 会话端到端延迟 (ms, 仅成功会话) ──
-  E2E_P50:   830.3
-  E2E_P95:   2745.2
-  E2E_P99:   3415.4
-  E2E_Mean:  1017.8
+  E2E_P50:   1299.9
+  E2E_P95:   3552.1
+  E2E_P99:   5689.9
+  E2E_Mean:  1454.4
 
   ── 客户端预测准入 (Shadow Mode) ──
-  总检查次数:        499
-  Client 拒绝次数:   106  (21.2%)
-  Client→网关命中:   74  (命中率=69.8%)
-  Client_Saved_Requests: 106
+  总检查次数:        547
+  Client 拒绝次数:   115  (21.0%)
+  Client→网关命中:   46  (命中率=40.0%)
+  Client_Saved_Requests: 115
 ============================================================
 
 [DAG发压机] 步骤级数据: /mnt/d/mcp-governance-main/scripts/../results/exp3_mixedmode/plangate_full_ps_ratio0.5_run5.csv
 [DAG发压机] 会话级数据: /mnt/d/mcp-governance-main/scripts/../results/exp3_mixedmode/plangate_full_ps_ratio0.5_run5_sessions.csv
-[DAG发压机] 总记录: 499 步 / 200 会话
+[DAG发压机] 总记录: 547 步 / 200 会话

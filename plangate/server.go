@@ -13,36 +13,40 @@ const (
 	HeaderTotalBudget = "X-Total-Budget"
 )
 
-// MCPDPServer 集成三大创新机制的 MCP HTTP 网关
+// MCPDPServer 集成四大创新机制的 MCP HTTP 网关
 type MCPDPServer struct {
 	governor          *mcpgov.MCPGovernor
 	tools             map[string]mcpgov.MCPTool
 	handlers          map[string]mcpgov.ToolCallHandler
 	serverInfo        mcpgov.Implementation
 	budgetMgr         *HTTPBudgetReservationManager
-	disableBudgetLock bool          // 消融实验：禁用预算锁（保留预检准入）
-	sessionCap        chan struct{} // 并发会话上限信道（nil 表示不限制）
+	reactSessions     *ReactSessionManager  // ReAct 会话沉没成本跟踪
+	disableBudgetLock bool                  // 消融实验：禁用预算锁（保留预检准入）
+	sessionCap        chan struct{}         // 并发会话上限信道（nil 表示不限制）
+	sunkCostAlpha     float64              // ReAct 沉没成本系数 (0=禁用)
 }
 
 // NewMCPDPServer 创建 PlanGate 创新网关
 // maxConcurrentSessions <= 0 表示不限制并发会话数
-func NewMCPDPServer(name string, gov *mcpgov.MCPGovernor, reservationTTL time.Duration, maxConcurrentSessions int) *MCPDPServer {
+func NewMCPDPServer(name string, gov *mcpgov.MCPGovernor, reservationTTL time.Duration, maxConcurrentSessions int, sunkCostAlpha float64) *MCPDPServer {
 	var cap chan struct{}
 	if maxConcurrentSessions > 0 {
 		cap = make(chan struct{}, maxConcurrentSessions)
 	}
 	return &MCPDPServer{
-		governor:   gov,
-		tools:      make(map[string]mcpgov.MCPTool),
-		handlers:   make(map[string]mcpgov.ToolCallHandler),
-		serverInfo: mcpgov.Implementation{Name: name, Version: "2.0.0"},
-		budgetMgr:  NewHTTPBudgetReservationManager(reservationTTL),
-		sessionCap: cap,
+		governor:      gov,
+		tools:         make(map[string]mcpgov.MCPTool),
+		handlers:      make(map[string]mcpgov.ToolCallHandler),
+		serverInfo:    mcpgov.Implementation{Name: name, Version: "2.0.0"},
+		budgetMgr:     NewHTTPBudgetReservationManager(reservationTTL),
+		reactSessions: NewReactSessionManager(reservationTTL),
+		sessionCap:    cap,
+		sunkCostAlpha: sunkCostAlpha,
 	}
 }
 
 // NewMCPDPServerNoLock 创建消融变体网关（保留预检准入，禁用预算锁）
-func NewMCPDPServerNoLock(name string, gov *mcpgov.MCPGovernor, reservationTTL time.Duration, maxConcurrentSessions int) *MCPDPServer {
+func NewMCPDPServerNoLock(name string, gov *mcpgov.MCPGovernor, reservationTTL time.Duration, maxConcurrentSessions int, sunkCostAlpha float64) *MCPDPServer {
 	var cap chan struct{}
 	if maxConcurrentSessions > 0 {
 		cap = make(chan struct{}, maxConcurrentSessions)
@@ -53,8 +57,10 @@ func NewMCPDPServerNoLock(name string, gov *mcpgov.MCPGovernor, reservationTTL t
 		handlers:          make(map[string]mcpgov.ToolCallHandler),
 		serverInfo:        mcpgov.Implementation{Name: name, Version: "2.0.0"},
 		budgetMgr:         NewHTTPBudgetReservationManager(reservationTTL),
+		reactSessions:     NewReactSessionManager(reservationTTL),
 		disableBudgetLock: true,
 		sessionCap:        cap,
+		sunkCostAlpha:     sunkCostAlpha,
 	}
 }
 

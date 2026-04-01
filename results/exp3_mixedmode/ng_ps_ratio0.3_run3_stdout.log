@@ -11,36 +11,36 @@
   DAG 会话发压机 — 统计摘要
 ============================================================
   总会话数:        200
-  ├─ SUCCESS:      199  (99.5%)
+  ├─ SUCCESS:      200  (100.0%)
   ├─ REJECTED@S0:  0  (0.0%)
-  ├─ CASCADE_FAIL: 1  (0.5%)
+  ├─ CASCADE_FAIL: 0  (0.0%)
   └─ PENDING:      0
 
   [Plan-and-Solve]  total=62  success=62  rejected@s0=0  cascade=0
-  [ReAct]           total=138  success=137  rejected@s0=0  cascade=1
+  [ReAct]           total=138  success=138  rejected@s0=0  cascade=0
 
   ── Goodput 指标 ──
-  Raw Goodput (单步累加):       1881.0
-  Effective Goodput (全链路):    1867.0
-  Raw Goodput/s:                67.79
-  Effective Goodput/s:          67.28
+  Raw Goodput (单步累加):       1882.0
+  Effective Goodput (全链路):    1882.0
+  Raw Goodput/s:                63.77
+  Effective Goodput/s:          63.77
 
   ── 步骤级统计 ──
   总步骤数:          894
-  步骤成功数:        893  (99.9%)
-  会话吞吐量:        7.2 sessions/s
+  步骤成功数:        894  (100.0%)
+  会话吞吐量:        6.8 sessions/s
 
   ── 延迟 (ms) ──
-  P50:   432.7
-  P95:   1190.7
-  P99:   1392.0
-  Mean:  565.3
+  P50:   440.1
+  P95:   1228.5
+  P99:   2885.4
+  Mean:  603.5
 
   ── 会话端到端延迟 (ms, 仅成功会话) ──
-  E2E_P50:   2489.2
-  E2E_P95:   4976.1
-  E2E_P99:   5433.4
-  E2E_Mean:  2516.2
+  E2E_P50:   2523.7
+  E2E_P95:   5148.8
+  E2E_P99:   6841.5
+  E2E_Mean:  2698.4
 
   ── 客户端预测准入 (Shadow Mode) ──
   总检查次数:        894

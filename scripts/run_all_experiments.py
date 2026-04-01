@@ -10,7 +10,8 @@ run_all_experiments.py — 无人值守自动化跑批脚本
   Exp2_HeavyRatio:  重量工具占比扫参 [0.1, 0.3, 0.5, 0.7]
   Exp3_MixedMode:   混合模式 P&S+ReAct, ps_ratio=[0.3, 0.5, 0.7, 1.0]
   Exp4_Ablation:    消融实验 Full vs w/o-BudgetLock vs w/o-SessionCap vs Rajomon
-  Exp5_ScaleConc:   并发扩展测试 concurrency=[10, 20, 40, 60]
+  Exp5_ScaleConc:   并发扩展测试 (P&S) concurrency=[10, 20, 40, 60]
+  Exp6_ScaleConcReact: 并发扩展测试 (纯ReAct) concurrency=[10, 20, 40, 60]
 
 用法：
   python scripts/run_all_experiments.py                          # 跑全部
@@ -73,8 +74,8 @@ TUNED_PARAMS = {
     "dagor":         {"rtt_threshold": 400.0, "price_step": 10},
     "sbac":          {"max_sessions": 150},
     "srl":           {"qps": 65.0, "burst": 400, "max_conc": 55},
-    # PlanGate: Optuna 调优结果 (max_sessions=30, price_step=40)
-    "plangate_full": {"price_step": 40, "max_sessions": 30},
+    # PlanGate: Optuna 调优结果 (max_sessions=30, price_step=40, sunk_cost_alpha=0.5)
+    "plangate_full": {"price_step": 40, "max_sessions": 30, "sunk_cost_alpha": 0.5},
 }
 
 
@@ -115,6 +116,7 @@ def get_gateways(experiment_name: str) -> List[GatewayConfig]:
         GatewayConfig("plangate_full", "mcpdp", [
             "--plangate-price-step", str(pg["price_step"]),
             "--plangate-max-sessions", str(pg["max_sessions"]),
+            "--plangate-sunk-cost-alpha", str(pg["sunk_cost_alpha"]),
         ]),
     ]
 
@@ -123,14 +125,17 @@ def get_gateways(experiment_name: str) -> List[GatewayConfig]:
             GatewayConfig("plangate_full", "mcpdp", [
                 "--plangate-price-step", str(pg["price_step"]),
                 "--plangate-max-sessions", str(pg["max_sessions"]),
+                "--plangate-sunk-cost-alpha", str(pg["sunk_cost_alpha"]),
             ]),
             GatewayConfig("wo_budgetlock", "mcpdp-no-budgetlock", [
                 "--plangate-price-step", str(pg["price_step"]),
                 "--plangate-max-sessions", str(pg["max_sessions"]),
+                "--plangate-sunk-cost-alpha", str(pg["sunk_cost_alpha"]),
             ]),
             GatewayConfig("wo_sessioncap", "mcpdp-no-sessioncap", [
                 "--plangate-price-step", str(pg["price_step"]),
                 "--plangate-max-sessions", str(pg["max_sessions"]),
+                "--plangate-sunk-cost-alpha", str(pg["sunk_cost_alpha"]),
             ]),
             GatewayConfig("rajomon", "rajomon", [
                 "--rajomon-price-step", str(rj["price_step"]),
@@ -144,6 +149,7 @@ def get_gateways(experiment_name: str) -> List[GatewayConfig]:
             GatewayConfig("plangate_full", "mcpdp", [
                 "--plangate-price-step", str(pg["price_step"]),
                 "--plangate-max-sessions", str(pg["max_sessions"]),
+                "--plangate-sunk-cost-alpha", str(pg["sunk_cost_alpha"]),
             ]),
         ]
 
@@ -214,6 +220,14 @@ EXPERIMENTS = {
         description="并发扩展测试",
         sessions=200,
         ps_ratio=1.0,
+        duration=60,
+        sweep={"concurrency": [10, 20, 40, 60]},
+    ),
+    "Exp6_ScaleConcReact": ExperimentConfig(
+        name="Exp6_ScaleConcReact",
+        description="纯 ReAct 下的并发扩展测试 (ps_ratio=0.0)",
+        sessions=200,
+        ps_ratio=0.0,
         duration=60,
         sweep={"concurrency": [10, 20, 40, 60]},
     ),
@@ -717,7 +731,7 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("--exp", type=str, default="all",
-                        help="指定实验 (Exp1_Core/Exp2_HeavyRatio/Exp3_MixedMode/Exp4_Ablation/Exp5_ScaleConc/all)")
+                        help="指定实验 (Exp1_Core/Exp2_HeavyRatio/Exp3_MixedMode/Exp4_Ablation/Exp5_ScaleConc/Exp6_ScaleConcReact/all)")
     parser.add_argument("--repeats", type=int, default=DEFAULT_REPEATS,
                         help=f"每组重复次数 (default: {DEFAULT_REPEATS})")
     parser.add_argument("--backend", type=str, default=BACKEND_URL,

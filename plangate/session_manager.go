@@ -105,3 +105,97 @@ func (m *HTTPBudgetReservationManager) cleanupLoop() {
 		})
 	}
 }
+
+// ==================== ReAct Session Tracker (Sunk-Cost-Aware) ====================
+
+// ReactSessionState 跟踪 ReAct 会话的执行进度，用于沉没成本感知准入
+type ReactSessionState struct {
+	SessionID   string
+	CurrentStep int
+	CreatedAt   time.Time
+	ExpiresAt   time.Time
+	mu          sync.Mutex
+	releaseOnce sync.Once
+	releaseFn   func()
+}
+
+// Release 一次性释放该 ReAct 会话的并发槽位（幂等）
+func (r *ReactSessionState) Release() {
+	if r.releaseFn != nil {
+		r.releaseOnce.Do(r.releaseFn)
+	}
+}
+
+// ReactSessionManager 管理所有活跃 ReAct 会话的沉没成本跟踪
+type ReactSessionManager struct {
+	sessions    sync.Map
+	maxDuration time.Duration
+}
+
+// NewReactSessionManager 创建 ReAct 会话管理器
+func NewReactSessionManager(ttl time.Duration) *ReactSessionManager {
+	mgr := &ReactSessionManager{maxDuration: ttl}
+	go mgr.cleanupLoop()
+	return mgr
+}
+
+// Create 为新 ReAct 会话创建跟踪条目
+func (m *ReactSessionManager) Create(sessionID string, releaseFn func()) *ReactSessionState {
+	s := &ReactSessionState{
+		SessionID:   sessionID,
+		CurrentStep: 0,
+		CreatedAt:   time.Now(),
+		ExpiresAt:   time.Now().Add(m.maxDuration),
+		releaseFn:   releaseFn,
+	}
+	m.sessions.Store(sessionID, s)
+	return s
+}
+
+// Get 获取 ReAct 会话状态（检查过期）
+func (m *ReactSessionManager) Get(sessionID string) (*ReactSessionState, bool) {
+	v, ok := m.sessions.Load(sessionID)
+	if !ok {
+		return nil, false
+	}
+	s := v.(*ReactSessionState)
+	if time.Now().After(s.ExpiresAt) {
+		s.Release()
+		m.sessions.Delete(sessionID)
+		return nil, false
+	}
+	return s, true
+}
+
+// Advance 推进 ReAct 会话步骤计数
+func (m *ReactSessionManager) Advance(sessionID string) {
+	if s, ok := m.Get(sessionID); ok {
+		s.mu.Lock()
+		s.CurrentStep++
+		s.mu.Unlock()
+	}
+}
+
+// ReleaseAndDelete 释放并删除 ReAct 会话
+func (m *ReactSessionManager) ReleaseAndDelete(sessionID string) {
+	if v, ok := m.sessions.Load(sessionID); ok {
+		v.(*ReactSessionState).Release()
+		m.sessions.Delete(sessionID)
+	}
+}
+
+func (m *ReactSessionManager) cleanupLoop() {
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+	for range ticker.C {
+		now := time.Now()
+		m.sessions.Range(func(k, v interface{}) bool {
+			s := v.(*ReactSessionState)
+			if now.After(s.ExpiresAt) {
+				s.Release()
+				m.sessions.Delete(k)
+			}
+			return true
+		})
+	}
+}
