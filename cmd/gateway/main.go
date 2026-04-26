@@ -98,12 +98,18 @@ func main() {
 	// Rajomon 参数
 	rajomonPriceStep := flag.Int64("rajomon-price-step", 100, "Rajomon: 过载涨价步长")
 
+	// Rajomon+SB 参数
+	rajomonSBPriceStep := flag.Int64("rajomon-sb-price-step", 100, "Rajomon+SB: 过载涨价步长")
+
 	// DAGOR 参数
 	dagorRTTThreshold := flag.Float64("dagor-rtt-threshold", 200.0, "DAGOR: RTT 过载检测阈值 (ms)")
 	dagorPriceStep := flag.Int64("dagor-price-step", 50, "DAGOR: 过载时优先级门槛每轮增量")
 
 	// SBAC 参数
 	sbacMaxSessions := flag.Int64("sbac-max-sessions", 50, "SBAC: 最大并发会话数")
+
+	// PP (Progress-Priority) 参数
+	ppMaxSessions := flag.Int64("pp-max-sessions", 50, "PP: 最大并发会话数")
 
 	// PlanGate (MCPDP) 参数
 	plangateMaxSessions := flag.Int("plangate-max-sessions", 30,
@@ -112,6 +118,16 @@ func main() {
 		"PlanGate: 过载涨价步长")
 	plangateSunkCostAlpha := flag.Float64("plangate-sunk-cost-alpha", 0.5,
 		"PlanGate: ReAct 沉没成本系数 (0=禁用)")
+	plangateSessionCapWait := flag.Int("plangate-session-cap-wait", 0,
+		"PlanGate: Session Cap 排队等待超时 (秒), 0=立即拒绝")
+	plangateDiscountFunc := flag.String("plangate-discount-func", "quadratic",
+		"PlanGate: 沉没成本折扣函数 (quadratic|linear|exponential|logarithmic)")
+
+	// PlanGate-Real 外部信号参数
+	realRateLimitMax := flag.Float64("real-ratelimit-max", 200,
+		"PlanGate-Real: API 配额上限 (GLM-4-Flash=200)")
+	realLatencyThreshold := flag.Float64("real-latency-threshold", 5000,
+		"PlanGate-Real: P95 延迟阈值 (ms), 达到此值时延迟压力=1.0")
 
 	flag.Parse()
 
@@ -139,6 +155,7 @@ func main() {
 			maxConcurrentSessions: *plangateMaxSessions,
 			disableBudgetLock: false,
 			sunkCostAlpha: *plangateSunkCostAlpha,
+			discountFunc: *plangateDiscountFunc,
 		})
 	case "mcpdp-no-budgetlock":
 		handler = setupMCPDPVariant(tools, *backendURL, mcpdpVariant{
@@ -146,6 +163,7 @@ func main() {
 			maxConcurrentSessions: *plangateMaxSessions,
 			disableBudgetLock: true,
 			sunkCostAlpha: *plangateSunkCostAlpha,
+			discountFunc: *plangateDiscountFunc,
 		})
 	case "mcpdp-no-sessioncap":
 		handler = setupMCPDPVariant(tools, *backendURL, mcpdpVariant{
@@ -153,15 +171,36 @@ func main() {
 			maxConcurrentSessions: 0,
 			disableBudgetLock: false,
 			sunkCostAlpha: *plangateSunkCostAlpha,
+			discountFunc: *plangateDiscountFunc,
 		})
+	case "mcpdp-real":
+		handler = setupMCPDPReal(tools, *backendURL, mcpdpVariant{
+			name: "plangate-real", priceStep: *plangatePriceStep,
+			maxConcurrentSessions: *plangateMaxSessions,
+			sunkCostAlpha: *plangateSunkCostAlpha,
+			sessionCapWait: time.Duration(*plangateSessionCapWait) * time.Second,
+			discountFunc: *plangateDiscountFunc,
+		}, *realRateLimitMax, *realLatencyThreshold)
+	case "mcpdp-real-no-sessioncap":
+		handler = setupMCPDPReal(tools, *backendURL, mcpdpVariant{
+			name: "plangate-real-wo-sessioncap", priceStep: *plangatePriceStep,
+			maxConcurrentSessions: 0,
+			sunkCostAlpha: *plangateSunkCostAlpha,
+			sessionCapWait: time.Duration(*plangateSessionCapWait) * time.Second,
+			discountFunc: *plangateDiscountFunc,
+		}, *realRateLimitMax, *realLatencyThreshold)
 	case "rajomon":
 		handler = setupRajomon(tools, *backendURL, *rajomonPriceStep)
+	case "rajomon-session":
+		handler = setupRajomonSession(tools, *backendURL, *rajomonSBPriceStep)
 	case "dagor":
 		handler = setupDagor(tools, *backendURL, *dagorRTTThreshold, *dagorPriceStep)
 	case "sbac":
 		handler = setupSBAC(tools, *backendURL, *sbacMaxSessions)
+	case "pp":
+		handler = setupPP(tools, *backendURL, *ppMaxSessions)
 	default:
-		log.Fatalf("未知模式: %s (可选: ng, srl, dp, dp-noregime, mcpdp, mcpdp-no-budgetlock, mcpdp-no-sessioncap, rajomon, dagor, sbac)", *mode)
+		log.Fatalf("未知模式: %s (可选: ng, srl, dp, dp-noregime, mcpdp, mcpdp-no-budgetlock, mcpdp-no-sessioncap, mcpdp-real, mcpdp-real-no-sessioncap, rajomon, rajomon-session, dagor, sbac, pp)", *mode)
 	}
 
 	addr := fmt.Sprintf("%s:%d", *host, *port)
@@ -429,9 +468,11 @@ func setupDPNoRegime(tools []mcpgov.MCPTool, backendURL string) http.Handler {
 type mcpdpVariant struct {
 	name                  string
 	priceStep             int64
-	maxConcurrentSessions int     // 有效并发会话上限 (0=不限制)
-	disableBudgetLock     bool    // 是否禁用预算锁
-	sunkCostAlpha         float64 // ReAct 沉没成本系数 (0=禁用)
+	maxConcurrentSessions int           // 有效并发会话上限 (0=不限制)
+	disableBudgetLock     bool          // 是否禁用预算锁
+	sunkCostAlpha         float64       // ReAct 沉没成本系数 (0=禁用)
+	sessionCapWait        time.Duration // Session Cap 排队等待超时 (0=立即拒绝)
+	discountFunc          string        // 折扣函数名称 (quadratic|linear|exponential|logarithmic)
 }
 
 func setupMCPDPVariant(tools []mcpgov.MCPTool, backendURL string, v mcpdpVariant) http.Handler {
@@ -484,6 +525,12 @@ func setupMCPDPVariant(tools []mcpgov.MCPTool, backendURL string, v mcpdpVariant
 	}
 	go detector.run()
 
+	// 设置折扣函数（消融实验支持）
+	if v.discountFunc != "" {
+		server.SetDiscountFunc(plangate.DiscountFuncName(v.discountFunc))
+		log.Printf("  [%s] 折扣函数: %s", v.name, v.discountFunc)
+	}
+
 	for _, tool := range tools {
 		server.RegisterTool(tool, makeProxyHandler(backendURL, tool.Name, detector))
 		log.Printf("  [%s] 注册工具: %s", v.name, tool.Name)
@@ -503,6 +550,19 @@ func setupRajomon(tools []mcpgov.MCPTool, backendURL string, priceStep int64) ht
 	for _, tool := range tools {
 		gw.RegisterTool(tool, makeProxyHandler(backendURL, tool.Name, nil))
 		log.Printf("  [Rajomon] 注册工具: %s (priceStep=%d)", tool.Name, priceStep)
+	}
+	return gw
+}
+
+func setupRajomonSession(tools []mcpgov.MCPTool, backendURL string, priceStep int64) http.Handler {
+	gw := baseline.NewRajomonSessionGateway("rajomon-session-gateway", baseline.RajomonSessionConfig{
+		RajomonConfig: baseline.RajomonConfig{
+			PriceStep: priceStep,
+		},
+	})
+	for _, tool := range tools {
+		gw.RegisterTool(tool, makeProxyHandler(backendURL, tool.Name, nil))
+		log.Printf("  [Rajomon+SB] 注册工具: %s (priceStep=%d)", tool.Name, priceStep)
 	}
 	return gw
 }
@@ -528,4 +588,192 @@ func setupSBAC(tools []mcpgov.MCPTool, backendURL string, maxSessions int64) htt
 		log.Printf("  [SBAC] 注册工具: %s (maxSessions=%d)", tool.Name, maxSessions)
 	}
 	return gw
+}
+
+func setupPP(tools []mcpgov.MCPTool, backendURL string, maxSessions int64) http.Handler {
+	gw := baseline.NewPPGateway("pp-gateway", baseline.PPConfig{
+		MaxSessions: maxSessions,
+	})
+	for _, tool := range tools {
+		gw.RegisterTool(tool, makeProxyHandler(backendURL, tool.Name, nil))
+		log.Printf("  [PP] 注册工具: %s (maxSessions=%d)", tool.Name, maxSessions)
+	}
+	return gw
+}
+
+// setupMCPDPReal 创建使用外部信号治理的 PlanGate 网关（真实 LLM 模式）
+// 三维信号: 429 频率 + 延迟 P95 EMA + RateLimit-Remaining EMA
+func setupMCPDPReal(tools []mcpgov.MCPTool, backendURL string, v mcpdpVariant,
+	rateLimitMax float64, latencyThresholdMs float64) http.Handler {
+
+	callMap := make(map[string][]string)
+	for _, tool := range tools {
+		callMap[tool.Name] = []string{}
+	}
+
+	opts := map[string]interface{}{
+		"initprice":             int64(0),
+		"rateLimiting":          false,
+		"loadShedding":          true,
+		"pinpointQueuing":       false,
+		"latencyThreshold":      50 * time.Millisecond,
+		"priceStep":             v.priceStep,
+		"priceStrategy":         "expdecay",
+		"priceDecayStep":        int64(1),
+		"priceSensitivity":      int64(10000),
+		"maxToken":              int64(20),
+		"smoothingWindow":       5,
+		"integralThreshold":     0.5,
+		"priceUpdateRate":       5 * time.Millisecond,
+		"tokenUpdateRate":       100 * time.Millisecond,
+		"tokenUpdateStep":       int64(1),
+		"tokenRefillDist":       "fixed",
+		"priceAggregation":      "maximal",
+		"enableAdaptiveProfile": true,
+		"regimeWindow":          100,
+		"regimeVarianceLow":     1.0,
+		"regimeVarianceHigh":    4.0,
+		"regimeSpikeThreshold":  2.0,
+		"profileSwitchCooldown": 500 * time.Millisecond,
+		"toolWeights": map[string]int64{
+			"deepseek_llm":    5, // 重量级 LLM 工具
+			"real_web_search": 2, // 中量级搜索工具
+		},
+	}
+
+	gov := mcpgov.NewMCPGovernor(v.name, callMap, opts)
+
+	// 创建外部信号跟踪器
+	signalTracker := plangate.NewExternalSignalTracker(rateLimitMax, latencyThresholdMs)
+
+	server := plangate.NewMCPDPServerWithExternalSignals(
+		v.name, gov, 60*time.Second,
+		v.maxConcurrentSessions, v.sunkCostAlpha, signalTracker,
+		v.sessionCapWait, float64(v.priceStep),
+	)
+
+	// 代理级过载检测器（仍需要：驱动 ownPrice 用于沉没成本定价）
+	detector := &proxyOverloadDetector{
+		gov:      gov,
+		interval: 10 * time.Millisecond,
+	}
+	go detector.run()
+
+	// 设置折扣函数（消融实验支持）
+	if v.discountFunc != "" {
+		server.SetDiscountFunc(plangate.DiscountFuncName(v.discountFunc))
+		log.Printf("  [%s] 折扣函数: %s", v.name, v.discountFunc)
+	}
+
+	for _, tool := range tools {
+		server.RegisterTool(tool, makeProxyHandlerWithSignals(
+			backendURL, tool.Name, detector, signalTracker,
+		))
+		log.Printf("  [%s] 注册工具: %s (外部信号治理)", v.name, tool.Name)
+	}
+	return server
+}
+
+// makeProxyHandlerWithSignals 创建信号感知的代理处理函数
+// 在标准代理基础上，解析后端 _meta 中的外部 API 信号并报告给 ExternalSignalTracker
+func makeProxyHandlerWithSignals(
+	backendURL string, toolName string,
+	detector *proxyOverloadDetector,
+	signalTracker *plangate.ExternalSignalTracker,
+) mcpgov.ToolCallHandler {
+	client := &http.Client{Timeout: 120 * time.Second}
+
+	return func(ctx context.Context, params mcpgov.MCPToolCallParams) (*mcpgov.MCPToolCallResult, error) {
+		if detector != nil {
+			detector.onRequestStart()
+			defer detector.onRequestEnd()
+		}
+
+		start := time.Now()
+
+		// 构建发往后端的 JSON-RPC 请求
+		rpcReq := mcpgov.JSONRPCRequest{
+			JSONRPC: "2.0",
+			ID:      fmt.Sprintf("proxy-%s-%d", toolName, time.Now().UnixNano()),
+			Method:  "tools/call",
+		}
+		paramsBytes, _ := json.Marshal(map[string]interface{}{
+			"name":      params.Name,
+			"arguments": params.Arguments,
+		})
+		rpcReq.Params = paramsBytes
+
+		body, _ := json.Marshal(rpcReq)
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, backendURL, bytes.NewReader(body))
+		if err != nil {
+			return nil, fmt.Errorf("创建后端请求失败: %w", err)
+		}
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err := client.Do(req)
+		if err != nil {
+			// 网络错误 → 报告为高延迟信号
+			elapsed := time.Since(start).Seconds() * 1000
+			if signalTracker != nil {
+				signalTracker.ReportResponse(false, elapsed, -1)
+			}
+			return nil, fmt.Errorf("后端调用失败: %w", err)
+		}
+		defer resp.Body.Close()
+
+		data, _ := io.ReadAll(resp.Body)
+		elapsed := time.Since(start).Seconds() * 1000
+
+		var rpcResp struct {
+			Result *struct {
+				Content []mcpgov.ContentBlock `json:"content"`
+				Meta    *struct {
+					Tool                string  `json:"tool"`
+					Category            string  `json:"category"`
+					LatencyMs           float64 `json:"latency_ms"`
+					Is429               bool    `json:"is_429"`
+					HttpStatus          int     `json:"http_status"`
+					ApiLatencyMs        float64 `json:"api_latency_ms"`
+					RateLimitRemaining  float64 `json:"rate_limit_remaining"`
+				} `json:"_meta"`
+			} `json:"result"`
+			Error *mcpgov.RPCError `json:"error"`
+		}
+		if err := json.Unmarshal(data, &rpcResp); err != nil {
+			if signalTracker != nil {
+				signalTracker.ReportResponse(false, elapsed, -1)
+			}
+			return nil, fmt.Errorf("解析后端响应失败: %w", err)
+		}
+
+		// 报告外部 API 信号给跟踪器
+		if signalTracker != nil && rpcResp.Result != nil && rpcResp.Result.Meta != nil {
+			meta := rpcResp.Result.Meta
+			apiLatency := meta.ApiLatencyMs
+			if apiLatency <= 0 {
+				apiLatency = elapsed // 回退到端到端延迟
+			}
+			signalTracker.ReportResponse(meta.Is429, apiLatency, meta.RateLimitRemaining)
+		} else if signalTracker != nil {
+			// 无 _meta → 使用端到端延迟
+			signalTracker.ReportResponse(false, elapsed, -1)
+		}
+
+		if rpcResp.Error != nil {
+			// 后端返回错误 → 检查是否为过载 (429/503)
+			is429 := resp.StatusCode == 429
+			if signalTracker != nil && is429 {
+				signalTracker.ReportResponse(true, elapsed, -1)
+			}
+			return nil, fmt.Errorf("后端工具执行错误: %s", rpcResp.Error.Message)
+		}
+		if rpcResp.Result == nil {
+			return nil, fmt.Errorf("后端返回空结果")
+		}
+
+		return &mcpgov.MCPToolCallResult{
+			Content: rpcResp.Result.Content,
+		}, nil
+	}
 }

@@ -19,10 +19,36 @@ import logging
 import argparse
 import os
 import platform
+import random
 import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from socketserver import ThreadingMixIn
+from pathlib import Path
 from tools import ToolRegistry
+
+# ──────────────────────────────────────────────
+# Load .env — 自动加载项目根目录的 .env 文件
+# ──────────────────────────────────────────────
+def _load_dotenv():
+    """从项目根目录加载 .env 文件到环境变量。"""
+    env_path = Path(__file__).resolve().parent.parent / ".env"
+    if not env_path.exists():
+        return
+    with open(env_path, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            if "=" in line:
+                key, _, value = line.partition("=")
+                key, value = key.strip(), value.strip()
+                # 去除包裹引号
+                if value and len(value) >= 2 and value[0] == value[-1] and value[0] in ('"', "'"):
+                    value = value[1:-1]
+                if key and value and key not in os.environ:
+                    os.environ[key] = value
+
+_load_dotenv()
 
 
 # ──────────────────────────────────────────────
@@ -82,8 +108,11 @@ def load_tools(mode="sterile"):
     elif mode == "battlefield":
         from tools.battlefield import register_all
         register_all(registry)
+    elif mode == "real_llm":
+        from tools.real_llm import register_all
+        register_all(registry)
     else:
-        raise ValueError(f"Unknown mode: {mode}. Use 'sterile' or 'battlefield'.")
+        raise ValueError(f"Unknown mode: {mode}. Use 'sterile', 'battlefield', or 'real_llm'.")
 
     log.info(f"实验模式: {mode}")
     log.info(f"已注册 {len(registry.all())} 个工具:")
@@ -125,6 +154,9 @@ _QUEUE_TIMEOUT = 1.0        # 由 main() 中 --queue-timeout 覆盖
 _in_flight_count = 0
 _in_flight_lock = threading.Lock()
 _CONGESTION_FACTOR = 0.5    # penalty_ms = (excess^1.5) * factor, capped at 2000ms
+# 工具执行延迟注入：模拟真实云工具的物理耗时（秒）
+# 由 CLI --tool-delay-lightweight/medium/heavyweight 填充
+_TOOL_EXEC_DELAYS = {}      # {"lightweight": (1.5, 3.0), "medium": (2.5, 5.0), ...}
 
 
 # ──────────────────────────────────────────────
@@ -186,6 +218,12 @@ def handle_tools_call(req_id, params):
                         penalty_ms = min(excess ** 1.5 * _CONGESTION_FACTOR, 2000)
                         time.sleep(penalty_ms / 1000.0)
 
+                # 工具执行延迟注入：模拟真实云工具的物理耗时
+                delay_range = _TOOL_EXEC_DELAYS.get(tool.category)
+                if delay_range and delay_range[1] > 0:
+                    delay = random.uniform(delay_range[0], delay_range[1])
+                    time.sleep(delay)
+
                 result_text = tool.handler(arguments)
             finally:
                 _global_semaphore.release()
@@ -195,12 +233,24 @@ def handle_tools_call(req_id, params):
         elapsed_ms = (time.time() - start) * 1000
         log.info(f"✓ [{tool.category}] {tool_name} — {elapsed_ms:.1f}ms")
 
+        # 提取工具返回的外部 API 信号 (_signals)，合并到 _meta 传递给网关
+        signals = {}
+        try:
+            result_obj = json.loads(result_text)
+            if isinstance(result_obj, dict) and "_signals" in result_obj:
+                signals = result_obj.pop("_signals")
+                # 重新序列化去掉 _signals 的结果
+                result_text = json.dumps(result_obj, ensure_ascii=False)
+        except (json.JSONDecodeError, TypeError):
+            pass
+
         return make_response(req_id, {
             "content": [{"type": "text", "text": result_text}],
             "_meta": {
                 "tool": tool_name,
                 "category": tool.category,
                 "latency_ms": round(elapsed_ms, 2),
+                **signals,
             },
         })
     except Exception as e:
@@ -307,8 +357,8 @@ def main():
     parser = argparse.ArgumentParser(description="MCP Tool Server")
     parser.add_argument("--host", default="127.0.0.1", help="绑定地址 (default: 127.0.0.1)")
     parser.add_argument("--port", type=int, default=8080, help="监听端口 (default: 8080)")
-    parser.add_argument("--mode", default="sterile", choices=["sterile", "battlefield"],
-                        help="实验模式: sterile=无菌实验室(3工具), battlefield=真实战场(7工具)")
+    parser.add_argument("--mode", default="sterile", choices=["sterile", "battlefield", "real_llm"],
+                        help="实验模式: sterile=无菌实验室(3工具), battlefield=真实战场(7工具), real_llm=DeepSeek真实验证(3工具)")
     parser.add_argument("--cpu-affinity", type=str, default=None,
                         help="CPU 亲和性核心列表, 如 '4,5,6,7,8,9,10,11,12,13,14,15'")
     parser.add_argument("--max-concurrency", type=int, default=8,
@@ -319,11 +369,28 @@ def main():
                         help="队列等待超时秒数，超时直接返回过载错误 (default: 1.0)")
     parser.add_argument("--congestion-factor", type=float, default=0.5,
                         help="拥塞惩罚系数: penalty_ms = excess^1.5 * factor (default: 0.5)")
+    parser.add_argument("--tool-delay-lightweight", type=str, default="0,0",
+                        help="轻量级工具额外延迟范围 (秒), 如 '1.5,3.0' (default: 0,0)")
+    parser.add_argument("--tool-delay-medium", type=str, default="0,0",
+                        help="中量级工具额外延迟范围 (秒), 如 '2.5,5.0' (default: 0,0)")
+    parser.add_argument("--tool-delay-heavyweight", type=str, default="0,0",
+                        help="重量级工具额外延迟范围 (秒), 如 '0,0' (default: 0,0)")
     args = parser.parse_args()
 
     # 设置重量级工具并发限制（旧逻辑保留）
     global _tool_semaphore
     _tool_semaphore = threading.Semaphore(args.max_concurrency)
+
+    # 设置工具执行延迟注入
+    global _TOOL_EXEC_DELAYS
+    for cat, arg_val in [("lightweight", args.tool_delay_lightweight),
+                         ("medium", args.tool_delay_medium),
+                         ("heavyweight", args.tool_delay_heavyweight)]:
+        lo, hi = [float(x) for x in arg_val.split(",")]
+        if hi > 0:
+            _TOOL_EXEC_DELAYS[cat] = (lo, hi)
+    if _TOOL_EXEC_DELAYS:
+        log.info(f"工具执行延迟注入: {_TOOL_EXEC_DELAYS}")
 
     # 设置全局并发限制（新逻辑：模拟 max_workers 瓶颈）
     global _global_semaphore, _GLOBAL_MAX_WORKERS, _QUEUE_TIMEOUT, _CONGESTION_FACTOR

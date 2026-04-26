@@ -2,14 +2,14 @@
 """
 run_all_experiments.py — 无人值守自动化跑批脚本
 
-5 组实验 × 6 个网关 × N=5 次重复 = 最多 125 个实验实例
+5 组实验 × 4 个网关 × N=5 次重复 = 最多 100 个实验实例
 每次循环: 启动 Go 网关 → 运行 DAG 发压机 → 收集 CSV → 终止网关
 
 实验配置：
   Exp1_Core:        Step 脉冲突发，ps_ratio=1.0，核心性能对比
   Exp2_HeavyRatio:  重量工具占比扫参 [0.1, 0.3, 0.5, 0.7]
   Exp3_MixedMode:   混合模式 P&S+ReAct, ps_ratio=[0.3, 0.5, 0.7, 1.0]
-  Exp4_Ablation:    消融实验 Full vs w/o-BudgetLock vs w/o-SessionCap vs Rajomon
+  Exp4_Ablation:    消融实验 Full vs w/o-BudgetLock vs w/o-SessionCap
   Exp5_ScaleConc:   并发扩展测试 (P&S) concurrency=[10, 20, 40, 60]
   Exp6_ScaleConcReact: 并发扩展测试 (纯ReAct) concurrency=[10, 20, 40, 60]
 
@@ -43,6 +43,7 @@ GATEWAY_BIN_DIR = os.path.join(ROOT_DIR, "cmd", "gateway")
 GATEWAY_BINARY = None  # 预编译后设置
 DAG_LOAD_GEN = os.path.join(SCRIPT_DIR, "dag_load_generator.py")
 RESULTS_DIR = os.path.join(ROOT_DIR, "results")
+MOCK_LOG_DIR = os.path.join(RESULTS_DIR, "log", "mock")
 
 # ====== 全局默认参数 ======
 BACKEND_URL = "http://127.0.0.1:8080"
@@ -90,8 +91,6 @@ class GatewayConfig:
 
 def get_gateways(experiment_name: str) -> List[GatewayConfig]:
     """根据实验名称返回需要测试的网关列表"""
-    rj = TUNED_PARAMS["rajomon"]
-    dg = TUNED_PARAMS["dagor"]
     sb = TUNED_PARAMS["sbac"]
     srl = TUNED_PARAMS["srl"]
     pg = TUNED_PARAMS["plangate_full"]
@@ -102,13 +101,6 @@ def get_gateways(experiment_name: str) -> List[GatewayConfig]:
             "--srl-qps", str(srl["qps"]),
             "--srl-burst", str(srl["burst"]),
             "--srl-max-conc", str(srl["max_conc"]),
-        ]),
-        GatewayConfig("rajomon", "rajomon", [
-            "--rajomon-price-step", str(rj["price_step"]),
-        ]),
-        GatewayConfig("dagor", "dagor", [
-            "--dagor-rtt-threshold", str(dg["rtt_threshold"]),
-            "--dagor-price-step", str(dg["price_step"]),
         ]),
         GatewayConfig("sbac", "sbac", [
             "--sbac-max-sessions", str(sb["max_sessions"]),
@@ -137,9 +129,6 @@ def get_gateways(experiment_name: str) -> List[GatewayConfig]:
                 "--plangate-max-sessions", str(pg["max_sessions"]),
                 "--plangate-sunk-cost-alpha", str(pg["sunk_cost_alpha"]),
             ]),
-            GatewayConfig("rajomon", "rajomon", [
-                "--rajomon-price-step", str(rj["price_step"]),
-            ]),
         ]
 
     if experiment_name == "Exp7_ClientReject":
@@ -153,7 +142,36 @@ def get_gateways(experiment_name: str) -> List[GatewayConfig]:
             ]),
         ]
 
-    # 其余实验: 全部 6 个网关 (NG, SRL, Rajomon, DAGOR, SBAC, PlanGate-Full)
+    if experiment_name == "Exp8_DiscountAblation":
+        # Exp8: 折扣函数消融实验 — 4 种折扣函数 × PlanGate
+        return [
+            GatewayConfig("plangate_quadratic", "mcpdp", [
+                "--plangate-price-step", str(pg["price_step"]),
+                "--plangate-max-sessions", str(pg["max_sessions"]),
+                "--plangate-sunk-cost-alpha", str(pg["sunk_cost_alpha"]),
+                "--plangate-discount-func", "quadratic",
+            ]),
+            GatewayConfig("plangate_linear", "mcpdp", [
+                "--plangate-price-step", str(pg["price_step"]),
+                "--plangate-max-sessions", str(pg["max_sessions"]),
+                "--plangate-sunk-cost-alpha", str(pg["sunk_cost_alpha"]),
+                "--plangate-discount-func", "linear",
+            ]),
+            GatewayConfig("plangate_exponential", "mcpdp", [
+                "--plangate-price-step", str(pg["price_step"]),
+                "--plangate-max-sessions", str(pg["max_sessions"]),
+                "--plangate-sunk-cost-alpha", str(pg["sunk_cost_alpha"]),
+                "--plangate-discount-func", "exponential",
+            ]),
+            GatewayConfig("plangate_logarithmic", "mcpdp", [
+                "--plangate-price-step", str(pg["price_step"]),
+                "--plangate-max-sessions", str(pg["max_sessions"]),
+                "--plangate-sunk-cost-alpha", str(pg["sunk_cost_alpha"]),
+                "--plangate-discount-func", "logarithmic",
+            ]),
+        ]
+
+    # 其余实验: 全部 4 个网关 (NG, SRL, SBAC, PlanGate-Full)
     return common
 
 
@@ -175,6 +193,9 @@ class ExperimentConfig:
     max_steps: int = 7
     step_timeout: float = 2.0  # 单步超时秒数（短超时是造成系统真实过载的关键）
     hard_reject: bool = False   # 客户端 Hard Reject 模式
+    adversarial_ratio: float = 0.0  # 恶意 Agent 占比
+    burst_pattern: Optional[str] = None  # 突发到达模式 'rate:dur,rate:dur,...'
+    longtail_ratio: float = 0.0  # 长尾会话占比
     # 扫参维度 (key → list of values)
     sweep: Optional[Dict[str, list]] = None
 
@@ -207,7 +228,7 @@ EXPERIMENTS = {
     ),
     "Exp4_Ablation": ExperimentConfig(
         name="Exp4_Ablation",
-        description="严格单变量消融实验: Full vs w/o-BudgetLock vs w/o-SessionCap vs Rajomon(SOTA)",
+        description="严格单变量消融实验: Full vs w/o-BudgetLock vs w/o-SessionCap",
         sessions=500,
         ps_ratio=1.0,
         duration=60,
@@ -242,6 +263,58 @@ EXPERIMENTS = {
         concurrency=200,
         hard_reject=True,
         sweep={"price_ttl": [0.1, 0.2, 0.5, 1.0, 2.0]},
+    ),
+    "Exp8_DiscountAblation": ExperimentConfig(
+        name="Exp8_DiscountAblation",
+        description="折扣函数消融实验：对比 Linear/Quadratic/Exponential/Logarithmic 四种 K-折扣函数",
+        sessions=500,
+        ps_ratio=0.0,  # 纯 ReAct 模式（折扣函数仅影响 ReAct 沉没成本定价）
+        duration=60,
+        arrival_rate=50.0,
+        heavy_ratio=0.3,
+        concurrency=200,
+    ),
+    "Exp9_ScaleStress": ExperimentConfig(
+        name="Exp9_ScaleStress",
+        description="高并发压力测试——扫描 200/400/600/800/1000 并发",
+        sessions=500,
+        ps_ratio=1.0,
+        duration=60,
+        arrival_rate=50.0,
+        heavy_ratio=0.3,
+        sweep={"concurrency": [200, 400, 600, 800, 1000]},
+    ),
+    "Exp10_Adversarial": ExperimentConfig(
+        name="Exp10_Adversarial",
+        description="对抗性实验 — 10% 恶意 Agent (虚报预算+超大DAG)",
+        sessions=500,
+        ps_ratio=1.0,
+        duration=60,
+        arrival_rate=50.0,
+        heavy_ratio=0.3,
+        concurrency=200,
+        adversarial_ratio=0.1,
+    ),
+    "Exp11_Bursty": ExperimentConfig(
+        name="Exp11_Bursty",
+        description="突发流量 — 交替稳态/突发到达模式 (scarcity regime)",
+        sessions=500,
+        ps_ratio=1.0,
+        duration=60,
+        heavy_ratio=0.3,
+        concurrency=200,
+        burst_pattern="15:10,80:8,15:10,120:7,15:10,50:5",
+    ),
+    "Exp12_LongTail": ExperimentConfig(
+        name="Exp12_LongTail",
+        description="长尾会话 — 20% 会话 10-15 步, 放大迟到拒绝损失",
+        sessions=500,
+        ps_ratio=1.0,
+        duration=60,
+        arrival_rate=50.0,
+        heavy_ratio=0.3,
+        concurrency=200,
+        longtail_ratio=0.2,
     ),
 }
 
@@ -299,8 +372,8 @@ def start_backend(max_workers: int = BACKEND_MAX_WORKERS):
     cmd = _taskset_prefix(CPU_BACKEND) + base_cmd
     env = os.environ.copy()
     env["PYTHONIOENCODING"] = "utf-8"
-    log_path = os.path.join(RESULTS_DIR, "_backend.log")
-    os.makedirs(RESULTS_DIR, exist_ok=True)
+    log_path = os.path.join(MOCK_LOG_DIR, "_backend.log")
+    os.makedirs(MOCK_LOG_DIR, exist_ok=True)
     with open(log_path, "w", encoding="utf-8") as lf:
         BACKEND_PROC = subprocess.Popen(
             cmd,
@@ -354,7 +427,8 @@ def start_gateway(gw: GatewayConfig, port: int) -> subprocess.Popen:
 
     print(f"    启动网关: {gw.name} (mode={gw.mode}, port={port})")
     # 网关日志写入文件，避免 PIPE 缓冲区满导致网关阻塞
-    gw_log_path = os.path.join(RESULTS_DIR, f"_gateway_{gw.name}_{port}.log")
+    os.makedirs(MOCK_LOG_DIR, exist_ok=True)
+    gw_log_path = os.path.join(MOCK_LOG_DIR, f"_gateway_{gw.name}_{port}.log")
     gw_log_file = open(gw_log_path, "w", encoding="utf-8")
     proc = subprocess.Popen(
         cmd,
@@ -446,6 +520,9 @@ def run_load_generator(target_url: str, exp: ExperimentConfig,
         "max_steps": exp.max_steps,
         "step_timeout": exp.step_timeout,
         "hard_reject": exp.hard_reject,
+        "adversarial_ratio": exp.adversarial_ratio,
+        "burst_pattern": exp.burst_pattern,
+        "longtail_ratio": exp.longtail_ratio,
     }
     if overrides:
         params.update(overrides)
@@ -468,6 +545,12 @@ def run_load_generator(target_url: str, exp: ExperimentConfig,
     ]
     if params.get("hard_reject"):
         base_cmd.append("--hard-reject")
+    if params.get("adversarial_ratio", 0) > 0:
+        base_cmd.extend(["--adversarial-ratio", str(params["adversarial_ratio"])])
+    if params.get("burst_pattern"):
+        base_cmd.extend(["--burst-pattern", str(params["burst_pattern"])])
+    if params.get("longtail_ratio", 0) > 0:
+        base_cmd.extend(["--longtail-ratio", str(params["longtail_ratio"])])
     cmd = _taskset_prefix(CPU_LOADGEN) + base_cmd
 
     print(f"    发压: sessions={params['sessions']} ps_ratio={params['ps_ratio']} "
@@ -593,6 +676,16 @@ def parse_stdout_stats(stdout: str) -> dict:
                 stats["e2e_p99_ms"] = float(line.split(":")[-1].strip())
             except ValueError:
                 pass
+        elif "JFI_Steps:" in line:
+            try:
+                stats["jfi_steps"] = float(line.split(":")[-1].strip())
+            except ValueError:
+                pass
+        elif "JFI_Latency:" in line:
+            try:
+                stats["jfi_latency"] = float(line.split(":")[-1].strip())
+            except ValueError:
+                pass
     return stats
 
 
@@ -710,6 +803,7 @@ def save_experiment_summary(exp_name: str, exp_dir: str, results: list):
         "raw_goodput_s", "effective_goodput_s",
         "p50_ms", "p95_ms", "p99_ms",
         "e2e_p50_ms", "e2e_p95_ms", "e2e_p99_ms",
+        "jfi_steps", "jfi_latency",
         "csv", "error",
     ]
 
@@ -731,7 +825,7 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("--exp", type=str, default="all",
-                        help="指定实验 (Exp1_Core/Exp2_HeavyRatio/Exp3_MixedMode/Exp4_Ablation/Exp5_ScaleConc/Exp6_ScaleConcReact/all)")
+                        help="指定实验 (Exp1_Core/Exp2_HeavyRatio/Exp3_MixedMode/Exp4_Ablation/Exp5_ScaleConc/Exp6_ScaleConcReact/Exp7_ClientReject/Exp8_DiscountAblation/Exp9_ScaleStress/Exp10_Adversarial/Exp11_Bursty/Exp12_LongTail/all)")
     parser.add_argument("--repeats", type=int, default=DEFAULT_REPEATS,
                         help=f"每组重复次数 (default: {DEFAULT_REPEATS})")
     parser.add_argument("--backend", type=str, default=BACKEND_URL,

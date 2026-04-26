@@ -168,6 +168,10 @@ func (gov *MCPGovernor) RateLimiting(ctx context.Context, tokens int64, toolName
 }
 
 // LoadShedding 服务端核心准入控制逻辑
+//
+// >>> Algorithm 1 中 MCPGovernor 标准准入路径的核心实现
+// >>> Eq.(1): P_eff(t) = P_own × w_t, 比较 tokens ≥ P_eff → ADMIT
+//
 // 根据价格表判断请求中的令牌是否足够，扣除后返回剩余令牌和当前价格。
 //
 // 返回值:
@@ -249,6 +253,14 @@ func (gov *MCPGovernor) LoadShedding(ctx context.Context, tokens int64, toolName
 }
 
 // HandleToolCall 是 MCP 服务端的工具调用治理中间件
+//
+// ┌─────────────────────────────────────────────────────────────────┐
+// │ Algorithm 1 中的 MCPGovernor 标准准入路径                      │
+// │                                                               │
+// │ 流程: LoadShedding → Eq.(1) P_eff 比较 → 准入/拒绝            │
+// │ ReAct 模式下由 handleReActMode() 委托此函数                  │
+// │ P&S 模式下绕过 LoadShedding，使用 executeStepDirect()         │
+// └─────────────────────────────────────────────────────────────────┘
 //
 // 等价于原 gRPC 实现中的 UnaryInterceptor，但使用 JSON-RPC 2.0 协议：
 //   - 请求中的治理元数据通过 params._meta 传递（而非 gRPC metadata header）
@@ -458,7 +470,8 @@ func (gov *MCPGovernor) UpdateResponsePrice(ctx context.Context, toolName string
 }
 
 // GetToolEffectivePrice 获取指定工具的有效价格（ownPrice × 工具权重）
-// 用于 MCPDP 网关计算 DAG 全链路总价格
+// >>> Eq.(1): P_eff(t) = P_own × w_t
+// 用于 MCPDP 网关计算 DAG 全链路总价格 C_total = Σ P_eff(t_i)
 func (gov *MCPGovernor) GetToolEffectivePrice(toolName string) int64 {
 	ownPriceVal, ok := gov.priceTableMap.Load("ownprice")
 	if !ok {

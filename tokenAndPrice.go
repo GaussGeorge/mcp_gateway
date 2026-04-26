@@ -116,7 +116,8 @@ func (gov *MCPGovernor) SetOwnPrice(price int64) {
 }
 
 // UpdateOwnPrice 更新自身价格（简单策略：Step）
-// 这种策略类似 TCP 拥塞控制中的 AIMD（加性增，乘性减）的简化版
+// >>> Eq.(6) 简化版: P_own(t+1) = P_own(t) ± priceStep
+// 类似 TCP AIMD：拥塞 → 加性增 (+priceStep)，非拥塞 → 步进减 (-priceDecayStep)
 func (gov *MCPGovernor) UpdateOwnPrice(congestion bool) error {
 
 	ownPrice_string, _ := gov.priceTableMap.Load("ownprice")
@@ -145,6 +146,23 @@ func (gov *MCPGovernor) UpdateOwnPrice(congestion bool) error {
 }
 
 // UpdatePrice 更新自身价格（高级策略：Exponential Decay）
+//
+// ┌─────────────────────────────────────────────────────────────────┐
+// │ 论文 §3.6 Dynamic Pricing Engine                                │
+// │                                                               │
+// │ Eq.(6):                                                       │
+// │   Δq > 0: P_own(t+1) = P_own(t) + K_p · Δq                  │
+// │   Δq ≤ 0: P_own(t+1) = P_own(t) - D_step                     │
+// │                                                               │
+// │ 其中:                                                            │
+// │   Δq = observedDelay - latencyThreshold (延迟缺口)               │
+// │   K_p = priceStep / priceSensitivity (比例增益)                │
+// │   D_step = priceDecayStep (衰减步长)                           │
+// │                                                               │
+// │ 指数衰减策略: 连续涨价时 adjustment *= decayRate^c              │
+// │ 积分项: 解决轻微持续过载下的稳态误差                       │
+// └─────────────────────────────────────────────────────────────────┘
+//
 // 结合了线性调整和指数衰减，基于排队延迟的差异来动态计算步长
 func (gov *MCPGovernor) UpdatePrice(ctx context.Context) error {
 	// 1. 获取当前自身价格
@@ -175,15 +193,15 @@ func (gov *MCPGovernor) UpdatePrice(ctx context.Context) error {
 	}
 
 	// 3. 计算差异 (Error)：实际排队延迟 - 目标阈值
-	// gapLatency 单位是 ms，需要 *1000 转微秒
+	// >>> Eq.(6): Δq = observedDelay - latencyThreshold
 	diff := int64(gapLatency*1000) - gov.latencyThreshold.Microseconds()
 
 	// 4. 比例调整 (P-Controller)：根据延迟差异的大小来决定价格调整的幅度
-	// 差异越大，涨价/降价越快
-	// priceSensitivity 控制增益 Kp = priceStep / priceSensitivity
+	// >>> Eq.(6): adjustment = K_p · Δq, 其中 K_p = priceStep / priceSensitivity
 	adjustment := diff * gov.priceStep / gov.priceSensitivity
 
 	// 5. 实现指数衰减机制 (Exponential Decay)
+	// >>> Eq.(6) 扩展: 连续涨价时 adjustment *= decayRate^c
 	// 防止价格因为网络抖动而剧烈震荡 (Oscillation)
 	if gov.priceStrategy == "expdecay" {
 		if adjustment > 0 {
@@ -290,11 +308,12 @@ func (gov *MCPGovernor) UpdateDownstreamPrice(ctx context.Context, method string
 
 		// --- 策略 B: 累加 (Additive) ---
 	} else if gov.priceAggregation == "additive" {
-		// 1. 原子替换特定下游节点的价格，并获取旧值 (Swap)
-		downstreamPrice_old, loaded := gov.priceTableMap.Swap(method+"-"+nodeName, downstreamPrice)
+		// 1. 原子替换特定下游节点的价格，并获取旧值
+		downstreamPrice_old, loaded := gov.priceTableMap.Load(method + "-" + nodeName)
 		if !loaded {
 			return 0, fmt.Errorf("下游价格 %s 未加载", method+"-"+nodeName)
 		}
+		gov.priceTableMap.Store(method+"-"+nodeName, downstreamPrice)
 
 		// 2. 计算差价 (Diff) = 新价格 - 旧价格
 		// 这样可以避免全量遍历求和，只需要增量更新总价格

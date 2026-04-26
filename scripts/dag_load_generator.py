@@ -214,6 +214,7 @@ class StepResult:
     locked_price: str = ""
     regime:      str = ""
     timestamp:   float = 0.0
+    gateway_latency_us: float = 0.0  # 网关处理耗时 (μs)，来自 X-Gateway-Latency-Us header
 
 
 # ══════════════════════════════════════════════════
@@ -325,6 +326,15 @@ async def send_tool_call(
             body = await resp.json()
             latency = (time.time() - ts) * 1000
 
+            # 捕获网关延迟分解 header
+            gw_lat_us = 0.0
+            gw_lat_header = resp.headers.get("X-Gateway-Latency-Us", "")
+            if gw_lat_header:
+                try:
+                    gw_lat_us = float(gw_lat_header)
+                except (ValueError, TypeError):
+                    pass
+
             locked_price = ""
             regime = ""
 
@@ -366,6 +376,7 @@ async def send_tool_call(
                 locked_price=locked_price,
                 regime=regime,
                 timestamp=ts,
+                gateway_latency_us=gw_lat_us,
             )
 
     except asyncio.TimeoutError:
@@ -453,6 +464,7 @@ async def execute_session(
             "regime": result.regime,
             "timestamp": result.timestamp,
             "shadow_would_reject": shadow_would_reject,
+            "gateway_latency_us": result.gateway_latency_us,
         })
 
         tool_weight = TOOL_CATALOG[step.tool_name]["weight"]
@@ -504,8 +516,9 @@ class AggregatedStats:
     react_cascade:      int = 0
     # 吞吐量指标
     raw_goodput_total:      float = 0.0
-    effective_goodput_total: float = 0.0
-    # 延迟
+    effective_goodput_total: float = 0.0    # 分模式吐量
+    ps_goodput:             float = 0.0
+    react_goodput:          float = 0.0    # 延迟
     all_latencies:      List[float] = field(default_factory=list)
     session_e2e_latencies: List[float] = field(default_factory=list)
     total_steps:        int = 0
@@ -552,6 +565,10 @@ def compute_stats(plans: List[SessionPlan], elapsed: float) -> AggregatedStats:
 
         stats.raw_goodput_total += plan.raw_goodput
         stats.effective_goodput_total += plan.total_weight
+        if is_ps:
+            stats.ps_goodput += plan.total_weight
+        else:
+            stats.react_goodput += plan.total_weight
 
         # 全链路端到端延迟（仅成功会话）
         if plan.state == SessionState.SUCCESS and plan.end_time > plan.start_time:
@@ -574,7 +591,39 @@ def compute_stats(plans: List[SessionPlan], elapsed: float) -> AggregatedStats:
     return stats
 
 
-def print_stats(stats: AggregatedStats):
+def _jain_index(values):
+    """Jain's Fairness Index: JFI = (Σ xi)² / (n × Σ xi²)"""
+    if not values or len(values) < 2:
+        return 1.0
+    n = len(values)
+    s = sum(values)
+    s2 = sum(x * x for x in values)
+    if s2 == 0:
+        return 1.0
+    return (s * s) / (n * s2)
+
+
+def _print_jain_fairness(plans, stats):
+    """打印 Jain 公平性指数"""
+    if plans is None:
+        return
+    success_steps = []
+    success_latencies = []
+    for p in plans:
+        if p.state == SessionState.SUCCESS:
+            success_steps.append(len(p.steps))
+            total_lat = sum(sr["latency_ms"] for sr in p.step_results)
+            success_latencies.append(total_lat)
+
+    if len(success_steps) >= 2:
+        jfi_steps = _jain_index([float(x) for x in success_steps])
+        jfi_lat = _jain_index(success_latencies) if success_latencies else 0.0
+        print(f"\n  ── Jain 公平性指数 (成功会话) ──")
+        print(f"  JFI_Steps:    {jfi_steps:.4f}")
+        print(f"  JFI_Latency:  {jfi_lat:.4f}")
+
+
+def print_stats(stats: AggregatedStats, plans_ref=None):
     print(f"\n{'='*60}")
     print(f"  DAG 会话发压机 — 统计摘要")
     print(f"{'='*60}")
@@ -586,6 +635,33 @@ def print_stats(stats: AggregatedStats):
 
     print(f"\n  [Plan-and-Solve]  total={stats.ps_total}  success={stats.ps_success}  rejected@s0={stats.ps_rejected}  cascade={stats.ps_cascade}")
     print(f"  [ReAct]           total={stats.react_total}  success={stats.react_success}  rejected@s0={stats.react_rejected}  cascade={stats.react_cascade}")
+
+    # ── Mode-Stratified ABD ──
+    ps_admitted = stats.ps_success + stats.ps_cascade
+    react_admitted = stats.react_success + stats.react_cascade
+    total_admitted = stats.success_sessions + stats.cascade_failed
+    abd_ps  = 100 * stats.ps_cascade / ps_admitted if ps_admitted > 0 else 0
+    abd_react = 100 * stats.react_cascade / react_admitted if react_admitted > 0 else 0
+    abd_total = 100 * stats.cascade_failed / total_admitted if total_admitted > 0 else 0
+    print(f"\n  ── Admitted-but-Doomed (ABD) ──")
+    print(f"  ABD_total:  {abd_total:.1f}%  ({stats.cascade_failed}/{total_admitted})")
+    print(f"  ABD_P&S:    {abd_ps:.1f}%  ({stats.ps_cascade}/{ps_admitted})")
+    print(f"  ABD_ReAct:  {abd_react:.1f}%  ({stats.react_cascade}/{react_admitted})")
+
+    # ── Mode-Stratified Success / Reject / GP/s ──
+    ps_sr = 100 * stats.ps_success / stats.ps_total if stats.ps_total > 0 else 0
+    react_sr = 100 * stats.react_success / stats.react_total if stats.react_total > 0 else 0
+    ps_rr = 100 * stats.ps_rejected / stats.ps_total if stats.ps_total > 0 else 0
+    react_rr = 100 * stats.react_rejected / stats.react_total if stats.react_total > 0 else 0
+    ps_gps = stats.ps_goodput / max(stats.elapsed_seconds, 0.001)
+    react_gps = stats.react_goodput / max(stats.elapsed_seconds, 0.001)
+    print(f"\n  ── Mode-Stratified 指标 ──")
+    print(f"  Success_P&S:    {ps_sr:.1f}%  ({stats.ps_success}/{stats.ps_total})")
+    print(f"  Success_ReAct:  {react_sr:.1f}%  ({stats.react_success}/{stats.react_total})")
+    print(f"  Reject_P&S:     {ps_rr:.1f}%  ({stats.ps_rejected}/{stats.ps_total})")
+    print(f"  Reject_ReAct:   {react_rr:.1f}%  ({stats.react_rejected}/{stats.react_total})")
+    print(f"  GP/s_P&S:       {ps_gps:.2f}")
+    print(f"  GP/s_ReAct:     {react_gps:.2f}")
 
     print(f"\n  ── Goodput 指标 ──")
     print(f"  Raw Goodput (单步累加):       {stats.raw_goodput_total:.1f}")
@@ -632,6 +708,9 @@ def print_stats(stats: AggregatedStats):
         saved = stats.client_shadow_reject
         print(f"  Client_Saved_Requests: {saved}")
 
+    # Jain 公平性指数（步数分布 + 延迟分布）
+    _print_jain_fairness(plans_ref, stats)
+
     print(f"{'='*60}")
 
 
@@ -654,6 +733,7 @@ def save_step_csv(plans: List[SessionPlan], path: str):
             "step_id", "tool_name", "status", "latency_ms",
             "budget", "locked_price", "regime",
             "raw_goodput", "effective_goodput", "shadow_would_reject",
+            "gateway_latency_us",
         ])
         for plan in plans:
             for sr in plan.step_results:
@@ -672,6 +752,7 @@ def save_step_csv(plans: List[SessionPlan], path: str):
                     f"{plan.raw_goodput:.1f}",
                     f"{plan.total_weight:.1f}",
                     sr.get("shadow_would_reject", False),
+                    f"{sr.get('gateway_latency_us', 0.0):.1f}",
                 ])
 
 
@@ -703,7 +784,33 @@ def save_session_csv(plans: List[SessionPlan], path: str):
 
 
 # ══════════════════════════════════════════════════
-# 10. 主调度器
+# 10. 突发到达模式
+# ══════════════════════════════════════════════════
+def _parse_burst_pattern(pattern_str: str) -> List[Tuple[float, float]]:
+    """解析突发模式字符串: 'rate1:dur1,rate2:dur2,...' → [(rate, duration), ...]"""
+    phases = []
+    for token in pattern_str.split(","):
+        parts = token.strip().split(":")
+        if len(parts) != 2:
+            raise ValueError(f"Invalid burst phase: {token}. Expected 'rate:duration'")
+        rate, dur = float(parts[0]), float(parts[1])
+        phases.append((rate, dur))
+    return phases
+
+
+def _get_burst_rate(phases: List[Tuple[float, float]], elapsed: float) -> float:
+    """根据已过时间返回当前到达速率"""
+    t = 0.0
+    for rate, dur in phases:
+        if elapsed < t + dur:
+            return rate
+        t += dur
+    # 超出所有阶段后, 使用最后一个阶段的速率
+    return phases[-1][0] if phases else 0.0
+
+
+# ══════════════════════════════════════════════════
+# 11. 主调度器
 # ══════════════════════════════════════════════════
 async def run(args):
     # 初始化客户端价格表
@@ -719,33 +826,68 @@ async def run(args):
         _hard_reject_enabled = False
 
     # 生成会话计划
+    adversarial_ratio = getattr(args, "adversarial_ratio", 0.0)
     plans: List[SessionPlan] = []
+    adversarial_count = 0
     for i in range(args.sessions):
         sid = f"sess-{i:04d}-{uuid.uuid4().hex[:8]}"
-        if random.random() < args.ps_ratio:
+        is_adversarial = random.random() < adversarial_ratio
+        if is_adversarial:
+            # 恶意 Agent: 虚报高预算(10x), 超大 DAG (15-20 步)
+            adversarial_count += 1
+            sid = f"adv-{i:04d}-{uuid.uuid4().hex[:8]}"
             plan = generate_ps_session(
-                sid, args.budget, args.heavy_ratio,
-                min_steps=args.min_steps, max_steps=args.max_steps,
+                sid, args.budget * 10, args.heavy_ratio,
+                min_steps=15, max_steps=20,
             )
+        elif random.random() < args.ps_ratio:
+            # 长尾会话: longtail_ratio 比例的会话有 10-15 步
+            longtail_ratio = getattr(args, "longtail_ratio", 0.0)
+            if longtail_ratio > 0 and random.random() < longtail_ratio:
+                plan = generate_ps_session(
+                    sid, args.budget, args.heavy_ratio,
+                    min_steps=10, max_steps=15,
+                )
+            else:
+                plan = generate_ps_session(
+                    sid, args.budget, args.heavy_ratio,
+                    min_steps=args.min_steps, max_steps=args.max_steps,
+                )
         else:
-            plan = generate_react_session(
-                sid, args.budget, args.heavy_ratio,
-                min_steps=1, max_steps=args.max_steps,
-            )
+            longtail_ratio = getattr(args, "longtail_ratio", 0.0)
+            if longtail_ratio > 0 and random.random() < longtail_ratio:
+                plan = generate_react_session(
+                    sid, args.budget, args.heavy_ratio,
+                    min_steps=8, max_steps=15,
+                )
+            else:
+                plan = generate_react_session(
+                    sid, args.budget, args.heavy_ratio,
+                    min_steps=1, max_steps=args.max_steps,
+                )
         plans.append(plan)
 
     # 统计模式分布
     ps_count = sum(1 for p in plans if p.mode == AgentMode.PLAN_AND_SOLVE)
     react_count = len(plans) - ps_count
     total_steps = sum(len(p.steps) for p in plans)
+    longtail_count = sum(1 for p in plans if len(p.steps) >= 10)
 
     print(f"[DAG发压机] 目标: {args.target}")
-    print(f"[DAG发压机] 总会话: {args.sessions}  (P&S={ps_count}, ReAct={react_count})")
+    print(f"[DAG发压机] 总会话: {args.sessions}  (P&S={ps_count}, ReAct={react_count}, Adversarial={adversarial_count}, LongTail={longtail_count})")
     print(f"[DAG发压机] 总步骤: {total_steps}")
     print(f"[DAG发压机] 预算: {args.budget}")
     print(f"[DAG发压机] 重载比: {args.heavy_ratio*100:.0f}%")
     print(f"[DAG发压机] 并发: {args.concurrency}")
     print(f"[DAG发压机] 种子: {SEED}")
+
+    # 解析 burst pattern (如有)
+    burst_phases = None
+    if getattr(args, "burst_pattern", None):
+        burst_phases = _parse_burst_pattern(args.burst_pattern)
+        total_dur = sum(d for _, d in burst_phases)
+        phase_desc = " → ".join(f"{r:.0f}sess/s×{d:.0f}s" for r, d in burst_phases)
+        print(f"[DAG发压机] 突发模式: {phase_desc} (总{total_dur:.0f}s)")
 
     # Poisson 到达间隔
     if args.arrival_rate > 0:
@@ -779,8 +921,14 @@ async def run(args):
 
             tasks.append(asyncio.create_task(run_one(plan)))
 
-            # Poisson 到达
-            if mean_interval > 0:
+            # 计算到达间隔
+            if burst_phases:
+                elapsed_now = time.time() - start
+                rate = _get_burst_rate(burst_phases, elapsed_now)
+                if rate > 0:
+                    interval = np.random.exponential(1.0 / rate)
+                    await asyncio.sleep(interval)
+            elif mean_interval > 0:
                 interval = np.random.exponential(mean_interval)
                 await asyncio.sleep(interval)
 
@@ -792,7 +940,7 @@ async def run(args):
 
     # 统计
     stats = compute_stats(completed_plans, elapsed)
-    print_stats(stats)
+    print_stats(stats, plans_ref=completed_plans)
 
     # 保存
     if args.output:
@@ -840,6 +988,13 @@ def main():
                         help="客户端价格缓存 TTL/秒, 0=禁用价格预测 (default: 1.0)")
     parser.add_argument("--hard-reject", action="store_true", default=False,
                         help="启用客户端 Hard Reject: 价格预测超预算则本地拒绝，不发送请求")
+    parser.add_argument("--adversarial-ratio", type=float, default=0.0,
+                        help="恶意 Agent 占比 0.0-1.0 (虚报高预算+超大DAG) (default: 0.0)")
+    parser.add_argument("--burst-pattern", type=str, default=None,
+                        help="突发到达模式: 'rate1:dur1,rate2:dur2,...' (sessions/s:seconds). "
+                             "e.g. '10:15,50:10,10:15,80:10,10:10' 覆盖 --arrival-rate")
+    parser.add_argument("--longtail-ratio", type=float, default=0.0,
+                        help="长尾会话占比 0.0-1.0, 长尾会话10-15步 (default: 0.0)")
     args = parser.parse_args()
 
     # CPU 亲和性

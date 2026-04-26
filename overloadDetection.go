@@ -58,6 +58,18 @@ func (gov *MCPGovernor) latencyCheck() {
 }
 
 // queuingCheck 检查 Go 协程(Goroutine)的排队延迟是否超过了 SLO (服务等级目标)
+//
+// ┌─────────────────────────────────────────────────────────────────┐
+// │ 论文 §3.6 Dynamic Pricing Engine 的输入信号源                  │
+// │                                                               │
+// │ 利用 Go runtime/metrics 读取调度器延迟直方图                │
+// │ 计算 gapLatency → 传入 Eq.(6) 中作为 Δq 的基础             │
+// │ 调用 maybeApplyAdaptiveProfile() 实现负载档位自适应切换    │
+// │                                                               │
+// │ 档位检测: bursty/periodic/steady 三种负载模式              │
+// │ 每种模式对应不同的定价参数组 (Profile)                      │
+// └─────────────────────────────────────────────────────────────────┘
+//
 // 它利用 Go runtime/metrics 库来读取底层的调度器延迟直方图 (Scheduler Latency)
 // 这是一个更底层的指标，反映了 CPU 饱和度，比业务延迟更早预警过载
 func (gov *MCPGovernor) queuingCheck() {
@@ -205,6 +217,17 @@ func (gov *MCPGovernor) overloadDetection(ctx context.Context) bool {
 // ================================================================
 
 // initAdaptiveProfiles 初始化参数档位，支持 options 覆盖。
+//
+// ┌─────────────────────────────────────────────────────────────────┐
+// │ 论文 §3.6 Dynamic Pricing Engine — Load Regime Adaptation       │
+// │                                                               │
+// │ 三种负载模式对应三组 Eq.(6) 参数:                            │
+// │   Bursty:   极速熔断 — 低阈值+高增益+高衰减率                 │
+// │   Periodic: 高阻尼防震荡 — 高阈值+低增益+快衰减              │
+// │   Steady:   迟钝保守 — 默认档位 (DP-NoRegime 锁死于此)       │
+// │                                                               │
+// │ maybeApplyAdaptiveProfile() 基于方差+尖峰+趋势检测自动切换  │
+// └─────────────────────────────────────────────────────────────────┘
 func (gov *MCPGovernor) initAdaptiveProfiles(
 	burstyOpt, periodicOpt, steadyOpt map[string]interface{},
 ) {
@@ -315,6 +338,8 @@ func applyProfileOptions(p *Profile, opt map[string]interface{}) {
 }
 
 // maybeApplyAdaptiveProfile 根据最近窗口统计特征识别状态并热切换参数。
+// >>> §3.6: 基于 variance/spike/trend 自动切换 Bursty/Periodic/Steady 档位
+// 切换后热更新 Eq.(6) 中的所有参数: priceStep, priceSensitivity, latencyThreshold 等
 func (gov *MCPGovernor) maybeApplyAdaptiveProfile(gapLatency float64) {
 	if !gov.enableAdaptiveProfile || gov.regimeWindow <= 0 {
 		return

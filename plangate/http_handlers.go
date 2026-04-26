@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
+	"time"
 
 	mcpgov "mcp-governance"
 )
@@ -42,6 +44,8 @@ func (s *MCPDPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	var resp *mcpgov.JSONRPCResponse
 
+	gatewayStart := time.Now()
+
 	switch req.Method {
 	case mcpgov.MethodInitialize:
 		resp = s.handleInitialize(&req)
@@ -55,6 +59,10 @@ func (s *MCPDPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		resp = mcpgov.NewErrorResponse(req.ID, mcpgov.CodeMethodNotFound,
 			fmt.Sprintf("MCP 方法 '%s' 未找到", req.Method), nil)
 	}
+
+	// 附加网关处理耗时到响应头（供延迟分解实验使用）
+	gatewayElapsed := time.Since(gatewayStart)
+	w.Header().Set("X-Gateway-Latency-Us", strconv.FormatInt(gatewayElapsed.Microseconds(), 10))
 
 	writeJSON(w, resp)
 }
@@ -76,16 +84,29 @@ func (s *MCPDPServer) handleToolsList(req *mcpgov.JSONRPCRequest) *mcpgov.JSONRP
 }
 
 // handleToolsCall 核心：双模态路由 (创新点 3) + ReAct 沉没成本准入 (创新点 4)
+//
+// ┌─────────────────────────────────────────────────────────────────┐
+// │ Algorithm 1: PlanGate Admission Control — 路由入口              │
+// │                                                               │
+// │ 路由逻辑 (双模态 Dual-Mode):                                    │
+// │   1. X-Plan-DAG 存在   → P&S 首步 (Eq.1 + Eq.2)               │
+// │   2. X-Session-ID 匹配  → P&S 后续 (Eq.2 锁定价格)              │
+// │   3. ReAct 已跟踪会话  → 沉没成本折扣 (Eq.4)                  │
+// │   4. ReAct 新会话     → Step-0 宽松准入 (Eq.3)                │
+// │   5. 无会话上下文    → MCPGovernor 标准准入                  │
+// └─────────────────────────────────────────────────────────────────┘
 func (s *MCPDPServer) handleToolsCall(ctx context.Context, r *http.Request, req *mcpgov.JSONRPCRequest) *mcpgov.JSONRPCResponse {
 	dagHeader := r.Header.Get(HeaderPlanDAG)
 	sessionID := r.Header.Get(HeaderSessionID)
 
 	// ====== Plan-and-Solve 模式: 首步（带 X-Plan-DAG）======
+	// >>> Algorithm 1, P&S 分支: Eq.(1) C_total + Eq.(2) LockedPrices
 	if dagHeader != "" {
 		return s.handlePlanAndSolveFirstStep(ctx, r, req, dagHeader, sessionID)
 	}
 
 	// ====== Plan-and-Solve 模式: 后续步骤（带 X-Session-ID + 预算锁）======
+	// >>> Algorithm 1, P&S 后续: 使用 Eq.(2) 锁定价格，绕过 LoadShedding
 	if sessionID != "" && !s.disableBudgetLock {
 		if res, ok := s.budgetMgr.Get(sessionID); ok {
 			return s.handleReservedStep(ctx, req, res)
@@ -101,11 +122,11 @@ func (s *MCPDPServer) handleToolsCall(ctx context.Context, r *http.Request, req 
 
 	// ====== ReAct 沉没成本感知准入 (创新点 4) ======
 	if sessionID != "" {
-		// 已跟踪的 ReAct 会话 → 沉没成本递减价格
+		// >>> Algorithm 1, ReAct K≥1: Eq.(4) P_K = P_eff×I/(1+K²α_eff)
 		if rState, ok := s.reactSessions.Get(sessionID); ok {
 			return s.handleReActSunkCostStep(ctx, req, rState)
 		}
-		// 新 ReAct 会话首步 → 准入 + 创建跟踪
+		// >>> Algorithm 1, ReAct step-0: Eq.(3) P_step0 = P_base × I(t) × L(t)
 		return s.handleReActFirstStep(ctx, req, sessionID)
 	}
 
