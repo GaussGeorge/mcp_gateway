@@ -1,0 +1,106 @@
+# PlanGate Artifact Scope
+
+## Overview
+
+This artifact accompanies the paper **"PlanGate: Sunk-Cost-Aware Dynamic Pricing
+for Multi-Step LLM Agent Tool Governance"**. This document clarifies which
+experiments and result directories belong to the **paper reproducibility path**
+and which are historical diagnostic/exploratory traces that are archived but
+**do not appear in the paper**.
+
+---
+
+## 1. Artifact Contents (Paper-Used Experiments)
+
+The following experiments and their cached results are part of the paper:
+
+| # | Paper Item | Results Directory | Notes |
+|---|------------|-------------------|-------|
+| 1 | Commitment Quality (Table 1) | `results/exp_week4_formal/` | 7 gateways × 5 repeats × 200 sessions; LaTeX at `results/paper_figures/table_commitment_quality.tex` |
+| 2 | Core Mock Performance | `results/exp1_core/` | 500 sessions, C=200, 5 repeats |
+| 3 | Mechanism Ablation | `results/exp4_ablation/` | PlanGate Full / wo-BudgetLock / wo-SessionCap |
+| 4 | Discount Function Ablation | `results/exp8_discountablation/` | quadratic / exponential / linear / logarithmic |
+| 5 | Rajomon Sensitivity | `results/exp_rajomon_sensitivity/` | price_step ∈ {5, 10, 20, 50, 100} |
+| 6 | Alpha Sensitivity | `results/exp_alpha_sweep/` | α sweep |
+| 7 | Beta Sensitivity (Appendix) | `results/beta_ablation/` | β ∈ {0, 0.5, 1, 2, 3}, pure ReAct mock; LaTeX at `tables/beta_ablation_table.tex` |
+| 8 | Steady Commercial API (GLM C=10) | `results/exp_week5_C10/` | 4 gateways, 200 sessions, C=10 |
+| 9 | Steady Commercial API (GLM C=40) | `results/exp_week5_C40/` | 4 gateways, 200 sessions, C=40 |
+| 10 | Bursty Real-LLM | `results/exp_bursty_C20_B30/` | GLM-4-Flash bursty, C=20, burst=30 |
+| 11 | Self-Hosted vLLM | `results/exp_selfhosted_vllm_C20_W8/` | vLLM C=20, workers=8 |
+| 12 | Adversarial Robustness (Appendix) | `results/exp10_adversarial/` | 10% malicious agents |
+
+Additional mock experiments (Exp2–Exp12 series) are referenced in the paper
+for breadth evaluation: `results/exp2_heavyratio/` through `results/exp12_longtail/`.
+
+---
+
+## 2. Archived / Diagnostic Results (NOT in Paper)
+
+The following directories contain exploratory, diagnostic, or superseded results.
+They are retained for internal traceability but **do not appear in the paper** and
+are **not part of the reproducibility path**:
+
+| Directory | Reason Excluded |
+|-----------|-----------------|
+| `results/neutral_real_llm/` | Early neutral-prompt diagnostic; zero-step sessions observed; not adopted |
+| `results/neutral_multitool_real_llm/` | B2-MT-medium experiment; PlanGate did not outperform PP; not adopted |
+| `results/neutral_multitool_real_llm/b2_mt_medium/` | Negative result (NG > PlanGate in success %), reported in internal log only |
+| `results/exp_real3_deepseek/` | DeepSeek-V3 steady pilot; superseded by standardized week5 suite |
+| `results/exp_deepseek_n3/` | DeepSeek pilot, N=3; superseded |
+| `results/exp_pp_smoke/` | Smoke test for Progress Priority gateway; diagnostic only |
+| `results/exp_sbac30/` | SBAC sensitivity sweep; not in main paper |
+| `results/exp_week2_smoke/` | Early smoke test; superseded by week4/week5 formal runs |
+| `results/exp_week5_pilot/` | Pilot sweep to select C; superseded by C10/C40 formal |
+| `results/exp_week5_real_llm/` | Duplicate/merged run set; superseded by C10/C40 directories |
+| `results/smoke_multitool/` | Multitool smoke tests |
+| `results/log/` | Runtime logs from various experiments |
+
+Scripts prefixed with `_` (e.g., `scripts/_audit.py`, `scripts/_bursty_check.py`)
+are diagnostic utilities, not reproducibility scripts.
+
+---
+
+## 3. Default Reproducibility Mode
+
+> **All paper figures and tables can be reproduced from cached CSV traces
+> without calling any external API or running a live LLM.**
+
+- Level 0: syntax/test check (< 1 min)
+- Level 1: regenerate all tables + figures from cached CSV (5–10 min)
+- Level 2: rerun controlled mock experiments (30–90 min, no API required)
+- Level 3 (optional): live real-LLM rerun (requires `.env` API credentials)
+
+See `README.md` § "Reproducing the Paper" for exact commands.
+
+---
+
+## 4. API Keys and Sensitive Information
+
+- `.env` is excluded from git (see `.gitignore`).
+- No API keys appear in any committed script; all scripts read from environment variables.
+- Live real-LLM reruns require setting `LLM_API_BASE` and `LLM_API_KEY` in `.env`.
+- If the `.env` file is absent, live-rerun scripts print a clear error and exit; they do **not** silently skip.
+
+---
+
+## 5. Experiment Not Included: B2-MT-medium Negative Result
+
+The B2-MT-medium experiment (agents=150, C=10, bursty, 4 gateways × 3 repeats)
+was conducted as an internal boundary test. Results showed PP outperformed PlanGate on cascade steps (315 vs 356), and PlanGate's success rate was lower than NG (16.4% vs 22.4%). This is an honest result that reveals a non-trivial tradeoff under medium-pressure bursty overload. It is preserved at:
+
+```
+results/neutral_multitool_real_llm/b2_mt_medium/medium_report.md
+```
+
+This result is **not part of the main paper claims** and is not cited in the paper tables. It is retained here for scientific completeness and to support potential future analysis.
+
+---
+
+## 6. Reproducing without a GPU / commercial API
+
+The mock experiments (Levels 0–2) require only:
+- Go 1.21+
+- Python 3.10+  
+- No GPU, no API key, no internet access
+
+The cached CSV traces for real-LLM experiments allow full table/figure regeneration offline.
