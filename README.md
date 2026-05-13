@@ -216,9 +216,7 @@ by 10.1% per run.
 
 ## License
 
-See [LICENSE](LICENSE) for license terms.
-*(If no LICENSE file is present, please add one before making the repository
-public.)*
+This repository is released under the Apache License 2.0. See [LICENSE](LICENSE) for details.
 
 ---
 
