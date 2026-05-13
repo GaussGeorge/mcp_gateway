@@ -92,7 +92,7 @@
 | **网关代码** | NG: `baseline/ng_gateway.go`; Rajomon: `baseline/rajomon_gateway.go`; Raj+SB: `baseline/rajomon_session_gateway.go`; SBAC: `baseline/sbac_gateway.go`; PP: `baseline/progress_priority_gateway.go`; PG-noRes: `plangate/` (mcpdp-no-budgetlock); PlanGate: `plangate/` (mcpdp) |
 | **参数** | 200 sessions, C=200, ps_ratio=0.5, budget=500, 5 repeats |
 | **结果目录** | `results/exp_week4_formal/` |
-| **分析/图表** | `scripts/gen_ccfa_figures.py::fig_mock_cascade()` |
+| **分析/图表** | `scripts/gen_paper_figures.py::fig_mock_cascade()` |
 
 #### Rajomon Sensitivity（price_step 扫参）
 
@@ -103,7 +103,7 @@
 | **网关代码** | `baseline/rajomon_gateway.go` (mode=rajomon) |
 | **参数** | price_step ∈ {5,10,20,50,100}, 200 sessions, C=200, 5 repeats |
 | **结果目录** | `results/exp_rajomon_sensitivity/` |
-| **分析/图表** | `scripts/plot_rajomon_sensitivity.py`, `scripts/gen_ccfa_figures.py::fig_rajomon_sensitivity()` |
+| **分析/图表** | `scripts/plot_rajomon_sensitivity.py`, `scripts/gen_paper_figures.py::fig_rajomon_sensitivity()` |
 
 #### Exp1: Core Performance
 
@@ -313,7 +313,7 @@
 | **网关代码** | NG / PlanGate-Real (mcpdp-real) |
 | **参数** | 50 agents, C ∈ {1, 3, 5}, max_steps=8, budget=300, DeepSeek-V3, 3 repeats |
 | **结果目录** | `results/exp_deepseek_n3/`, `results/exp_conc_sweep_deepseek/` |
-| **分析/图表** | `scripts/gen_ccfa_figures.py::fig_deepseek_sweep()` |
+| **分析/图表** | `scripts/gen_paper_figures.py::fig_deepseek_sweep()` |
 
 ---
 
@@ -321,16 +321,16 @@
 
 | 图表 | 生成脚本 | 函数 | 依赖数据 |
 |---|---|---|---|
-| Architecture | `gen_ccfa_figures.py` | `fig_architecture()` | 手绘 (matplotlib patches) |
-| Mock Cascade Comparison | `gen_ccfa_figures.py` | `fig_mock_cascade()` | `exp_week4_formal/` |
-| Ablation Study | `gen_ccfa_figures.py` | `fig_ablation()` | `exp4_ablation/` |
-| Scalability | `gen_ccfa_figures.py` | `fig_scalability()` | `exp9_scalestress/` |
-| Token Efficiency | `gen_ccfa_figures.py` | `fig_token_efficiency()` | `exp1_core/` |
-| Fairness (Steps Boxplot) | `gen_ccfa_figures.py` | `fig_fairness()` | `exp1_core/` |
-| DeepSeek Concurrency Sweep | `gen_ccfa_figures.py` | `fig_deepseek_sweep()` | `exp_conc_sweep_deepseek/` or `exp_deepseek_n3/` |
-| Adversarial Robustness | `gen_ccfa_figures.py` | `fig_adversarial()` | `exp10_adversarial/` |
-| Rajomon Sensitivity | `gen_ccfa_figures.py` | `fig_rajomon_sensitivity()` | `exp_rajomon_sensitivity/` |
-| Discount Function Ablation | `gen_ccfa_figures.py` | `fig_discount_ablation()` | `exp8_discountablation/` |
+| Architecture | `gen_paper_figures.py` | `fig_architecture()` | 手绘 (matplotlib patches) |
+| Mock Cascade Comparison | `gen_paper_figures.py` | `fig_mock_cascade()` | `exp_week4_formal/` |
+| Ablation Study | `gen_paper_figures.py` | `fig_ablation()` | `exp4_ablation/` |
+| Scalability | `gen_paper_figures.py` | `fig_scalability()` | `exp9_scalestress/` |
+| Token Efficiency | `gen_paper_figures.py` | `fig_token_efficiency()` | `exp1_core/` |
+| Fairness (Steps Boxplot) | `gen_paper_figures.py` | `fig_fairness()` | `exp1_core/` |
+| DeepSeek Concurrency Sweep | `gen_paper_figures.py` | `fig_deepseek_sweep()` | `exp_conc_sweep_deepseek/` or `exp_deepseek_n3/` |
+| Adversarial Robustness | `gen_paper_figures.py` | `fig_adversarial()` | `exp10_adversarial/` |
+| Rajomon Sensitivity | `gen_paper_figures.py` | `fig_rajomon_sensitivity()` | `exp_rajomon_sensitivity/` |
+| Discount Function Ablation | `gen_paper_figures.py` | `fig_discount_ablation()` | `exp8_discountablation/` |
 | Cross-LLM Comparison | `gen_paper_figures.py` | `fig_cross_llm()` | `exp_week5_*` / `exp_bursty_*` |
 | 心电图 (Price Timeseries) | `plot_paper_charts.py` | `plot_chart1_heartbeat()` | 网关运行日志 |
 | 8 轮调优演进图 | `plot_paper_charts.py` | `plot_chart2_evolution()` | `results/evolution_8runs.csv` |
@@ -426,11 +426,10 @@ python scripts/run_deepseek_n3.py --repeats 3
 ### Phase 4: 生成图表
 
 ```bash
-# 生成全部 CCF-A 质量论文图表
-python scripts/gen_ccfa_figures.py
+# 生成所有论文图表
+python scripts/gen_paper_figures.py
 
 # 备选图表脚本
-python scripts/gen_paper_figures.py
 python scripts/plot_paper_charts.py
 python scripts/plot_rajomon_sensitivity.py
 ```

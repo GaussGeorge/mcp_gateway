@@ -62,15 +62,19 @@ are diagnostic utilities, not reproducibility scripts.
 
 ## 3. Default Reproducibility Mode
 
-> **All paper figures and tables can be reproduced from cached CSV traces
-> without calling any external API or running a live LLM.**
+The minimal reproduction path (no API key required):
 
-- Level 0: syntax/test check (< 1 min)
-- Level 1: regenerate all tables + figures from cached CSV (5–10 min)
-- Level 2: rerun controlled mock experiments (30–90 min, no API required)
+- Level 0: compile + unit tests (< 1 min)
+- Level 1: rerun controlled mock experiments (30–90 min, no API required)
+- Level 2: `go test ./plangate/... -run "TestRuntime"` — PlanGate-R recovery smoke (< 2 min, no API)
 - Level 3 (optional): live real-LLM rerun (requires `.env` API credentials)
 
-See `README.md` § "Reproducing the Paper" for exact commands.
+Full cached traces for real-LLM experiments are not tracked in this public repository.
+For conference submission, they are provided through the conference supplementary
+artifact mechanism. Mock experiments can be re-run from scratch using the commands
+in `docs/minimal_reproduction.md`.
+
+See `README.md` § "Minimal Reproduction" for exact commands.
 
 ---
 
@@ -98,9 +102,10 @@ This result is **not part of the main paper claims** and is not cited in the pap
 
 ## 6. Reproducing without a GPU / commercial API
 
-The mock experiments (Levels 0–2) require only:
+The mock experiments (Levels 0–1) require only:
 - Go 1.21+
-- Python 3.10+  
+- Python 3.10+
 - No GPU, no API key, no internet access
 
-The cached CSV traces for real-LLM experiments allow full table/figure regeneration offline.
+Full cached traces for real-LLM experiments are distributed separately through the
+conference supplementary artifact; they are not tracked in this public code repository.

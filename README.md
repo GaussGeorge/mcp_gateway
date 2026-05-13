@@ -1,17 +1,13 @@
 ﻿# PlanGate: Session Commitment for Multi-Step LLM Agent Tool Governance
 
-PlanGate is an MCP-compatible gateway that prevents **cascading compute waste**
-in multi-step LLM agent workloads by enforcing *session commitment*: atomic
-admission, temporal isolation, and continuation value.
+PlanGate is an MCP-compatible gateway that reduces **governance-induced cascading compute waste**
+in multi-step LLM agent workloads by aligning admission decisions with multi-step session
+semantics — enforcing *session commitment*: atomic admission, temporal isolation, and
+continuation value.
 
-Traditional per-request governance (rate limiters, load shedders) shares a
-structural flaw: its *governance unit* is the individual tool call, while the
-*workload unit* is the multi-step session. When a session is admitted at step 0
-but rejected at step K, all compute from steps 1 to K-1 is irrecoverably lost.
-Under 200-concurrent-session load with no governance, 65% of admitted sessions
-are doomed to fail mid-execution.
-
-PlanGate addresses this through two complementary policies:
+For plan-accurate P&S sessions, PlanGate prevents price-induced mid-session rejection
+within the declared plan scope. For ReAct sessions, it reduces mid-execution abandonment
+through sunk-cost-aware continuation pricing.
 
 | Agent type | Commitment | Mechanism |
 |---|---|---|
@@ -41,7 +37,7 @@ scripts/              Experiment runner, analysis, and plotting scripts
   run_exp_real3_all.sh          Real-LLM (GLM/DeepSeek) experiment driver
   reproduce_mock_core.sh        Reproducibility: mock core experiments
   reproduce_main_paper_from_cache.sh  Re-generate figures from CSV cache
-  gen_ccfa_figures.py           Paper figure generator
+  gen_paper_figures.py         Paper figure generator
 docs/                 Artifact documentation
   REPRODUCIBILITY.md  Full reproduction guide with expected runtimes
   RESULT_MAPPING.md   Maps paper items to data files
@@ -125,20 +121,21 @@ The `results/` directory is excluded from the public repo (see `.gitignore`).
 
 ---
 
-## Reproducing Key Results from Cached CSV
+## Reproducing Key Results
 
-Pre-computed CSV traces for the paper results can be re-analyzed and plotted
-without running live experiments:
+The public repository contains source code and no-key minimal reproduction commands.
+Full cached traces for real-LLM experiments are not tracked in this public branch;
+they are distributed separately through the conference artifact submission mechanism,
+not as a public GitHub release.
+
+Mock core experiments can be re-run from scratch:
 
 ```bash
-# Re-generate all paper figures from cached CSVs
-bash scripts/reproduce_main_paper_from_cache.sh
-
-# Re-generate appendix figures from cached CSVs
-bash scripts/reproduce_appendix_from_cache.sh
-
-# Re-run mock core experiments from scratch
+# Re-run mock core experiments from scratch (no API key, ~30–45 min)
 bash scripts/reproduce_mock_core.sh
+
+# Re-generate paper figures from local CSV results (after re-running)
+python scripts/gen_paper_figures.py
 ```
 
 See [docs/REPRODUCIBILITY.md](docs/REPRODUCIBILITY.md) for full instructions,
@@ -263,8 +260,9 @@ go test ./plangate/... -run "TestRuntime" -v -timeout 120s
 - Large external tokenizer assets are not tracked; see
   [`scripts/deepseek_v3_tokenizer/README.md`](scripts/deepseek_v3_tokenizer/README.md)
   for how to obtain `tokenizer.json` if needed for token-accounting scripts.
-- Pre-computed cached CSV traces for the main paper results are available in
-  the reproducibility release package (see `docs/REPRODUCIBILITY.md`).
+- Pre-computed cached CSV traces for real-LLM experiments are **not** included in
+  this public repository. For double-blind submission, they are provided through
+  the conference supplementary artifact mechanism.
 
 ---
 
