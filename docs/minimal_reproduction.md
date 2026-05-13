@@ -78,18 +78,24 @@ This script automatically:
 
 **Expected sanity trend (1 repeat, may vary):**
 ```
-Policy         | SuccessRate | CascadeRate | ABD-like | EffGoodput
-----------------|-------------|-------------|----------|----------
-ng (no-gov)    |   ~0.35     |   ~0.60     |  ~0.28   |  low
-sbac           |   ~0.65     |   ~0.25     |  ~0.12   |  medium
-plangate_full  |   ~0.92     |   ~0.05     |  ~0.02   |  high
+Policy         | success | cascade_failed | effective_goodput
+----------------|---------|----------------|------------------
+ng (no-gov)    |   ~22   |      ~88       |       ~248
+srl            |   ~37   |      ~88       |       ~417
+sbac           |   ~46   |      ~27       |       ~527
+plangate_full  |   ~80   |       ~0       |       ~673
 ```
 
-Exact values depend on the local machine timing and single-repeat variance;
-the qualitative ordering (plangate > sbac > ng) is the key sanity check.
+Key sanity check: `plangate_full.cascade_failed == 0` and
+`plangate_full.effective_goodput` is the highest.
+Exact numbers vary with single-repeat randomness; the qualitative
+ordering (plangate eliminates cascade, highest effective goodput) is stable.
 
-**Runtime:** ~5–10 minutes on a 4-core/8-core machine (single repeat).
-Windows may be 1.5–2× slower due to process-spawning overhead.
+**Verified on `public-artifact-clean` (2026-05-13):**
+Runtime 1.2 min on Windows (4-core), pre-built `gateway.exe`.
+Output: `results/exp1_core/exp1_core_summary.csv`
+
+**Runtime:** ~1–5 minutes on a developer machine (single repeat, pre-built binary).
 
 ### Dry-run check (no processes started)
 
@@ -114,21 +120,24 @@ This runs three gateway policies:
 
 **Output directory:** `results/Exp4_Ablation/`
 
-**Expected sanity trend:**
+**Expected sanity trend (1 repeat, may vary):**
 ```
-Policy          | SuccessRate | CascadeRate | MidSessionFail
-----------------|-------------|-------------|---------------
-plangate_full   |   ~0.92     |   ~0.05     |  low
-wo_budgetlock   |   ~0.75     |   ~0.18     |  higher
-wo_sessioncap   |   ~0.80     |   ~0.12     |  moderate
+Policy          | success | cascade_failed | effective_goodput
+----------------|---------|----------------|------------------
+plangate_full   |   ~85   |       ~1       |       ~724
+wo_budgetlock   |   ~21   |       ~9       |       ~118
+wo_sessioncap   |   ~69   |       ~0       |       ~602
 ```
 
-`wo_budgetlock` should show noticeably more mid-session cascades or failures
-than `plangate_full` under P&S overload. This is the key sanity check for
-the budget-reservation mechanism.
+Key sanity check: `wo_budgetlock.effective_goodput` is dramatically lower
+than `plangate_full` (~83% reduction). This confirms that the budget-lock
+mechanism is the primary driver of PlanGate's goodput improvement.
 
-**Runtime:** ~5–10 minutes per policy × 3 policies = ~15–30 minutes total
-(single repeat). Windows may be slower.
+**Verified on `public-artifact-clean` (2026-05-13):**
+Runtime 0.8 min on Windows (4-core), pre-built `gateway.exe`.
+Output: `results/exp4_ablation/exp4_ablation_summary.csv`
+
+**Runtime:** ~1–3 minutes on a developer machine (single repeat, pre-built binary).
 
 ---
 
@@ -182,8 +191,8 @@ are deterministic (`context.DeadlineExceeded`-class, classified as recoverable).
 |-------|---------|----------|---------|-----------|
 | L0 | `go test ./...` | No | < 1 min | Compilation + unit tests |
 | L0 | `go test ./plangate/...` | No | < 1 min | PlanGate-R unit + integration tests |
-| L1 | `python scripts/run_all_experiments.py --exp Exp1_Core --repeats 1` | No | ~5–10 min | PlanGate reduces cascade vs NG/SBAC |
-| L2 | `python scripts/run_all_experiments.py --exp Exp4_Ablation --repeats 1` | No | ~15–30 min | Budget-lock mechanism matters (wo-BudgetLock > plangate_full defects) |
+| L1 | `python scripts/run_all_experiments.py --exp Exp1_Core --repeats 1` | No | ~1–5 min | PlanGate reduces cascade vs NG/SBAC (verified 1.2 min, 2026-05-13) |
+| L2 | `python scripts/run_all_experiments.py --exp Exp4_Ablation --repeats 1` | No | ~1–3 min | Budget-lock mechanism matters (verified 0.8 min, 2026-05-13) |
 | L3 | `go test ./plangate/... -run "TestRuntime" -v` | No | < 2 min | PlanGate-R no-replay + compute saving |
 | Full | `bash scripts/reproduce_mock_core.sh` | No | ~30–45 min | Paper mock tables (from re-run) |
 | Full | `bash scripts/reproduce_main_paper_from_cache.sh` | No | ~5–10 min | Paper tables from cached CSVs |

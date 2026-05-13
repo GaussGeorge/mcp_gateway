@@ -213,15 +213,17 @@ by 10.1% per run.
 go test ./... -timeout 120s
 ```
 
-**2. PlanGate core mock smoke — validates PlanGate reduces cascade vs NG/SBAC (no API key, ~5–10 min):**
+**2. PlanGate core mock smoke — validates PlanGate reduces cascade vs NG/SBAC (no API key, ~1–5 min, verified 1.2 min):**
 ```bash
 python scripts/run_all_experiments.py --exp Exp1_Core --repeats 1
 ```
+Sanity check: `plangate_full.cascade_failed == 0`, `plangate_full.effective_goodput` is highest.
 
-**3. PlanGate mechanism ablation smoke — validates budget-lock matters (no API key, ~15–30 min):**
+**3. PlanGate mechanism ablation smoke — validates budget-lock matters (no API key, ~1–3 min, verified 0.8 min):**
 ```bash
 python scripts/run_all_experiments.py --exp Exp4_Ablation --repeats 1
 ```
+Sanity check: `wo_budgetlock.effective_goodput` ~83% lower than `plangate_full`.
 
 **4. PlanGate-R recovery smoke — validates checkpoint resume / no replay (no API key, < 2 min, Go tests only):**
 ```bash

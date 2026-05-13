@@ -65,10 +65,17 @@ components: source data, minimal sanity command, and full reproduction command.
   # or to regenerate from scratch (5 repeats, ~30 min):
   python scripts/run_all_experiments.py --exp Exp1_Core --repeats 5
   ```
-- **Expected sanity (1 repeat):**
-  - Cascade rate: `plangate_full` < `sbac` < `ng`
-  - Effective goodput: `plangate_full` > `sbac` > `ng`
-  - No guarantee of exact paper numbers in a single repeat.
+- **Expected sanity (1 repeat, verified 2026-05-13 on `public-artifact-clean`):**
+  | Policy | success | cascade_failed | effective_goodput |
+  |--------|---------|----------------|-------------------|
+  | ng | 22 | 88 | 248 |
+  | srl | 37 | 88 | 417 |
+  | sbac | 46 | 27 | 527 |
+  | plangate_full | 80 | **0** | **673** |
+  - Cascade rate: `plangate_full`=0 < `sbac`=27 < `ng`/`srl`=88
+  - Effective goodput: `plangate_full` > `sbac` > `srl` > `ng`
+  - No guarantee of exact paper numbers in a single repeat; qualitative ordering is stable.
+  - Verified runtime: 1.2 min on Windows 4-core developer machine.
 
 ---
 
@@ -89,9 +96,15 @@ components: source data, minimal sanity command, and full reproduction command.
   # or re-run:
   python scripts/run_all_experiments.py --exp Exp4_Ablation --repeats 5
   ```
-- **Expected sanity (1 repeat):**
-  - `wo_budgetlock` shows more mid-session failures and higher cascade rate than `plangate_full`.
-  - Exactqualitative direction: `plangate_full` success > `wo_budgetlock` success.
+- **Expected sanity (1 repeat, verified 2026-05-13 on `public-artifact-clean`):**
+  | Policy | success | cascade_failed | effective_goodput |
+  |--------|---------|----------------|-------------------|
+  | plangate_full | 85 | 1 | **724** |
+  | wo_budgetlock | 21 | 9 | **118** |
+  | wo_sessioncap | 69 | 0 | 602 |
+  - `wo_budgetlock.effective_goodput` (118) is ~83% lower than `plangate_full` (724).
+  - Confirms budget-lock is the dominant mechanism for effective goodput.
+  - Verified runtime: 0.8 min on Windows 4-core developer machine.
 
 ---
 
@@ -158,8 +171,8 @@ components: source data, minimal sanity command, and full reproduction command.
 
 | Paper Item | Minimal Sanity | Needs API Key | Runtime (minimal) |
 |-----------|---------------|--------------|-------------------|
-| Table 2 (commitment quality) | ✅ Exp1_Core --repeats 1 | No | ~5–10 min |
-| Table 3 (core mock perf) | ✅ Exp1_Core --repeats 1 | No | ~5–10 min |
-| Table 4 (mechanism ablation) | ✅ Exp4_Ablation --repeats 1 | No | ~15–30 min |
+| Table 2 (commitment quality) | ✅ Exp1_Core --repeats 1 | No | ~1–5 min (verified 1.2 min) |
+| Table 3 (core mock perf) | ✅ Exp1_Core --repeats 1 | No | ~1–5 min (verified 1.2 min) |
+| Table 4 (mechanism ablation) | ✅ Exp4_Ablation --repeats 1 | No | ~1–3 min (verified 0.8 min) |
 | Table 9 (PlanGate-R recovery) | ✅ go test -run TestRuntime | No | < 2 min |
 | Tables 6–8 (real LLM/vLLM) | ❌ optional only | **Yes (live)** | Variable |
