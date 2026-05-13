@@ -200,6 +200,44 @@ by 10.1% per run.
 
 ---
 
+## Minimal Reproduction
+
+> Mock reproduction does **not** require API keys.
+> PlanGate-R reproduction is P&S controlled mock only.
+> Exact paper tables require full runs; minimal smoke validates qualitative trends.
+> See [docs/minimal_reproduction.md](docs/minimal_reproduction.md) and
+> [docs/paper_mapping.md](docs/paper_mapping.md) for full details.
+
+**1. Unit tests (no server, no API key, < 1 min):**
+```bash
+go test ./... -timeout 120s
+```
+
+**2. PlanGate core mock smoke — validates PlanGate reduces cascade vs NG/SBAC (no API key, ~5–10 min):**
+```bash
+python scripts/run_all_experiments.py --exp Exp1_Core --repeats 1
+```
+
+**3. PlanGate mechanism ablation smoke — validates budget-lock matters (no API key, ~15–30 min):**
+```bash
+python scripts/run_all_experiments.py --exp Exp4_Ablation --repeats 1
+```
+
+**4. PlanGate-R recovery smoke — validates checkpoint resume / no replay (no API key, < 2 min, Go tests only):**
+```bash
+go test ./plangate/... -run "TestRuntime" -v -timeout 120s
+```
+
+**What is NOT included:**
+- `paper/` — unpublished draft, excluded entirely.
+- `results/` — large experiment CSVs, excluded (see `.gitignore`).
+- Real LLM credentials — not needed for mock or unit tests.
+- Large tokenizer asset (`scripts/deepseek_v3_tokenizer/tokenizer.json`) — see
+  [`scripts/deepseek_v3_tokenizer/README.md`](scripts/deepseek_v3_tokenizer/README.md).
+- Real LLM / vLLM experiments (Tables 6–8) are optional and require external setup.
+
+---
+
 ## Artifact Notes
 
 - `paper/` is excluded from this public repository.
