@@ -64,13 +64,27 @@ go build -o gateway.exe ./cmd/gateway
 ### Smoke run: Exp1_Core (1 repeat, no API key)
 
 ```bash
+# Linux / macOS / WSL2
+go build -o gateway ./cmd/gateway
+python scripts/run_all_experiments.py --exp Exp1_Core --repeats 1 --gateway-binary ./gateway
+
+# Windows PowerShell
+go build -o gateway.exe ./cmd/gateway
+python scripts/run_all_experiments.py --exp Exp1_Core --repeats 1 --gateway-binary gateway.exe
+```
+
+The `--gateway-binary` flag skips recompilation on each run.
+The gateway binary is built locally and is excluded from git (see `.gitignore`).
+
+Alternatively, omit `--gateway-binary` to let the script run `go build` automatically:
+```bash
 python scripts/run_all_experiments.py --exp Exp1_Core --repeats 1
 ```
 
 This script automatically:
-1. Builds the Go gateway binary if not present.
+1. Builds the Go gateway binary if not present (or uses `--gateway-binary` if specified).
 2. Starts the Python mock backend (`mcp_server/server.py`) on port 8080.
-3. Starts each gateway policy (NG, SRL, SBAC, PlanGate-Full) on port 9200.
+3. Starts each gateway policy (NG, SRL, SBAC, PlanGate-Full) on sequential ports.
 4. Runs the DAG load generator (500 sessions, C=200, P&S only, `--ps-ratio 1.0`).
 5. Collects per-session CSV, computes summary metrics, shuts down processes.
 
@@ -110,8 +124,16 @@ python scripts/run_all_experiments.py --exp Exp1_Core --repeats 1 --dry-run
 **Same prerequisites as Level 1.** No API key.
 
 ```bash
-python scripts/run_all_experiments.py --exp Exp4_Ablation --repeats 1
+# Linux / macOS / WSL2
+go build -o gateway ./cmd/gateway
+python scripts/run_all_experiments.py --exp Exp4_Ablation --repeats 1 --gateway-binary ./gateway
+
+# Windows PowerShell
+go build -o gateway.exe ./cmd/gateway
+python scripts/run_all_experiments.py --exp Exp4_Ablation --repeats 1 --gateway-binary gateway.exe
 ```
+
+The gateway binary is built locally and excluded from git.
 
 This runs three gateway policies:
 - `plangate_full` — full PlanGate with budget lock and session cap.

@@ -213,15 +213,29 @@ by 10.1% per run.
 go test ./... -timeout 120s
 ```
 
-**2. PlanGate core mock smoke — validates PlanGate reduces cascade vs NG/SBAC (no API key, ~1–5 min, verified 1.2 min):**
+**2. PlanGate core mock smoke — validates PlanGate reduces cascade vs NG/SBAC (no API key, ~1–5 min, verified 1.2 min on Windows):**
+
 ```bash
-python scripts/run_all_experiments.py --exp Exp1_Core --repeats 1
+# Linux / macOS / WSL2
+go build -o gateway ./cmd/gateway
+python scripts/run_all_experiments.py --exp Exp1_Core --repeats 1 --gateway-binary ./gateway
+
+# Windows PowerShell
+go build -o gateway.exe ./cmd/gateway
+python scripts/run_all_experiments.py --exp Exp1_Core --repeats 1 --gateway-binary gateway.exe
 ```
+> The gateway binary is built locally and excluded from git. Omit `--gateway-binary` to let the script auto-build.
+
 Sanity check: `plangate_full.cascade_failed == 0`, `plangate_full.effective_goodput` is highest.
 
-**3. PlanGate mechanism ablation smoke — validates budget-lock matters (no API key, ~1–3 min, verified 0.8 min):**
+**3. PlanGate mechanism ablation smoke — validates budget-lock matters (no API key, ~1–3 min, verified 0.8 min on Windows):**
+
 ```bash
-python scripts/run_all_experiments.py --exp Exp4_Ablation --repeats 1
+# Linux / macOS / WSL2
+python scripts/run_all_experiments.py --exp Exp4_Ablation --repeats 1 --gateway-binary ./gateway
+
+# Windows PowerShell
+python scripts/run_all_experiments.py --exp Exp4_Ablation --repeats 1 --gateway-binary gateway.exe
 ```
 Sanity check: `wo_budgetlock.effective_goodput` ~83% lower than `plangate_full`.
 
