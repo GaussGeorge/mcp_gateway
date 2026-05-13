@@ -5,24 +5,31 @@ generation script, and reproduce command.
 
 All paths are relative to the repository root.
 
+> **Supplementary Cache column**: "✅ Suppl." means the cached CSV is available
+> in the conference supplementary artifact (NOT committed to this public
+> repository; `results/` is excluded via `.gitignore`). "✅ Re-run" means the
+> result can be reproduced from scratch with no API key in ≤5 min.
+
 ---
 
 ## Paper Items → Data → Commands
 
-| Paper Item | Paper Location | Source Data Directory | Generate Command | Live API? | From Cache? |
-|-----------|---------------|----------------------|-----------------|-----------|-------------|
-| **Table 1**: Commitment Quality | §4.1 / Table 1 | `results/exp_week4_formal/` | `python scripts/update_paper_tables.py --exp commitment_quality` | No | ✅ Yes |
-| **Table**: Core Mock Performance | §4.2 | `results/exp1_core/` | `python scripts/update_paper_tables.py --exp core_mock` | No | ✅ Yes |
-| **Table**: Mechanism Ablation | §4.3 / ablation | `results/exp4_ablation/` | `python scripts/update_paper_tables.py --exp ablation` | No | ✅ Yes |
-| **Table**: Discount Function Ablation | §4.3 / discount | `results/exp8_discountablation/` | `python scripts/update_paper_tables.py --exp discount` | No | ✅ Yes |
-| **Figure/Table**: Rajomon Sensitivity | §4.3 / sensitivity | `results/exp_rajomon_sensitivity/` | `python scripts/plot_rajomon_sensitivity.py` | No | ✅ Yes |
-| **Figure**: Alpha Sensitivity | Appendix | `results/exp_alpha_sweep/` | `python scripts/update_paper_figures.py --exp alpha_sweep` | No | ✅ Yes |
-| **Table**: Beta Sensitivity | Appendix | `results/beta_ablation/` | `python scripts/run_beta_ablation.py --plot-only` | No | ✅ Yes |
-| **Table**: Steady Commercial API (C=10) | §4.4 | `results/exp_week5_C10/` | `python scripts/analyze_real_llm.py --dir results/exp_week5_C10` | No | ✅ Yes |
-| **Table**: Steady Commercial API (C=40) | §4.4 | `results/exp_week5_C40/` | `python scripts/analyze_real_llm.py --dir results/exp_week5_C40` | No | ✅ Yes |
-| **Table**: Bursty Real-LLM | §4.5 | `results/exp_bursty_C20_B30/` | `python scripts/analyze_real_llm.py --dir results/exp_bursty_C20_B30 --bursty` | No | ✅ Yes |
-| **Table**: Self-Hosted vLLM | §4.5 / Appendix | `results/exp_selfhosted_vllm_C20_W8/` | `python scripts/analyze_real_llm.py --dir results/exp_selfhosted_vllm_C20_W8` | No | ✅ Yes |
-| **Table**: Adversarial Robustness | Appendix | `results/exp10_adversarial/` | `python scripts/update_paper_tables.py --exp adversarial` | No | ✅ Yes |
+| Paper Item | Paper Location | Source Data | Minimal Command | API Key? | Suppl. Cache? | Re-run (no key)? |
+|-----------|---------------|-------------|-----------------|----------|--------------|-----------------|
+| **Table 2**: Commitment Quality | §4.1 / Table 2 | `exp_week4_formal/` | `run_all_experiments.py --exp Exp1_Core --repeats 1` | No | ✅ Suppl. | ✅ (qualitative trend) |
+| **Table 3**: Core Mock Performance | §4.2 | `exp1_core/` | `run_all_experiments.py --exp Exp1_Core --repeats 1` | No | ✅ Suppl. | ✅ (qualitative trend) |
+| **Table 4**: Mechanism Ablation | §4.3 / ablation | `exp4_ablation/` | `run_all_experiments.py --exp Exp4_Ablation --repeats 1` | No | ✅ Suppl. | ✅ (qualitative trend) |
+| **Table**: Discount Function Ablation | §4.3 / discount | `exp8_discountablation/` | *(full run only)* | No | ✅ Suppl. | ⚠️ Long (~45 min) |
+| **Figure/Table**: Rajomon Sensitivity | §4.3 / sensitivity | `exp_rajomon_sensitivity/` | *(full run only)* | No | ✅ Suppl. | ⚠️ Long |
+| **Figure**: Alpha Sensitivity | Appendix | `exp_alpha_sweep/` | *(full run only)* | No | ✅ Suppl. | ⚠️ Long |
+| **Table**: Beta Sensitivity | Appendix | `beta_ablation/` | *(full run only)* | No | ✅ Suppl. | ⚠️ Long |
+| **Table 9**: PlanGate-R Recovery | Appendix | Go test only | `go test ./plangate/... -run TestRuntime -v` | No | N/A (code-only) | ✅ (< 2 min) |
+| **Pareto Frontier Figure** | B-Strengthening | `pareto_frontier_selected/` | `run_pareto_frontier.py --selected --dry-run` | No | ✅ Suppl. | ✅ `--selected --repeats 1` |
+| **Tables 6–8**: Steady Commercial API (C=10) | §4.4 | `exp_week5_C10/` | *(optional)* | **Yes** | ✅ Suppl. | ❌ Needs API key |
+| **Tables 6–8**: Steady Commercial API (C=40) | §4.4 | `exp_week5_C40/` | *(optional)* | **Yes** | ✅ Suppl. | ❌ Needs API key |
+| **Tables 6–8**: Bursty Real-LLM | §4.5 | `exp_bursty_C20_B30/` | *(optional)* | **Yes** | ✅ Suppl. | ❌ Needs API key |
+| **Tables 6–8**: Self-Hosted vLLM | §4.5 / Appendix | `exp_selfhosted_vllm_C20_W8/` | *(optional)* | **Yes (GPU)** | ✅ Suppl. | ❌ Needs GPU+API |
+| **Table**: Adversarial Robustness | Appendix | `exp10_adversarial/` | *(full run only)* | No | ✅ Suppl. | ⚠️ Long |
 
 ---
 

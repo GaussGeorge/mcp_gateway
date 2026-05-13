@@ -71,15 +71,47 @@ cd mcp-governance-main
 pip install -r mcp_server/requirements.txt
 go build -o gateway ./cmd/gateway
 
-# Level 1: regenerate all tables/figures from cached data
+# Level 0: unit tests only (< 1 min, no API key)
+go test ./... -timeout 120s
+
+# Level 1 (no-key mock re-run): reproduce core qualitative trends
+bash scripts/reproduce_mock_core.sh
+
+# Level 1 PlanGate-R recovery
+go test ./plangate/... -run "TestRuntime" -v -timeout 120s
+
+# Level 2 (supplementary artifact required): regenerate paper tables/figures from cached data
+# First unpack the conference supplementary artifact to artifact_cache/
 bash scripts/reproduce_main_paper_from_cache.sh
 bash scripts/reproduce_real_llm_from_cache.sh
 bash scripts/reproduce_appendix_from_cache.sh
 ```
 
+> **Note on from-cache scripts:** `reproduce_main_paper_from_cache.sh` and similar
+> scripts require cached CSV summaries that are **not committed to this public
+> repository**. They are distributed via the conference supplementary artifact.
+> Without the cached data, these scripts will fail with "CSV not found."
+> The no-key minimal reproduction path (Level 0 / Level 1 mock re-run) does
+> **not** require cached data.
+
 ## Quick Start (Windows PowerShell)
 
-The shell scripts require bash (WSL2 or Git Bash). To use them on Windows:
+For the no-key mock reproduction path on Windows (no WSL2 required):
+
+```powershell
+# Option A: use the included PowerShell script
+.\scripts\artifact_smoke.ps1 -Target smoke
+.\scripts\artifact_smoke.ps1 -Target reproduce-core
+.\scripts\artifact_smoke.ps1 -Target reproduce-recovery
+
+# Option B: run commands individually
+go test ./... -timeout 120s
+go build -o gateway.exe ./cmd/gateway
+python scripts/run_all_experiments.py --exp Exp1_Core --repeats 1 --gateway-binary gateway.exe
+go test ./plangate/... -run "TestRuntime" -v -timeout 120s
+```
+
+For the from-cache bash scripts on Windows (requires WSL2 or Git Bash):
 
 ```powershell
 # Option A: WSL2
@@ -89,42 +121,34 @@ wsl bash scripts/reproduce_main_paper_from_cache.sh
 "C:\Program Files\Git\bin\bash.exe" scripts/reproduce_main_paper_from_cache.sh
 ```
 
-For the Level 1 Python steps specifically, you can run them directly in PowerShell:
-
-```powershell
-# Verify key cached CSVs are present
-Test-Path results\exp1_core\exp1_core_summary.csv
-Test-Path results\exp4_ablation\exp4_ablation_summary.csv
-Test-Path results\beta_ablation\beta_summary.csv
-Test-Path results\exp_week5_C10\week5_summary.csv
-Test-Path results\exp_week5_C40\week5_summary.csv
-Test-Path results\exp_bursty_C20_B30\bursty_summary.csv
-
-# Copy commitment quality table (no Python needed)
-Copy-Item results\paper_figures\table_commitment_quality.tex `
-    tables\table_commitment_quality_submission.tex
-```
-
 ---
 
 ## Cached Data Inventory
 
-The following summary CSVs are pre-committed and sufficient to regenerate all paper tables and figures without re-running any experiments:
+> **Important**: The following summary CSVs are **NOT committed to this public
+> repository** (`results/` is excluded via `.gitignore`). They are distributed
+> via the **conference supplementary artifact**. To use the from-cache
+> reproduction scripts, unpack the supplementary artifact to `artifact_cache/`
+> first.
 
-| File | Paper Section |
+When available (via supplementary artifact unpacked to `artifact_cache/`),
+the following summary CSVs are sufficient to regenerate all paper tables and
+figures without re-running any experiments:
+
+| File (in supplementary artifact) | Paper Section |
 |------|--------------|
-| `results/exp1_core/exp1_core_summary.csv` | §5.1 Core results (Table 3) |
-| `results/exp4_ablation/exp4_ablation_summary.csv` | §5.2 Ablation (Table 4) |
-| `results/exp8_discountablation/exp8_discountablation_summary.csv` | §5.3 Discount ablation |
-| `results/exp_rajomon_sensitivity/{ps5..ps100}/` | §5.3 Rajomon sensitivity |
-| `results/exp_alpha_sweep/alpha_sweep_summary.csv` | §5.3 Alpha sensitivity |
-| `results/beta_ablation/beta_summary.csv` | Appendix: Beta sensitivity |
-| `results/exp_week5_C10/week5_summary.csv` | §5.4 Steady GLM C=10 |
-| `results/exp_week5_C40/week5_summary.csv` | §5.4 Steady GLM C=40 |
-| `results/exp_bursty_C20_B30/bursty_summary.csv` | §5.4 Bursty GLM |
-| `results/exp_selfhosted_vllm_C20_W8/selfhosted_c20_summary.csv` | §5.4 vLLM C=20/W=8 |
-| `results/exp10_adversarial/exp10_adversarial_summary.csv` | §5.5 Adversarial |
-| `results/paper_figures/table_commitment_quality.tex` | §5.1 Table 2 (pre-built LaTeX) |
+| `exp1_core/exp1_core_summary.csv` | §5.1 Core results (Table 3) |
+| `exp4_ablation/exp4_ablation_summary.csv` | §5.2 Ablation (Table 4) |
+| `exp8_discountablation/exp8_discountablation_summary.csv` | §5.3 Discount ablation |
+| `exp_rajomon_sensitivity/` | §5.3 Rajomon sensitivity |
+| `exp_alpha_sweep/alpha_sweep_summary.csv` | §5.3 Alpha sensitivity |
+| `beta_ablation/beta_summary.csv` | Appendix: Beta sensitivity |
+| `exp_week5_C10/week5_summary.csv` | §5.4 Steady GLM C=10 |
+| `exp_week5_C40/week5_summary.csv` | §5.4 Steady GLM C=40 |
+| `exp_bursty_C20_B30/bursty_summary.csv` | §5.4 Bursty GLM |
+| `exp_selfhosted_vllm_C20_W8/selfhosted_c20_summary.csv` | §5.4 vLLM C=20/W=8 |
+| `exp10_adversarial/exp10_adversarial_summary.csv` | §5.5 Adversarial |
+| `paper_figures/table_commitment_quality.tex` | §5.1 Table 2 (pre-built LaTeX) |
 
 ---
 

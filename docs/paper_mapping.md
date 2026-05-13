@@ -14,13 +14,18 @@ components: source data, minimal sanity command, and full reproduction command.
 
 ## Quick Reference Table
 
-| Paper Item | What it Demonstrates | Minimal Command | Full Command | API Key? | Sanity Check |
-|-----------|---------------------|-----------------|-------------|----------|-------------|
-| **Table 2** — Commitment Quality | PlanGate reduces ABD-like failures vs NG/SBAC under P&S overload | `python scripts/run_all_experiments.py --exp Exp1_Core --repeats 1` | `bash scripts/reproduce_mock_core.sh` | No | plangate_full success rate > sbac > ng |
-| **Table 3** — Core Mock Performance | PlanGate reduces cascade rate, improves effective goodput | `python scripts/run_all_experiments.py --exp Exp1_Core --repeats 1` | `bash scripts/reproduce_mock_core.sh` | No | cascade rate: plangate_full < sbac < ng |
-| **Table 4** — Mechanism Ablation | Budget-lock / reservation mechanism matters | `python scripts/run_all_experiments.py --exp Exp4_Ablation --repeats 1` | `python scripts/run_all_experiments.py --exp Exp4_Ablation --repeats 5` | No | wo_budgetlock more mid-session failures than plangate_full |
-| **Table 9** — PlanGate-R Recovery | Checkpoint resume reduces replay waste | `go test ./plangate/... -run "TestRuntime" -v -timeout 120s` | `go test ./plangate/... -timeout 120s` | No | PlanGate-R tool calls < naive retry; completed steps not replayed |
-| **Tables 6–8** — Real LLM / vLLM | PlanGate governs commercial + self-hosted LLM sessions | *(optional, not part of minimal artifact)* | See [REPRODUCIBILITY.md](REPRODUCIBILITY.md) Level 3 | **Yes** | N/A for minimal check |
+> **Cache column**: "Suppl." = available in conference supplementary artifact
+> (NOT in public repo). "Code-only" = reproduced via Go tests, no CSV needed.
+> "Dry-run" = can validate config without running experiments.
+
+| Paper Item | What it Demonstrates | Minimal Command | API Key? | Suppl. Cache? | Sanity Check |
+|-----------|---------------------|-----------------|----------|--------------|-------------|
+| **Table 2** — Commitment Quality | PlanGate reduces ABD-like failures vs NG/SBAC under P&S overload | `run_all_experiments.py --exp Exp1_Core --repeats 1` | No | ✅ Suppl. | plangate_full success rate > sbac > ng |
+| **Table 3** — Core Mock Performance | PlanGate reduces cascade rate, improves effective goodput | `run_all_experiments.py --exp Exp1_Core --repeats 1` | No | ✅ Suppl. | cascade: plangate_full < sbac < ng |
+| **Table 4** — Mechanism Ablation | Budget-lock mechanism matters | `run_all_experiments.py --exp Exp4_Ablation --repeats 1` | No | ✅ Suppl. | wo_budgetlock GP ~83% lower than plangate_full |
+| **Table 9** — PlanGate-R Recovery | Checkpoint resume reduces replay waste | `go test ./plangate/... -run TestRuntime -v` | No | Code-only | PlanGate-R tool calls < naive retry |
+| **Pareto Frontier Figure** — B-Strengthening | Tunable admission-vs-cascade tradeoff; not early rejection alone | `run_pareto_frontier.py --selected --dry-run` | No | ✅ Suppl. | All PlanGate: cascade=0; baselines: cascade 15–28% |
+| **Tables 6–8** — Real LLM / vLLM | PlanGate governs commercial + self-hosted LLM sessions | *(optional)* | **Yes** | ✅ Suppl. | N/A for minimal check |
 
 ---
 
@@ -157,22 +162,75 @@ components: source data, minimal sanity command, and full reproduction command.
 - **Minimal command:** Not applicable (requires real LLM infrastructure).
 - **Full reproduction:**
   ```bash
-  # From cached data (no API key needed to regenerate tables):
+  # From cached data via supplementary artifact (unpack to artifact_cache/ first):
   bash scripts/reproduce_real_llm_from_cache.sh
 
   # Live re-run (requires LLM_API_KEY in .env):
   bash scripts/reproduce_real_llm_live.sh
   ```
-- **API key required:** Yes (for live re-run). No (for table regeneration from cached CSVs).
+- **API key required:** Yes (for live re-run). No (for table regeneration from supplementary cached CSVs).
+
+---
+
+### Pareto Frontier Figure — Admission-vs-Cascade Tradeoff (B-Strengthening)
+
+- **Paper location:** B-Paper-Strengthening supplemental / Pareto tradeoff figure
+- **Claim:** PlanGate's benefit is not reducible to simple early rejection. The
+  sweep exposes a tunable admission-vs-cascade tradeoff: all admitted sessions
+  succeed (100%), while baselines cascade 15–28% of sessions mid-chain. PlanGate
+  rejects ~10 pp more at S0, but admitted session quality is qualitatively higher.
+- **Scope:** Mock backend only (sessions=200, n=3 repeats for selected configs).
+  Not a real-LLM result.
+- **Source data:** `results/pareto_frontier_selected/pareto_summary.csv` (not committed;
+  available in supplementary artifact)
+- **Dry-run command (no experiments, prints 8 configs):**
+  ```bash
+  python scripts/run_pareto_frontier.py --selected --dry-run
+  # Windows PowerShell:
+  python scripts/run_pareto_frontier.py --selected --dry-run
+  ```
+- **Minimal re-run (selected configs, n=1, ~15 min, no API key):**
+  ```bash
+  python scripts/run_pareto_frontier.py --selected --repeats 1 \
+      --sessions 200 --concurrency 100 --gateway-binary ./gateway
+  # Windows PowerShell:
+  go build -o gateway.exe ./cmd/gateway
+  python scripts/run_pareto_frontier.py --selected --repeats 1 `
+      --sessions 200 --concurrency 100 --gateway-binary gateway.exe
+  ```
+- **Full reproduction (selected configs, n=3, ~45 min, no API key):**
+  ```bash
+  python scripts/run_pareto_frontier.py --selected --repeats 3 \
+      --sessions 200 --concurrency 100 --gateway-binary ./gateway \
+      --output-dir results/pareto_frontier_selected
+  python scripts/analyze_pareto_frontier.py \
+      --input results/pareto_frontier_selected/pareto_summary.csv \
+      --sessions 200 --output tables/pareto_frontier_selected
+  python scripts/plot_pareto_frontier.py \
+      --input tables/pareto_frontier_selected/pareto_frontier_summary.csv \
+      --output-dir plots/pareto_frontier_selected
+  ```
+- **Expected sanity (n=1 dry-run + run):**
+  - All PlanGate configs: `cascade_failed = 0`, `success_among_admitted = 1.0`
+  - Baselines: `cascade_failed > 0`, `success_among_admitted < 0.4`
+  - `effective_goodput` of best PlanGate (ms=80) > NG and SBAC despite higher Rej0 rate
+- **API key required:** No
+- **See also:** `docs/pareto_frontier_notes.md` for full mean±std table, honest
+  admission audit, and paper-candidate text.
 
 ---
 
 ## Coverage Summary
 
-| Paper Item | Minimal Sanity | Needs API Key | Runtime (minimal) |
-|-----------|---------------|--------------|-------------------|
-| Table 2 (commitment quality) | ✅ Exp1_Core --repeats 1 | No | ~1–5 min (verified 1.2 min) |
-| Table 3 (core mock perf) | ✅ Exp1_Core --repeats 1 | No | ~1–5 min (verified 1.2 min) |
-| Table 4 (mechanism ablation) | ✅ Exp4_Ablation --repeats 1 | No | ~1–3 min (verified 0.8 min) |
-| Table 9 (PlanGate-R recovery) | ✅ go test -run TestRuntime | No | < 2 min |
-| Tables 6–8 (real LLM/vLLM) | ❌ optional only | **Yes (live)** | Variable |
+| Paper Item | Minimal Sanity | Needs API Key | Runtime (minimal) | Suppl. Cache? |
+|-----------|---------------|--------------|-------------------|--------------|
+| Table 2 (commitment quality) | ✅ Exp1_Core --repeats 1 | No | ~1–5 min (verified 1.2 min) | ✅ Suppl. |
+| Table 3 (core mock perf) | ✅ Exp1_Core --repeats 1 | No | ~1–5 min (verified 1.2 min) | ✅ Suppl. |
+| Table 4 (mechanism ablation) | ✅ Exp4_Ablation --repeats 1 | No | ~1–3 min (verified 0.8 min) | ✅ Suppl. |
+| Table 9 (PlanGate-R recovery) | ✅ go test -run TestRuntime | No | < 2 min | Code-only |
+| Pareto frontier figure | ✅ --selected --dry-run / --repeats 1 | No | Dry-run: instant; run: ~15 min | ✅ Suppl. |
+| Tables 6–8 (real LLM/vLLM) | ❌ optional only | **Yes (live)** | Variable | ✅ Suppl. |
+
+> **Note**: "Suppl. Cache" means the result CSVs are available via the conference
+> supplementary artifact, NOT committed to this public repository.
+> The minimal sanity commands re-run experiments from scratch (no cached data needed).

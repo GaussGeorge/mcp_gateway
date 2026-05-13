@@ -205,6 +205,24 @@ by 10.1% per run.
 > See [docs/minimal_reproduction.md](docs/minimal_reproduction.md) and
 > [docs/paper_mapping.md](docs/paper_mapping.md) for full details.
 
+**One-click targets (Linux/macOS/WSL2):**
+```bash
+make smoke               # Go unit tests (< 1 min)
+make reproduce-core      # Exp1_Core mock (~2 min)
+make reproduce-ablation  # Exp4_Ablation mock (~1 min)
+make reproduce-recovery  # PlanGate-R Go tests (< 2 min)
+make pareto-dryrun       # Pareto sweep dry-run (instant)
+```
+
+**One-click targets (Windows PowerShell):**
+```powershell
+.\scripts\artifact_smoke.ps1 -Target smoke
+.\scripts\artifact_smoke.ps1 -Target reproduce-core
+.\scripts\artifact_smoke.ps1 -Target reproduce-ablation
+.\scripts\artifact_smoke.ps1 -Target reproduce-recovery
+.\scripts\artifact_smoke.ps1 -Target pareto-dryrun
+```
+
 **1. Unit tests (no server, no API key, < 1 min):**
 ```bash
 go test ./... -timeout 120s
@@ -254,15 +272,16 @@ go test ./plangate/... -run "TestRuntime" -v -timeout 120s
 ## Artifact Notes
 
 - `paper/` is excluded from this public repository.
-- `results/` (large experiment CSVs) is excluded from this public repository.
+- `results/` (large experiment CSVs) is **not committed**; excluded via `.gitignore`.
+  Cached paper-result CSVs are distributed via the **conference supplementary artifact** only.
 - API keys: copy `.env.example` to `.env` and fill in values.
   Mock experiments and all unit tests do **not** require any API key.
 - Large external tokenizer assets are not tracked; see
   [`scripts/deepseek_v3_tokenizer/README.md`](scripts/deepseek_v3_tokenizer/README.md)
   for how to obtain `tokenizer.json` if needed for token-accounting scripts.
-- Pre-computed cached CSV traces for real-LLM experiments are **not** included in
-  this public repository. For double-blind submission, they are provided through
-  the conference supplementary artifact mechanism.
+- One-click reproduction: `make <target>` (Linux/macOS/WSL2) or
+  `.\scripts\artifact_smoke.ps1 -Target <target>` (Windows). Run `make help` for the full target list.
+- `figures-from-cache` target requires the conference supplementary artifact unpacked to `artifact_cache/`.
 
 ---
 

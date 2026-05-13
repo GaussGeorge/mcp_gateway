@@ -12,13 +12,17 @@ and which are historical diagnostic/exploratory traces that are archived but
 
 ## 1. Artifact Contents (Paper-Used Experiments)
 
+> **Note on `results/` directories**: All `results/` paths below are excluded
+> from this public repository (`.gitignore`). They exist locally after running
+> experiments and are distributed via the conference supplementary artifact.
+
 The following experiments and their cached results are part of the paper:
 
 | # | Paper Item | Results Directory | Notes |
 |---|------------|-------------------|-------|
-| 1 | Commitment Quality (Table 1) | `results/exp_week4_formal/` | 7 gateways × 5 repeats × 200 sessions; LaTeX at `results/paper_figures/table_commitment_quality.tex` |
-| 2 | Core Mock Performance | `results/exp1_core/` | 500 sessions, C=200, 5 repeats |
-| 3 | Mechanism Ablation | `results/exp4_ablation/` | PlanGate Full / wo-BudgetLock / wo-SessionCap |
+| 1 | Commitment Quality (Table 2) | `results/exp_week4_formal/` | 7 gateways × 5 repeats × 200 sessions; LaTeX at `results/paper_figures/table_commitment_quality.tex` |
+| 2 | Core Mock Performance (Table 3) | `results/exp1_core/` | 500 sessions, C=200, 5 repeats |
+| 3 | Mechanism Ablation (Table 4) | `results/exp4_ablation/` | PlanGate Full / wo-BudgetLock / wo-SessionCap |
 | 4 | Discount Function Ablation | `results/exp8_discountablation/` | quadratic / exponential / linear / logarithmic |
 | 5 | Rajomon Sensitivity | `results/exp_rajomon_sensitivity/` | price_step ∈ {5, 10, 20, 50, 100} |
 | 6 | Alpha Sensitivity | `results/exp_alpha_sweep/` | α sweep |
@@ -28,6 +32,7 @@ The following experiments and their cached results are part of the paper:
 | 10 | Bursty Real-LLM | `results/exp_bursty_C20_B30/` | GLM-4-Flash bursty, C=20, burst=30 |
 | 11 | Self-Hosted vLLM | `results/exp_selfhosted_vllm_C20_W8/` | vLLM C=20, workers=8 |
 | 12 | Adversarial Robustness (Appendix) | `results/exp10_adversarial/` | 10% malicious agents |
+| 13 | Pareto Frontier Tradeoff (B-Strengthening) | `results/pareto_frontier_selected/` | n=3 selected repeats; scripts in `scripts/run_pareto_frontier.py`; notes in `docs/pareto_frontier_notes.md` |
 
 Additional mock experiments (Exp2–Exp12 series) are referenced in the paper
 for breadth evaluation: `results/exp2_heavyratio/` through `results/exp12_longtail/`.
@@ -64,10 +69,17 @@ are diagnostic utilities, not reproducibility scripts.
 
 The minimal reproduction path (no API key required):
 
-- Level 0: compile + unit tests (< 1 min)
-- Level 1: rerun controlled mock experiments (30–90 min, no API required)
-- Level 2: `go test ./plangate/... -run "TestRuntime"` — PlanGate-R recovery smoke (< 2 min, no API)
-- Level 3 (optional): live real-LLM rerun (requires `.env` API credentials)
+- **Level 0 — Unit tests**: `go test ./... -timeout 120s` (< 1 min, no server)
+- **Level 1 — Mock re-run**: Re-run core mock experiments from scratch  
+  `python scripts/run_all_experiments.py --exp Exp1_Core --repeats 1` (~2 min, no API key)  
+  `python scripts/run_all_experiments.py --exp Exp4_Ablation --repeats 1` (~1 min, no API key)  
+  `go test ./plangate/... -run "TestRuntime"` — PlanGate-R recovery smoke (< 2 min, no API)
+- **Level 2 — From supplementary cache**: regenerate paper tables/figures using cached CSVs  
+  Cached CSVs are **not** committed to this public repo; they are distributed via the  
+  conference supplementary artifact. Unpack to `artifact_cache/` before running from-cache scripts.
+- **Level 3 (optional)** — Live real-LLM rerun (requires `.env` API credentials)
+
+See `Makefile` (Linux/macOS/WSL2) or `scripts/artifact_smoke.ps1` (Windows) for one-click targets.
 
 Full cached traces for real-LLM experiments are not tracked in this public repository.
 For conference submission, they are provided through the conference supplementary
