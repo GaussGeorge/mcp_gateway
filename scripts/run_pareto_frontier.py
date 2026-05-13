@@ -71,6 +71,19 @@ DEFAULT_WAIT = 1
 SBAC_MAX_SESSIONS = 150
 RAJOMON_PRICE_STEP = 20
 
+# ====== 选定关键点（用于 --selected 模式） ======
+# 8 个配置： 3 基线 + Pareto有效点 + 论文默认点 + 保守点 + 进攻性点
+SELECTED_LABELS = {
+    "ng",                     # baseline: no governance
+    "sbac",                   # baseline: threshold-based
+    "rajomon",                # baseline: price-based
+    "pg_ms80_wait1_a0.5",    # Pareto-efficient (pilot): highest success
+    "pg_ms60_wait3_a0.5",    # Pareto-efficient (pilot): highest eff goodput
+    "pg_ms30_wait1_a0.5",    # paper default proxy (ms=30, alpha=0.5, wait≈1)
+    "pg_ms20_wait1_a0.5",    # conservative operating point (low cascade exposure)
+    "pg_ms40_wait1_a0.5",    # sweet-spot: zero cascade + high goodput
+}
+
 
 def _pgargs(max_sessions: int, alpha: float, session_cap_wait: int,
             price_step: int = PRICE_STEP) -> list:
@@ -301,6 +314,8 @@ def main():
                         help="跳过后端启动（外部已手动启动）")
     parser.add_argument("--stage", choices=["A", "B", "baselines", "all"], default="all",
                         help="只跑指定 Stage: A / B / baselines / all (default: all)")
+    parser.add_argument("--selected", action="store_true",
+                        help="只跑关键选定点（8 个配置：3 基线 + Pareto有效点 + 论文默认点 + 保守点 + 进攻性点）")
     args = parser.parse_args()
 
     # ---- 参数解析 ----
@@ -308,10 +323,14 @@ def main():
     sessions = args.sessions if args.sessions else (200 if pilot else 500)
     concurrency = args.concurrency if args.concurrency else (100 if pilot else 200)
     repeats = args.repeats if not pilot else 1
-    output_dir = args.output_dir or os.path.join(
-        ROOT_DIR, "results",
-        "pareto_frontier_pilot" if pilot else "pareto_frontier"
-    )
+    if args.output_dir:
+        output_dir = args.output_dir
+    elif args.selected:
+        output_dir = os.path.join(ROOT_DIR, "results", "pareto_frontier_selected")
+    elif pilot:
+        output_dir = os.path.join(ROOT_DIR, "results", "pareto_frontier_pilot")
+    else:
+        output_dir = os.path.join(ROOT_DIR, "results", "pareto_frontier")
 
     # ---- 实验配置 ----
     exp = ExperimentConfig(
@@ -329,7 +348,8 @@ def main():
 
     print(f"\n{'#'*70}")
     print(f"  PlanGate Pareto 前沿扫参实验")
-    print(f"  模式: {'PILOT' if pilot else '正式'} | DRY-RUN: {args.dry_run}")
+    mode_label = "SELECTED" if args.selected else ("PILOT" if pilot else "正式")
+    print(f"  模式: {mode_label} | DRY-RUN: {args.dry_run}")
     print(f"  sessions={sessions}, concurrency={concurrency}, repeats={repeats}")
     print(f"  duration={args.duration}s, arrival_rate={args.arrival_rate}")
     print(f"  输出目录: {output_dir}")
@@ -347,7 +367,9 @@ def main():
     stage_b_labels = {f"pg_ms30_wait1_a{a}" for a in [0.3, 0.7]}
     baseline_labels = {"ng", "sbac", "rajomon"}
 
-    if args.stage == "A":
+    if args.selected:
+        variants = [v for v in all_variants if v.label in SELECTED_LABELS]
+    elif args.stage == "A":
         variants = [v for v in all_variants if v.label in stage_a_labels]
     elif args.stage == "B":
         # Stage B 需要包含 ms=30,wait=1,a=0.5 作为参照点

@@ -300,6 +300,77 @@ def plot_goodput_vs_latency(rows: List[dict], output_dir: str, no_pdf: bool = Fa
     save_fig(mplt, "goodput_vs_latency", output_dir, no_pdf)
 
 
+# ====== 图 4: goodput_vs_abd ======
+
+def plot_goodput_vs_abd(rows: List[dict], output_dir: str, no_pdf: bool = False):
+    """
+    Effective Goodput (x) vs ABD-like cascade rate (y).
+    ABD-like = cascade_failed / total_sessions (proxy; NOT the formal ABD metric).
+    Lower-right corner is better (high goodput, low cascade exposure).
+    """
+    plt, ticker = setup_matplotlib()
+    import matplotlib.pyplot as mplt
+    import matplotlib.colors as mcolors
+
+    baselines, pg_variants = categorize_rows(rows)
+    fig, ax = mplt.subplots(figsize=FIG_SIZE)
+
+    cmap = mplt.get_cmap("Blues")
+    norm = mcolors.Normalize(vmin=10, vmax=90)
+
+    TOTAL_SESSIONS = 200  # pilot default; used only if abd_like not in CSV
+
+    def _abd(r: dict) -> float:
+        """Return ABD-like from pre-computed field or derive from raw counts."""
+        v = _float(r.get("abd_like"))
+        if not (v != v):  # not NaN
+            return v
+        cascade = _float(r.get("cascade_failed"))
+        return cascade / TOTAL_SESSIONS
+
+    for r in pg_variants:
+        x = _float(r.get("effective_goodput"))
+        y = _abd(r)
+        ms = float(r.get("max_sessions") or 30)
+        color = cmap(norm(ms))
+        ax.scatter(x, y, color=color, edgecolors=PARETO_EDGE_COLOR,
+                   linewidths=0.8, marker="D", s=MARKER_SIZE**2, zorder=4, alpha=0.9)
+        ax.annotate(f"ms={int(ms)}", (x, y),
+                    textcoords="offset points", xytext=(4, 3),
+                    fontsize=6.5, color="#333333", alpha=0.8)
+
+    baseline_markers = {"ng": ("o", "#e74c3c"), "sbac": ("s", "#e67e22"), "rajomon": ("^", "#f39c12")}
+    for r in baselines:
+        x = _float(r.get("effective_goodput"))
+        y = _abd(r)
+        policy = r.get("policy", "")
+        mk, color = baseline_markers.get(policy, ("x", "grey"))
+        ax.scatter(x, y, color=color, edgecolors="black", linewidths=1.2,
+                   marker=mk, s=(MARKER_SIZE + 2)**2, zorder=5)
+        blabel = PALETTE.get(policy, (None, None, policy))[2]
+        ax.annotate(blabel, (x, y),
+                    textcoords="offset points", xytext=(5, -10),
+                    fontsize=8, fontweight="bold", color=color)
+
+    # 色条
+    sm = mplt.cm.ScalarMappable(cmap=cmap, norm=norm)
+    sm.set_array([])
+    cb = fig.colorbar(sm, ax=ax, pad=0.02, shrink=0.8)
+    cb.set_label("max_sessions", fontsize=9)
+    cb.ax.tick_params(labelsize=8)
+
+    ax.set_xlabel("Effective Goodput (successful full-chain sessions)", fontsize=FONT_SIZE)
+    ax.set_ylabel("ABD-like cascade rate\n(cascade_failed / total_sessions)", fontsize=FONT_SIZE)
+    ax.set_title("Goodput vs ABD-like Cascade Rate\n(lower-right = better; ABD-like ≠ formal ABD)", fontsize=TITLE_SIZE)
+    # Annotate the ideal direction
+    ax.annotate("← lower cascade\n    higher goodput →",
+                xy=(0.98, 0.02), xycoords="axes fraction",
+                ha="right", va="bottom", fontsize=7, color="grey",
+                style="italic")
+
+    save_fig(mplt, "goodput_vs_abd", output_dir, no_pdf)
+
+
 # ====== 主函数 ======
 
 def main():
@@ -343,6 +414,7 @@ def main():
     plot_success_vs_waste(rows, output_dir, args.no_pdf)
     plot_rej0_vs_cascade(rows, output_dir, args.no_pdf)
     plot_goodput_vs_latency(rows, output_dir, args.no_pdf)
+    plot_goodput_vs_abd(rows, output_dir, args.no_pdf)
 
     print(f"\n  全部图表已保存至: {output_dir}")
 

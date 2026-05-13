@@ -68,12 +68,18 @@ def compute_derived(row: dict, sessions: int) -> dict:
     rej_s0 = _int(row.get("rejected_s0"))
     cascade = _int(row.get("cascade_failed"))
     raw_gp = _float(row.get("raw_goodput"))
+    admitted = sessions - rej_s0
 
     row["sessions_total"] = sessions
     row["useful_completion_rate"] = success / sessions if sessions > 0 else 0.0
-    row["admission_rate"] = (sessions - rej_s0) / sessions if sessions > 0 else 0.0
+    row["rej0_rate"] = rej_s0 / sessions if sessions > 0 else 0.0
+    row["admission_rate"] = admitted / sessions if sessions > 0 else 0.0
+    row["success_among_admitted"] = success / max(admitted, 1)
     row["waste_per_success"] = cascade / max(success, 1)
     row["calls_per_success"] = raw_gp / max(success, 1)
+    # ABD-like 指标：级联失败对总会话的比率
+    # 命名为 ABD-like 而非论文正式 ABD，后者需要完整经济模型支持
+    row["abd_like"] = cascade / sessions if sessions > 0 else 0.0
     return row
 
 
@@ -92,8 +98,9 @@ def aggregate_by_label(rows: List[dict]) -> Dict[str, dict]:
         "p50_ms", "p95_ms", "p99_ms",
         "e2e_p50_ms", "e2e_p95_ms", "e2e_p99_ms",
         "jfi_steps", "jfi_latency",
-        "useful_completion_rate", "admission_rate",
-        "waste_per_success", "calls_per_success",
+        "useful_completion_rate", "rej0_rate", "admission_rate",
+        "success_among_admitted", "waste_per_success", "calls_per_success",
+        "abd_like",
     ]
 
     aggregated = {}
@@ -169,9 +176,12 @@ def write_summary_csv(aggregated: Dict[str, dict], output_path: str):
         "rejected_s0", "rejected_s0_std",
         "cascade_failed", "cascade_failed_std",
         "useful_completion_rate", "useful_completion_rate_std",
+        "rej0_rate", "rej0_rate_std",
         "admission_rate", "admission_rate_std",
+        "success_among_admitted", "success_among_admitted_std",
         "waste_per_success", "waste_per_success_std",
         "calls_per_success", "calls_per_success_std",
+        "abd_like", "abd_like_std",
         "effective_goodput", "effective_goodput_std",
         "raw_goodput", "raw_goodput_std",
         "p50_ms", "p50_ms_std",
@@ -193,9 +203,9 @@ def write_key_points_csv(pareto: List[dict], baselines: List[dict], output_path:
     key_cols = [
         "label", "policy", "max_sessions", "alpha", "session_cap_wait",
         "is_pareto_front",
-        "useful_completion_rate", "admission_rate",
-        "waste_per_success", "effective_goodput",
-        "p50_ms", "p95_ms",
+        "useful_completion_rate", "rej0_rate", "admission_rate",
+        "success_among_admitted", "waste_per_success", "abd_like",
+        "effective_goodput", "p50_ms", "p95_ms",
         "success", "rejected_s0", "cascade_failed",
     ]
     rows = []
@@ -224,17 +234,19 @@ def print_analysis_table(aggregated: Dict[str, dict], pareto_labels: set):
     order = ["ng", "rajomon", "sbac"] + sorted(
         [k for k in aggregated if k not in {"ng", "rajomon", "sbac"}]
     )
-    print(f"\n{'='*110}")
-    print(f"  {'label':<35} {'P':<3} {'UCR':>6} {'AdmR':>6} {'W/Suc':>7} "
-          f"{'EffGP':>7} {'P95ms':>7} {'Pareto'}")
-    print(f"  {'-'*35} {'---':<3} {'---':>6} {'---':>6} {'---':>7} {'---':>7} {'---':>7} {'---'}")
+    print(f"\n{'='*120}")
+    print(f"  {'label':<35} {'P':<3} {'UCR':>6} {'AdmR':>6} {'Suc/Adm':>8} "
+          f"{'W/Suc':>7} {'ABD-lk':>7} {'EffGP':>7} {'P95ms':>7} {'Pareto'}")
+    print(f"  {'-'*35} {'---':<3} {'---':>6} {'---':>6} {'---':>8} {'---':>7} {'---':>7} {'---':>7} {'---':>7} {'---'}")
     for label in order:
         if label not in aggregated:
             continue
         v = aggregated[label]
         ucr = v.get("useful_completion_rate", "")
         adm = v.get("admission_rate", "")
+        saa = v.get("success_among_admitted", "")
         wps = v.get("waste_per_success", "")
+        abd = v.get("abd_like", "")
         egp = v.get("effective_goodput", "")
         p95 = v.get("p95_ms", "")
         policy = v.get("policy", "")[:1].upper()
@@ -242,11 +254,13 @@ def print_analysis_table(aggregated: Dict[str, dict], pareto_labels: set):
         print(f"  {label:<35} {policy:<3} "
               f"{str(ucr) if ucr != '' else '-':>6} "
               f"{str(adm) if adm != '' else '-':>6} "
+              f"{str(saa) if saa != '' else '-':>8} "
               f"{str(wps) if wps != '' else '-':>7} "
+              f"{str(abd) if abd != '' else '-':>7} "
               f"{str(egp) if egp != '' else '-':>7} "
               f"{str(p95) if p95 != '' else '-':>7}"
               f"{marker}")
-    print(f"{'='*110}\n")
+    print(f"{'='*120}\n")
 
 
 # ====== 主函数 ======
@@ -261,7 +275,7 @@ def main():
                         help="pareto_summary.csv 路径 (default: results/pareto_frontier/pareto_summary.csv)")
     parser.add_argument("--sessions", type=int, default=200,
                         help="实验使用的 session 总数 (default: 200)")
-    parser.add_argument("--output-dir", type=str, default=None,
+    parser.add_argument("--output-dir", "--output", dest="output_dir", type=str, default=None,
                         help="表格输出目录 (default: tables/)")
     args = parser.parse_args()
 
