@@ -111,73 +111,29 @@ for gw, paper in paper_disc.items():
 
 # ============================================================================
 print("\n" + "="*100)
-print("TABLE 4: tab:reallm - Real-LLM GLM-4-Flash")
+print("TABLE 4: tab:reallm - Real-LLM GLM-4-Flash (exp_week5 C=10 and C=40)")
 print("="*100)
+data_c10 = read_csv('results/exp_week5_C10/week5_summary.csv')
+data_c40 = read_csv('results/exp_week5_C40/week5_summary.csv')
 
-# Read summary_all.csv from exp_real3_glm
-data = read_csv('results/exp_real3_glm/summary_all.csv')
+for label, gw in [('NG','ng'), ('Rajomon','rajomon'), ('PP','pp'), ('PlanGate','plangate_real')]:
+    rows10 = [r for r in data_c10 if r['gateway']==gw]
+    rows40 = [r for r in data_c40 if r['gateway']==gw]
+    sr10  = avg([float(r['success_rate']) for r in rows10])
+    sr40  = avg([float(r['success_rate']) for r in rows40])
+    p95_10 = avg([float(r['p95_ms'])/1000 for r in rows10])
+    p95_40 = avg([float(r['p95_ms'])/1000 for r in rows40])
+    gps10 = avg([float(r['eff_gps']) for r in rows10])
+    gps40 = avg([float(r['eff_gps']) for r in rows40])
+    print(f"  {label}(n={len(rows10)}/{len(rows40)}): "
+          f"C=10 Succ%={sr10:.1f}, P95={p95_10:.1f}s, GP/s={gps10:.2f} | "
+          f"C=40 Succ%={sr40:.1f}, P95={p95_40:.1f}s, GP/s={gps40:.2f}")
 
-# C=10: the 0412 runs are C=10, 0413 runs are C=40 based on the dates
-# Actually need to figure out which runs are C=10 vs C=40
-# The file has mcpdp-real-no-sessioncap (PlanGate w/o session cap), mcpdp-real (PlanGate), ng, srl
-# Paper says 4 gateways: NG, Rajomon, PP, PlanGate
-# But the CSV has ng, srl, mcpdp-real, mcpdp-real-no-sessioncap
-# The dates: 0412 = first batch (C=10?), 0413 = second batch (C=40?)
-# Let's check - there are 3 runs for 0412 per gw and 2 runs for 0413 per gw (for ng, mcpdp-real-no-sessioncap, mcpdp-real)
-# SRL has 3 for 0412 and 2 for 0413
-
-# Actually looking more carefully:
-# ng: 0412 runs 1-3 (3 runs), 0413 runs 1-2 (2 runs) = 5 total
-# srl: 0412 runs 1-3 (3 runs), 0413 runs 1-2 (2 runs) = 5 total  
-# mcpdp-real: 0412 runs 1-3 (3 runs), 0413 runs 1-2 (2 runs) = 5 total
-# mcpdp-real-no-sessioncap: 0412 runs 1-3 (3 runs), 0413 runs 1-2 (2 runs) = 5 total
-
-# The paper says C=10 and C=40 concurrency levels
-# Looking at 0412 data (first batch) vs 0413 data
-# Actually the agents column says 50 for all. The concurrency is not in the CSV.
-# Need to check based on dates - 0412 = C=10, 0413 = C=40
-
-# Let me separate by date timestamp
-for gw_label, gw_csv in [('NG','ng'), ('Rajomon/SRL','srl'), ('PP/PG-noRes','mcpdp-real-no-sessioncap'), ('PlanGate','mcpdp-real')]:
-    rows_c10 = [r for r in data if r['gateway']==gw_csv and '20260412' in r.get('csv','') if 'csv' in r]
-    rows_c40 = [r for r in data if r['gateway']==gw_csv and '20260413' in r.get('csv','') if 'csv' in r]
-    
-    # Actually the CSV might not have a 'csv' column - let me check the structure
-    # Looking at the data read earlier, the columns are:
-    # gateway,agents,success,partial,all_rejected,cascade_wasted_steps,agent_llm_tokens,backend_llm_tokens,raw_goodput,effective_goodput,eff_gp_per_s,e2e_p50_ms,e2e_p95_ms,elapsed_s
-    # There's no csv column or date column. Rows are in order though.
-    pass
-
-# The data from exp_real3_glm has these rows for each gateway:
-# ng: 5 rows, srl: 5 rows, mcpdp-real: 5 rows, mcpdp-real-no-sessioncap: 5 rows
-# The paper says C=10 (5 runs) and C=40 (5 runs) but there are only 5 runs per gateway total
-# Wait - looking at dates, there are 5 ng rows (3 from 0412 + 2 from 0413)
-# Let me check: the paper table has NG, Rajomon, PP, PlanGate at C=10 and C=40
-
-# The CSV gateways are ng, srl, mcpdp-real, mcpdp-real-no-sessioncap
-# These likely map to: NG, SRL (Rajomon proxy?), PlanGate, PlanGate-no-sessioncap(PP?)
-# But paper has Rajomon and PP which don't match. This is a different experiment setup.
-
-# Let me just compute means for what we have and report
-print("\nNote: exp_real3_glm CSV has gateways: ng, srl, mcpdp-real, mcpdp-real-no-sessioncap")
-print("Paper table lists: NG, Rajomon, PP, PlanGate - mapping: ng=NG, srl~Rajomon?, mcpdp-real~PlanGate")
-print("There are only 5 rows per gateway (combined), cannot separate C=10 vs C=40 from this CSV alone")
-print("Existing data appears to combine both regimes, or may represent just one regime")
-print()
-
-for gw in ['ng','srl','mcpdp-real-no-sessioncap','mcpdp-real']:
-    rows = [r for r in data if r['gateway']==gw]
-    succ_pct = [float(r['success'])/float(r['agents'])*100 for r in rows]
-    p95 = [float(r['e2e_p95_ms'])/1000 for r in rows]
-    gps = [float(r['eff_gp_per_s']) for r in rows]
-    partial = [float(r['partial']) for r in rows]
-    print(f"{gw}(n={len(rows)}): Succ%={avg(succ_pct):.1f}+-{sd(succ_pct):.1f}, P95={avg(p95):.1f}s, GP/s={avg(gps):.2f}, PARTIAL={avg(partial):.1f}")
-
-# Paper C=10 claims:
-print("Paper C=10 (v7 corrected, penalty boundary): NG 94.0%, Raj 94.0%, PP 92.1%, PG 88.4% (penalty)")
-print("Paper C=10 P95 (v7 corrected): NG 80.5s, Raj 73.1s, PP 75.7s, PG 87.4s")
-print("Paper C=40: NG 96.3%, Raj 96.4%, PP 95.7%, PG 96.2%")
-print("Paper C=40 P95: NG 56.3s, Raj 59.4s, PP 56.1s, PG 55.5s")
+print("\nPaper claims (v7 corrected):")
+print("  C=10: NG 94.0%, Raj 94.0%, PP 92.1%, PlanGate 88.4%")
+print("  C=10 P95: NG 80.5s, Raj 73.1s, PP 75.7s, PlanGate 87.4s")
+print("  C=40: NG 96.3%, Raj 96.4%, PP 95.7%, PlanGate 96.2%")
+print("  C=40 P95: NG 56.3s, Raj 59.4s, PP 56.1s, PlanGate 55.5s")
 
 # ============================================================================
 print("\n" + "="*100)
@@ -195,11 +151,9 @@ for gw in set(r['gateway'] for r in data):
     abd = [float(r['abd_total']) for r in rows]
     print(f"{gw}(n={len(rows)}): PARTIAL={avg(partial):.0f}+-{sd(partial):.0f}, Rej0_actual=check_col, ABD={avg(abd):.1f}%, Succ%={avg(succ_pct):.1f}, Cascade={avg(cascade):.0f}+-{sd(cascade):.0f}")
 
-print("\nPaper claims:")
+print("\nPaper claims (N=7):")
 print("NG:       PARTIAL=94+-14, Rej0=86+-15, ABD=82.5%, Succ%=10.0, Cascade=174+-38")
 print("PlanGate: PARTIAL=76+-12, Rej0=108+-12, ABD=82.4%, Succ%=8.1, Cascade=143+-25")
-print("Note: bursty_summary.csv only has 4 rows total (runs 4,5 for ng and plangate_real)")
-print("Need to check the per-run directories for complete N=7 data")
 
 # ============================================================================
 print("\n" + "="*100)

@@ -41,6 +41,7 @@ COPY_MAP = [
     ("exp_selfhosted_vllm_C20_W8",   "exp_selfhosted_vllm_C20_W8"),
     ("exp_real3_glm",                "exp_real3_glm"),
     ("exp_real3_deepseek",           "exp_real3_deepseek"),
+    ("exp_tput_latency",             "exp_tput_latency"),
     ("pareto_frontier_selected",     "pareto_frontier_selected"),
     ("manifests",                    "manifests"),
     # Pre-generated figures (used as reference; overwritten by gen_paper_figures.py)

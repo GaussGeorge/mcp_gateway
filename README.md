@@ -142,15 +142,12 @@ Live mock re-runs require Go 1.21+ and locally built gateway binary.
 Cached CSV verification (Tier A/B) does not require re-running experiments.
 
 ```bash
-# Build gateway first
+# Build gateway (required for live experiments)
 go build -o gateway ./cmd/gateway          # Linux/macOS
 go build -o gateway.exe ./cmd/gateway      # Windows
 
-# Run Exp1 Core (1 repeat, ~1-5 min)
-python scripts/optional_live/run_all_experiments.py --exp Exp1_Core --repeats 1 --gateway-binary ./gateway
-
-# Run full suite (5 repeats, ~30-45 min)
-python scripts/optional_live/run_all_experiments.py --exp all --repeats 5
+# Run unit + integration tests
+go test ./... -timeout 120s
 ```
 
 Results are written to `results/exp1_core/`, `results/exp2_heavyratio/`, etc.
@@ -168,10 +165,10 @@ not as a public GitHub release.
 Mock core experiments can be re-run from scratch (requires Go + gateway binary):
 
 ```bash
-# Re-run mock core experiments (no API key, ~30–45 min)
-bash scripts/optional_live/reproduce_mock_core.sh
+# Reproduce paper tables and figures from frozen artifact_cache/ (no API key, < 5 min)
+bash scripts/reproduce_main_paper_from_cache.sh
 
-# Re-generate paper figures from local CSV results (after re-running)
+# Or regenerate figures only (after setup_frozen_results.py)
 python scripts/gen_paper_figures.py
 ```
 
@@ -193,11 +190,9 @@ cp .env.example .env
 ```
 
 ```bash
-# Tier 2: Steady real-LLM (GLM-4-Flash or DeepSeek-V3, requires API key)
-bash scripts/optional_live/reproduce_real_llm_live.sh
-
-# Tier 3: Bursty real-LLM
-python scripts/optional_live/run_real_llm_bursty.py --repeats 3 --burst-size 30
+# Live real-LLM re-run scripts require API credentials and are not included in
+# this artifact package. Frozen real-LLM results are verified via:
+bash scripts/reproduce_main_paper_from_cache.sh
 ```
 
 ---
@@ -259,29 +254,22 @@ go test ./... -timeout 120s
 go test ./... -timeout 120s
 ```
 
-**2. PlanGate core mock smoke — validates PlanGate reduces cascade vs NG/SBAC (no API key, ~1–5 min):**
+**2. PlanGate core mock smoke — validates PlanGate reduces cascade vs NG/SBAC (no API key, < 1 min):**
 
 ```bash
-# Linux / macOS / WSL2
-go build -o gateway ./cmd/gateway
-python scripts/optional_live/run_all_experiments.py --exp Exp1_Core --repeats 1 --gateway-binary ./gateway
-
-# Windows PowerShell
-go build -o gateway.exe ./cmd/gateway
-python scripts/optional_live/run_all_experiments.py --exp Exp1_Core --repeats 1 --gateway-binary gateway.exe
+# Verify from frozen artifact_cache/ (all platforms)
+python scripts/setup_frozen_results.py
+python scripts/_verify_paper_data.py
 ```
-> The gateway binary is built locally and excluded from git. Omit `--gateway-binary` to let the script auto-build.
 
 Sanity check: `plangate_full.cascade_failed == 0`, `plangate_full.effective_goodput` is highest.
 
-**3. PlanGate mechanism ablation smoke (no API key, ~1–3 min):**
+**3. PlanGate mechanism ablation smoke (no API key, < 1 min):**
 
 ```bash
-# Linux / macOS / WSL2
-python scripts/optional_live/run_all_experiments.py --exp Exp4_Ablation --repeats 1 --gateway-binary ./gateway
-
-# Windows PowerShell
-python scripts/optional_live/run_all_experiments.py --exp Exp4_Ablation --repeats 1 --gateway-binary gateway.exe
+# Verify ablation from frozen artifact_cache/ (all platforms)
+python scripts/setup_frozen_results.py
+python scripts/_verify_paper_data.py
 ```
 Sanity check: `wo_budgetlock.effective_goodput` ~83% lower than `plangate_full`.
 
@@ -311,7 +299,7 @@ go test ./plangate/... -run "TestRuntime" -v -timeout 120s
   [`scripts/deepseek_v3_tokenizer/README.md`](scripts/deepseek_v3_tokenizer/README.md)
   for how to obtain `tokenizer.json` if needed for token-accounting scripts.
 - One-click cache reproduction: `bash scripts/reproduce_main_paper_from_cache.sh` (Linux/macOS/WSL2)
-- One-click mock rerun: `make reproduce-core` (Linux/macOS/WSL2) or build gateway and run `scripts/optional_live/run_all_experiments.py`
+- One-click mock rerun: `go test ./... -timeout 120s` (unit tests); build the gateway with `go build -o gateway ./cmd/gateway` for live integration tests.
 
 ---
 

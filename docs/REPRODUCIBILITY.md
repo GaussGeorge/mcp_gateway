@@ -53,8 +53,6 @@ GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o gateway_linux ./cmd/gateway  #
 |-------|--------|------|-------------|
 | L0 | `go test ./...` | < 1 min | no |
 | L1 | `reproduce_main_paper_from_cache.sh` | 5–10 min | no |
-| L1 | `reproduce_real_llm_from_cache.sh` | < 2 min | no |
-| L1 | `reproduce_appendix_from_cache.sh` | < 2 min | no |
 | L2a | `reproduce_mock_core.sh` | ~30–45 min | no |
 | L2b | `reproduce_sensitivity.sh` | ~30–45 min | no |
 | L3 | `reproduce_real_llm_live.sh` | variable | yes (GLM) |
@@ -83,14 +81,11 @@ go test ./plangate/... -run "TestRuntime" -v -timeout 120s
 # Level 2 (supplementary artifact required): regenerate paper tables/figures from cached data
 # First unpack the conference supplementary artifact to artifact_cache/
 bash scripts/reproduce_main_paper_from_cache.sh
-bash scripts/reproduce_real_llm_from_cache.sh
-bash scripts/reproduce_appendix_from_cache.sh
 ```
 
-> **Note on from-cache scripts:** `reproduce_main_paper_from_cache.sh` and similar
-> scripts require cached CSV summaries that are **not committed to this public
-> repository**. They are distributed via the conference supplementary artifact.
-> Without the cached data, these scripts will fail with "CSV not found."
+> **Note on from-cache scripts:** `reproduce_main_paper_from_cache.sh`
+> requires cached CSV summaries distributed via the conference supplementary artifact.
+> Without the cached data, this script will fail with "CSV not found."
 > The no-key minimal reproduction path (Level 0 / Level 1 mock re-run) does
 > **not** require cached data.
 
@@ -99,15 +94,9 @@ bash scripts/reproduce_appendix_from_cache.sh
 For the no-key mock reproduction path on Windows (no WSL2 required):
 
 ```powershell
-# Option A: use the included PowerShell script
-.\scripts\artifact_smoke.ps1 -Target smoke
-.\scripts\artifact_smoke.ps1 -Target reproduce-core
-.\scripts\artifact_smoke.ps1 -Target reproduce-recovery
-
-# Option B: run commands individually
+# Run unit tests and PlanGate-R recovery tests
 go test ./... -timeout 120s
 go build -o gateway.exe ./cmd/gateway
-python scripts/run_all_experiments.py --exp Exp1_Core --repeats 1 --gateway-binary gateway.exe
 go test ./plangate/... -run "TestRuntime" -v -timeout 120s
 ```
 
@@ -210,7 +199,7 @@ A: Yes. Level 0 and Level 1 require no API key. Level 2 also requires no API key
 A: Each `results/expN_*/` directory contains per-gateway subdirectories with `*.jsonl` or `*.csv` raw logs alongside the summary CSV.
 
 **Q: Is there a single command to reproduce everything?**  
-A: Run `bash scripts/reproduce_main_paper_from_cache.sh` for mock results and `bash scripts/reproduce_real_llm_from_cache.sh` for real-LLM tables. Both complete in under 15 minutes total.
+A: Run `bash scripts/reproduce_main_paper_from_cache.sh` (no API key required, < 5 min). This verifies all paper tables and regenerates all figures from frozen `artifact_cache/` data.
 
 **Q: The beta ablation plots look slightly different from the paper.**  
 A: The paper plots were generated with the full 5-repeat run. If you re-run with `run_beta_ablation.py`, variance across repeats may cause minor visual differences. The means and qualitative conclusions are stable.
