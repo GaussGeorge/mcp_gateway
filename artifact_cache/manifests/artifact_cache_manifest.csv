@@ -24,7 +24,7 @@ Figure Fairness Boxplot (session data),exp1_core/plangate_full_run5_sessions.csv
 Table 4: Mechanism Ablation,exp4_ablation/exp4_ablation_summary.csv,exp4_ablation/exp4_ablation_summary.csv,YES,§4.3 mechanism ablation,No,
 Table 5: Discount Function Ablation,exp8_discountablation/exp8_discountablation_summary.csv,exp8_discountablation/exp8_discountablation_summary.csv,YES,§4.3 discount function ablation,No,
 Figure: Scalability (exp9),exp9_scalestress/exp9_scalestress_summary.csv,exp9_scalestress/exp9_scalestress_summary.csv,YES,Referenced by gen_paper_figures.py fig_exp9_scalability,No,Not explicitly listed in RESULT_MAPPING.md but used by gen_paper_figures.py
-Appendix: Adversarial Robustness,exp10_adversarial/exp10_adversarial_summary.csv,exp10_adversarial/exp10_adversarial_summary.csv,YES,§5.5 / Appendix adversarial robustness,No,
+Appendix: Adversarial Robustness,exp10_adversarial/exp10_adversarial_summary.csv,exp10_adversarial/exp10_adversarial_summary.csv,YES,§4.5 / Appendix adversarial robustness,No,
 Figure: Cross-LLM Comparison + Token Efficiency (GLM),exp_real3_glm/summary_all.csv,exp_real3_glm/summary_all.csv,YES,Used by gen_paper_figures.py fig_cross_llm and fig_token_efficiency,Yes (live rerun),Per-run CSVs excluded; only aggregated summary
 Figure: Cross-LLM Comparison + Token Efficiency (DeepSeek),exp_real3_deepseek/summary_all.csv,exp_real3_deepseek/summary_all.csv,YES,Used by gen_paper_figures.py fig_cross_llm and fig_token_efficiency,Yes (live rerun),_corrupted_backup directory excluded
 Appendix: Alpha Sensitivity,exp_alpha_sweep/alpha_sweep_summary.csv,exp_alpha_sweep/alpha_sweep_summary.csv,YES,Appendix α sensitivity sweep,No,
@@ -32,8 +32,8 @@ Appendix: Beta Sensitivity,beta_ablation/beta_summary.csv,beta_ablation/beta_sum
 Figure 2 / Rajomon Sensitivity,exp_rajomon_sensitivity/rajomon_sensitivity.csv,exp_rajomon_sensitivity/rajomon_sensitivity.csv,YES,§4.3 / Figure 2 Rajomon price-step sensitivity,No,
 Table 6: Steady Real-LLM GLM C=10,exp_week5_C10/week5_summary.csv,exp_week5_C10/week5_summary.csv,YES,§4.4 Steady GLM-4-Flash C=10,Yes (live rerun),
 Table 6: Steady Real-LLM GLM C=40,exp_week5_C40/week5_summary.csv,exp_week5_C40/week5_summary.csv,YES,§4.4 Steady GLM-4-Flash C=40,Yes (live rerun),
-Table 7: Bursty Real-LLM,exp_bursty_C20_B30/bursty_summary.csv,exp_bursty_C20_B30/bursty_summary.csv,YES,§4.5 Bursty GLM-4-Flash C=20 B=30,Yes (live rerun),
-Table 8 / Appendix: Self-Hosted vLLM,exp_selfhosted_vllm_C20_W8/selfhosted_c20_summary.csv,exp_selfhosted_vllm_C20_W8/selfhosted_c20_summary.csv,YES,§4.5 / Appendix vLLM C=20 W=8,No (GPU for live rerun),GPU required for live rerun
+Table 7: Bursty Real-LLM,exp_bursty_C20_B30/bursty_summary.csv,exp_bursty_C20_B30/bursty_summary.csv,YES,§4.6 Bursty GLM-4-Flash C=20 B=30,Yes (live rerun),
+Table 8 / Appendix: Self-Hosted vLLM,exp_selfhosted_vllm_C20_W8/selfhosted_c20_summary.csv,exp_selfhosted_vllm_C20_W8/selfhosted_c20_summary.csv,YES,§4.7 / Appendix vLLM C=20 W=8,No (GPU for live rerun),GPU required for live rerun
 Table 10: Throughput-Latency Sweep (summary),exp_tput_latency/tput_latency_summary.csv,exp_tput_latency/tput_latency_summary.csv,YES,§4.8 tput-latency table verification input,No,
 Figure: Throughput-Latency Sweep (aggregated),exp_tput_latency/tput_latency_agg.csv,exp_tput_latency/tput_latency_agg.csv,YES,Used by gen_paper_figures.py fig_tput_latency(),No,
 Table 9: PlanGate-R Recovery,N/A (code only),N/A,N/A,Reproduced by go test ./plangate/... -run TestRuntime,No,No CSV needed

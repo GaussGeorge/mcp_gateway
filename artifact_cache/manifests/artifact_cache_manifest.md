@@ -26,7 +26,7 @@ experiments are excluded.
 | **Table 4**: Mechanism Ablation | `exp4_ablation/exp4_ablation_summary.csv` | `exp4_ablation/exp4_ablation_summary.csv` | ✅ YES | No | §4.3 mechanism ablation |
 | **Table 5**: Discount Function Ablation | `exp8_discountablation/exp8_discountablation_summary.csv` | `exp8_discountablation/exp8_discountablation_summary.csv` | ✅ YES | No | §4.3 discount ablation |
 | **Figure: Scalability** | `exp9_scalestress/exp9_scalestress_summary.csv` | `exp9_scalestress/exp9_scalestress_summary.csv` | ✅ YES | No | Referenced by `gen_paper_figures.py fig_exp9_scalability()` |
-| **Appendix: Adversarial Robustness** | `exp10_adversarial/exp10_adversarial_summary.csv` | `exp10_adversarial/exp10_adversarial_summary.csv` | ✅ YES | No | §5.5 / Appendix adversarial robustness |
+| **Appendix: Adversarial Robustness** | `exp10_adversarial/exp10_adversarial_summary.csv` | `exp10_adversarial/exp10_adversarial_summary.csv` | ✅ YES | No | §4.5 / Appendix adversarial robustness |
 | **Figure: Cross-LLM Comparison (GLM)** | `exp_real3_glm/summary_all.csv` | `exp_real3_glm/summary_all.csv` | ✅ YES | Yes (live rerun) | Used by `gen_paper_figures.py fig_cross_llm()` and `fig_token_efficiency()` |
 | **Figure: Cross-LLM Comparison (DeepSeek)** | `exp_real3_deepseek/summary_all.csv` | `exp_real3_deepseek/summary_all.csv` | ✅ YES | Yes (live rerun) | Per-run per-gateway CSVs and `_corrupted_backup/` are excluded |
 | **Appendix: Alpha Sensitivity** | `exp_alpha_sweep/alpha_sweep_summary.csv` | `exp_alpha_sweep/alpha_sweep_summary.csv` | ✅ YES | No | Appendix α sensitivity sweep |
@@ -34,8 +34,8 @@ experiments are excluded.
 | **Figure 2 / Rajomon Sensitivity** | `exp_rajomon_sensitivity/rajomon_sensitivity.csv` | `exp_rajomon_sensitivity/rajomon_sensitivity.csv` | ✅ YES | No | §4.3 / Figure 2 Rajomon price-step sensitivity |
 | **Table 6**: Steady Real-LLM C=10 | `exp_week5_C10/week5_summary.csv` | `exp_week5_C10/week5_summary.csv` | ✅ YES | Yes (live rerun) | §4.4 GLM-4-Flash C=10 |
 | **Table 6**: Steady Real-LLM C=40 | `exp_week5_C40/week5_summary.csv` | `exp_week5_C40/week5_summary.csv` | ✅ YES | Yes (live rerun) | §4.4 GLM-4-Flash C=40 |
-| **Table 7**: Bursty Real-LLM | `exp_bursty_C20_B30/bursty_summary.csv` | `exp_bursty_C20_B30/bursty_summary.csv` | ✅ YES | Yes (live rerun) | §4.5 Bursty GLM C=20 B=30 |
-| **Table 8 / Appendix**: Self-Hosted vLLM | `exp_selfhosted_vllm_C20_W8/selfhosted_c20_summary.csv` | `exp_selfhosted_vllm_C20_W8/selfhosted_c20_summary.csv` | ✅ YES | No (GPU) | §4.5 / Appendix vLLM C=20 W=8; GPU required for live rerun |
+| **Table 7**: Bursty Real-LLM | `exp_bursty_C20_B30/bursty_summary.csv` | `exp_bursty_C20_B30/bursty_summary.csv` | ✅ YES | Yes (live rerun) | §4.6 Bursty GLM C=20 B=30 |
+| **Table 8 / Appendix**: Self-Hosted vLLM | `exp_selfhosted_vllm_C20_W8/selfhosted_c20_summary.csv` | `exp_selfhosted_vllm_C20_W8/selfhosted_c20_summary.csv` | ✅ YES | No (GPU) | §4.7 / Appendix vLLM C=20 W=8; GPU required for live rerun |
 | **Table 9**: PlanGate-R Recovery | N/A (code only) | N/A | N/A | No | Reproduced by `go test ./plangate/... -run TestRuntime`; no CSV needed |
 | **Pareto Frontier Figure** (B-Strengthening) | `pareto_frontier_selected/pareto_summary.csv` | `pareto_frontier_selected/pareto_summary.csv` | ✅ YES | No | Admission-vs-cascade tradeoff; all PlanGate configs: cascade=0 |
 
