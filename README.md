@@ -71,8 +71,7 @@ scripts/              Experiment runner, analysis, and plotting scripts
   reproduce_main_paper_from_cache.sh  One-click cache verification
 docs/                 Artifact documentation
   REPRODUCIBILITY.md  Full reproduction guide with expected runtimes
-  RESULT_MAPPING.md   Maps paper items to data files
-  experiment_code_mapping.md
+  (historical docs removed from anonymous artifact package)
 ```
 
 ---
@@ -174,8 +173,8 @@ python scripts/gen_paper_figures.py
 
 See [docs/REPRODUCIBILITY.md](docs/REPRODUCIBILITY.md) for full instructions,
 expected runtimes, and troubleshooting.
-See [docs/RESULT_MAPPING.md](docs/RESULT_MAPPING.md) for a mapping of paper
-items to specific data files.
+See [TABLE_FIGURE_MAPPING.md](TABLE_FIGURE_MAPPING.md) for a mapping of paper
+items to specific data files and verification commands.
 
 ---
 
@@ -233,15 +232,14 @@ by 10.1% per run.
 > Mock reproduction does **not** require API keys.
 > PlanGate-R reproduction is P&S controlled mock only.
 > Exact paper tables require full runs; minimal smoke validates qualitative trends.
-> See [docs/minimal_reproduction.md](docs/minimal_reproduction.md) and
-> [docs/paper_mapping.md](docs/paper_mapping.md) for full details.
+> See [docs/REPRODUCIBILITY.md](docs/REPRODUCIBILITY.md) and
+> [TABLE_FIGURE_MAPPING.md](TABLE_FIGURE_MAPPING.md) for full details.
 
 **One-click targets (Linux/macOS/WSL2):**
 ```bash
 make smoke               # Go unit tests (< 1 min)
-make reproduce-core      # Exp1_Core mock (~2 min)
-make reproduce-ablation  # Exp4_Ablation mock (~1 min)
 make reproduce-recovery  # PlanGate-R Go tests (< 2 min)
+make figures-from-cache  # Frozen cache verification + figure regeneration
 ```
 
 **Windows PowerShell — unit tests only:**

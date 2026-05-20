@@ -38,7 +38,7 @@ python scripts/plot_rajomon_sensitivity.py
 
 | Paper Table | Section | Frozen Data | Verification Script | Expected Output |
 |-------------|---------|-------------|---------------------|-----------------|
-| Table: Commitment Quality (tab:commitment-quality) | §4.1 | `artifact_cache/manifests/` + go test | `go test ./plangate/... -run TestRuntime -v` | pass/fail per mode |
+| Table: Commitment Quality (tab:commitment-quality) | §4.1 | `artifact_cache/exp_week4_formal/week2_smoke_summary.csv` | `scripts/_verify_paper_data.py` | `OK` lines for NG/Rajomon/SBAC/PlanGate/PG-noRes |
 | Table: Core Mock (tab:exp1) | §4.2 | `artifact_cache/exp1_core/exp1_core_summary.csv` | `scripts/_verify_paper_data.py` | `OK` lines for NG/SRL/SBAC/PlanGate |
 | Table: Mechanism Ablation (tab:ablation) | §4.3 | `artifact_cache/exp4_ablation/exp4_ablation_summary.csv` | `scripts/_verify_paper_data.py` | `OK` lines for Full/wo-BL/wo-SC |
 | Table: Discount Function Ablation (tab:discount) | §4.3 | `artifact_cache/exp8_discountablation/exp8_discountablation_summary.csv` | `scripts/_verify_paper_data.py` | `OK` for quadratic/linear/exp/log |
@@ -76,7 +76,7 @@ python scripts/plot_rajomon_sensitivity.py
 | Tier | Description | API key needed? | Time estimate |
 |------|-------------|-----------------|---------------|
 | **A — Frozen verification** | Run `_verify_paper_data.py` + `gen_paper_figures.py` against cached CSVs | No | < 5 min |
-| **B — Mock re-run** | Re-run all mock experiments from scratch via `run_all_experiments.py` | No | 30–45 min |
+| **B — Live/mock re-run (not included)** | Live/mock rerun scripts are not included in this anonymous artifact; use Tier A frozen verification | N/A | N/A |
 | **C — Live real-LLM** | Re-run GLM / DeepSeek / vLLM experiments (requires provider key or GPU) | Yes / GPU | Hours |
 
 Tier A is the recommended starting point for artifact reviewers.

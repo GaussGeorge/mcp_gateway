@@ -2,7 +2,7 @@
 
 This document covers prerequisites, expected runtimes, common issues, and FAQ for reproducing all results in the PlanGate paper.
 
-For a quick mapping of paper items to data files and commands, see [RESULT_MAPPING.md](RESULT_MAPPING.md).  
+For a quick mapping of paper items to data files and commands, see [../TABLE_FIGURE_MAPPING.md](../TABLE_FIGURE_MAPPING.md).  
 For the scope declaration (what is and isn't in the artifact), see [../ARTIFACT_SCOPE.md](../ARTIFACT_SCOPE.md).
 
 ---
@@ -163,7 +163,8 @@ Create a `.env` file in the repo root (see Prerequisites above). Do NOT commit i
 
 The GLM-4-Flash free tier allows ~200 RPM. Reduce concurrency:
 ```bash
-CONCURRENCY=5 bash scripts/optional_live/reproduce_real_llm_live.sh
+# Live rerun scripts are not included in this anonymous artifact package.
+# Use your local live-rerun script wrapper and lower concurrency (e.g., CONCURRENCY=5).
 ```
 
 ### Windows: `bash: set: pipefail: invalid option`
@@ -187,4 +188,4 @@ A: Run `bash scripts/reproduce_main_paper_from_cache.sh` (no API key required, <
 A: The paper plots were generated with the full 5-repeat run. If you re-run with `run_beta_ablation.py`, variance across repeats may cause minor visual differences. The means and qualitative conclusions are stable.
 
 **Q: How do I add a new gateway baseline?**  
-A: Implement `BaselineGateway` interface (see `baseline/ng_gateway.go`), register the mode flag in `cmd/gateway/main.go`, then add the gateway name to the `GATEWAYS` list in `scripts/run_all_experiments.py`.
+A: Implement `BaselineGateway` interface (see `baseline/ng_gateway.go`) and register the mode flag in `cmd/gateway/main.go`. The live rerun automation scripts are not included in this anonymous artifact package.
