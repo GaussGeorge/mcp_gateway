@@ -327,19 +327,14 @@
 | Mock Cascade Comparison | `gen_paper_figures.py` | `fig_mock_cascade()` | `exp_week4_formal/` |
 | Ablation Study | `gen_paper_figures.py` | `fig_ablation()` | `exp4_ablation/` |
 | Scalability | `gen_paper_figures.py` | `fig_scalability()` | `exp9_scalestress/` |
-| Token Efficiency | `gen_paper_figures.py` | `fig_token_efficiency()` | `exp1_core/` |
-| Fairness (Steps Boxplot) | `gen_paper_figures.py` | `fig_fairness()` | `exp1_core/` |
+| Token Efficiency | `gen_paper_figures.py` | `fig_token_efficiency()` | `exp_real3_glm/` + `exp_real3_deepseek/` |
+| Fairness (Steps Boxplot) | `gen_paper_figures.py` | `fig_fairness_boxplot()` | `exp1_core/` |
 | DeepSeek Concurrency Sweep | `gen_paper_figures.py` | `fig_deepseek_sweep()` | `exp_conc_sweep_deepseek/` or `exp_deepseek_n3/` |
 | Adversarial Robustness | `gen_paper_figures.py` | `fig_adversarial()` | `exp10_adversarial/` |
 | Rajomon Sensitivity | `gen_paper_figures.py` | `fig_rajomon_sensitivity()` | `exp_rajomon_sensitivity/` |
 | Discount Function Ablation | `gen_paper_figures.py` | `fig_discount_ablation()` | `exp8_discountablation/` |
 | Cross-LLM Comparison | `gen_paper_figures.py` | `fig_cross_llm()` | `exp_week5_*` / `exp_bursty_*` |
-| 心电图 (Price Timeseries) | `plot_paper_charts.py` | `plot_chart1_heartbeat()` | 网关运行日志 |
-| 8 轮调优演进图 | `plot_paper_charts.py` | `plot_chart2_evolution()` | `results/evolution_8runs.csv` |
-| 成功率 vs 吞吐 | `plot_paper_charts.py` | `plot_chart3_success_vs_goodput()` | `exp_week4_formal/` |
-| 单任务 Token 效率 | `plot_paper_charts.py` | `plot_chart4_token_efficiency()` | `exp_week4_formal/` |
-| 尾延迟 P50 vs P95 | `plot_paper_charts.py` | `plot_chart5_tail_latency()` | `exp_week4_formal/` |
-| 步数公平性箱线图 | `plot_paper_charts.py` | `plot_chart6_fairness()` | `exp_week4_formal/` |
+| 心电图 / 调优演进 / 旧成功率图 | *(归档)* `scripts/archive/plot_paper_charts.py` | — | 早期开发图，不在最终论文中 |
 | Rajomon 敏感性 (独立) | `plot_rajomon_sensitivity.py` | `main()` | `exp_rajomon_sensitivity/` |
 
 ---
