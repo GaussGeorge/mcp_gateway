@@ -29,12 +29,7 @@ go build -o gateway ./cmd/gateway                        # Windows / macOS
 GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o gateway_linux ./cmd/gateway  # Linux cross-compile
 ```
 
-### Required for Level 2 (Mock Re-Run Only)
-
-- The mock MCP backend (`mcp_server/server.py`) runs entirely locally; no Internet access needed.
-- Linux or WSL2 is recommended for CPU isolation (`taskset`). On Windows, mock experiments still work but may show higher variance.
-
-### Required for Level 3 (Live Real-LLM Only)
+### Optional: Live Experiment Prerequisites (Not Required for Artifact Validation)
 
 - A `.env` file in the repo root (do NOT commit this file):
   ```
@@ -53,11 +48,8 @@ GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o gateway_linux ./cmd/gateway  #
 |-------|--------|------|-------------|
 | L0 | `go test ./...` | < 1 min | no |
 | L1 | `reproduce_main_paper_from_cache.sh` | 5–10 min | no |
-| L2a | `reproduce_mock_core.sh` | ~30–45 min | no |
-| L2b | `reproduce_sensitivity.sh` | ~30–45 min | no |
-| L3 | `reproduce_real_llm_live.sh` | variable | yes (GLM) |
 
-Timings are on a 16-core Linux machine. Windows may be 1.5–2× slower for mock runs due to process spawning overhead.
+Timings are on a 16-core Linux machine.
 
 ---
 
@@ -72,22 +64,16 @@ go build -o gateway ./cmd/gateway
 # Level 0: unit tests only (< 1 min, no API key)
 go test ./... -timeout 120s
 
-# Level 1 (no-key mock re-run): reproduce core qualitative trends
-bash scripts/reproduce_mock_core.sh
-
 # Level 1 PlanGate-R recovery
 go test ./plangate/... -run "TestRuntime" -v -timeout 120s
 
-# Level 2 (supplementary artifact required): regenerate paper tables/figures from cached data
-# First unpack the conference supplementary artifact to artifact_cache/
+# Reproduce paper tables/figures from frozen artifact_cache/ (no API key, < 5 min)
 bash scripts/reproduce_main_paper_from_cache.sh
 ```
 
-> **Note on from-cache scripts:** `reproduce_main_paper_from_cache.sh`
-> requires cached CSV summaries distributed via the conference supplementary artifact.
-> Without the cached data, this script will fail with "CSV not found."
-> The no-key minimal reproduction path (Level 0 / Level 1 mock re-run) does
-> **not** require cached data.
+> **Note:** `artifact_cache/` is included in this anonymous artifact repository.
+> Run `python scripts/setup_frozen_results.py` to populate `results/` from the cache
+> before running any verification or figure-generation scripts.
 
 ## Quick Start (Windows PowerShell)
 
@@ -114,17 +100,13 @@ wsl bash scripts/reproduce_main_paper_from_cache.sh
 
 ## Cached Data Inventory
 
-> **Important**: The following summary CSVs are **NOT committed to this public
-> repository** (`results/` is excluded via `.gitignore`). They are distributed
-> via the **conference supplementary artifact**. To use the from-cache
-> reproduction scripts, unpack the supplementary artifact to `artifact_cache/`
-> first.
+The following summary CSVs are included under `artifact_cache/` in this repository.
+Run `python scripts/setup_frozen_results.py` once to copy them into `results/`
+before running any verification scripts.
 
-When available (via supplementary artifact unpacked to `artifact_cache/`),
-the following summary CSVs are sufficient to regenerate all paper tables and
-figures without re-running any experiments:
+All paper tables and figures can be regenerated without re-running any experiments:
 
-| File (in supplementary artifact) | Paper Section |
+| File (under `artifact_cache/`) | Paper Section |
 |------|--------------|
 | `exp1_core/exp1_core_summary.csv` | §5.1 Core results (Table 3) |
 | `exp4_ablation/exp4_ablation_summary.csv` | §5.2 Ablation (Table 4) |
@@ -137,6 +119,8 @@ figures without re-running any experiments:
 | `exp_bursty_C20_B30/bursty_summary.csv` | §5.4 Bursty GLM |
 | `exp_selfhosted_vllm_C20_W8/selfhosted_c20_summary.csv` | §5.4 vLLM C=20/W=8 |
 | `exp10_adversarial/exp10_adversarial_summary.csv` | §5.5 Adversarial |
+| `exp_tput_latency/tput_latency_agg.csv` | §5.5 Throughput-latency figure |
+| `exp_week4_formal/week2_smoke_summary.csv` | §5.1 Commitment Quality (Table 2) |
 | `paper_figures/table_commitment_quality.tex` | §5.1 Table 2 (pre-built LaTeX) |
 
 ---
@@ -169,9 +153,7 @@ Stop-Process -Id (Get-NetTCPConnection -LocalPort 8080).OwningProcess -Force
 
 ### `reproduce_main_paper_from_cache.sh` exits with "CSV not found"
 
-The cached CSV is missing. Either:
-1. Re-run the corresponding Level 2 script (`reproduce_mock_core.sh` or `reproduce_sensitivity.sh`)
-2. Check `ARTIFACT_SCOPE.md` — some experiments were diagnostic and are not committed
+Run `python scripts/setup_frozen_results.py` first to copy `artifact_cache/` data into `results/`.
 
 ### Real-LLM script exits with "LLM_API_KEY is not set"
 
@@ -181,7 +163,7 @@ Create a `.env` file in the repo root (see Prerequisites above). Do NOT commit i
 
 The GLM-4-Flash free tier allows ~200 RPM. Reduce concurrency:
 ```bash
-CONCURRENCY=5 bash scripts/reproduce_real_llm_live.sh
+CONCURRENCY=5 bash scripts/optional_live/reproduce_real_llm_live.sh
 ```
 
 ### Windows: `bash: set: pipefail: invalid option`
@@ -193,7 +175,7 @@ Use WSL2 or Git Bash to run the `.sh` scripts. PowerShell does not support bash 
 ## FAQ
 
 **Q: Can I reproduce the paper results without any API key?**  
-A: Yes. Level 0 and Level 1 require no API key. Level 2 also requires no API key (mock backend). Only Level 3 requires real LLM credentials.
+A: Yes. The artifact validation path (`go test` + `reproduce_main_paper_from_cache.sh`) requires no API key.
 
 **Q: Where are the raw per-request logs?**  
 A: Each `results/expN_*/` directory contains per-gateway subdirectories with `*.jsonl` or `*.csv` raw logs alongside the summary CSV.

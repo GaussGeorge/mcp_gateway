@@ -427,6 +427,91 @@ def fig_exp4_ablation():
     save_fig(fig, 'exp4_ablation')
 
 
+# ═══════════════════════════
+# Fig: Throughput–Latency Sweep (3-panel)
+# ═══════════════════════════
+def fig_tput_latency():
+    """
+    3-panel throughput–latency figure.
+    Reads: results/exp_tput_latency/tput_latency_agg.csv
+    """
+    import csv as _csv
+    agg_csv = os.path.join('results', 'exp_tput_latency', 'tput_latency_agg.csv')
+    if not os.path.isfile(agg_csv):
+        print(f"  SKIP fig_tput_latency — {agg_csv} not found")
+        return
+
+    rows = []
+    with open(agg_csv, newline='', encoding='utf-8') as f:
+        rows = list(_csv.DictReader(f))
+
+    _C = {'ng': COLORS['NG'], 'srl': COLORS['SRL'], 'sbac': COLORS['SBAC'],
+          'plangate_full': COLORS['PlanGate']}
+    _M = {'ng': 'o', 'srl': '^', 'sbac': 's', 'plangate_full': 'D'}
+    _LS = {'ng': '-', 'srl': '--', 'sbac': '-.', 'plangate_full': '-'}
+    _LBL = {'ng': 'No-Gate', 'srl': 'SRL', 'sbac': 'SBAC', 'plangate_full': 'PlanGate'}
+
+    gw_data = {gw: {'conc': [], 'gps': [], 'gps_ci': [], 'p95': [], 'p95_ci': [],
+                    'casc': []}
+               for gw in _C}
+
+    for r in rows:
+        gw = r.get('gateway', '')
+        if gw not in gw_data:
+            continue
+        d = gw_data[gw]
+        try:
+            d['conc'].append(int(r['concurrency']))
+            d['gps'].append(float(r['gps_mean']))
+            d['gps_ci'].append(float(r.get('gps_ci95', 0)))
+            d['p95'].append(float(r['p95_mean']))
+            d['p95_ci'].append(float(r.get('p95_ci95', 0)))
+            d['casc'].append(float(r.get('casc_pct_mean', 0)))
+        except (KeyError, ValueError):
+            continue
+
+    for gw, d in gw_data.items():
+        if not d['conc']:
+            continue
+        order = sorted(range(len(d['conc'])), key=lambda i: d['conc'][i])
+        for key in d:
+            d[key] = [d[key][i] for i in order]
+
+    fig, (ax_sc, ax_gps, ax_abd) = plt.subplots(1, 3, figsize=(12, 3.4))
+
+    for gw, d in gw_data.items():
+        if not d['gps']:
+            continue
+        kw = dict(color=_C[gw], marker=_M[gw], linewidth=1.1, markersize=5,
+                  capsize=2, label=_LBL[gw], linestyle=_LS[gw])
+        ax_sc.errorbar(d['gps'], d['p95'], xerr=d['gps_ci'], yerr=d['p95_ci'], **kw)
+        ax_gps.errorbar(d['conc'], d['gps'], yerr=d['gps_ci'], **kw)
+        ax_abd.plot(d['conc'], d['casc'], color=_C[gw], marker=_M[gw],
+                   linewidth=1.1, markersize=5, linestyle=_LS[gw], label=_LBL[gw])
+
+    conc_vals = sorted(set(c for d in gw_data.values() for c in d['conc']))
+
+    ax_sc.set_xlabel('Effective Goodput (sess/s)', fontsize=9)
+    ax_sc.set_ylabel('P95 Latency (s)', fontsize=9)
+    ax_sc.set_title('(a) Latency–Goodput Trade-off', fontsize=9)
+    ax_sc.legend(fontsize=7)
+
+    ax_gps.set_xlabel('Concurrency (offered load)', fontsize=9)
+    ax_gps.set_ylabel('Effective Goodput (sess/s)', fontsize=9)
+    ax_gps.set_title('(b) Goodput vs Offered Load', fontsize=9)
+    ax_gps.set_xticks(conc_vals)
+    ax_gps.legend(fontsize=7)
+
+    ax_abd.set_xlabel('Concurrency (offered load)', fontsize=9)
+    ax_abd.set_ylabel('Cascade Waste (%)', fontsize=9)
+    ax_abd.set_title('(c) Cascade Failure Rate', fontsize=9)
+    ax_abd.set_xticks(conc_vals)
+    ax_abd.legend(fontsize=7)
+
+    fig.tight_layout()
+    save_fig(fig, 'tput_latency_sweep')
+
+
 # ═══════════════════════════════════════════
 # MAIN
 # ═══════════════════════════════════════════
@@ -473,5 +558,10 @@ if __name__ == '__main__':
         fig_exp4_ablation()
     except Exception as e:
         print(f"  ✗ Exp4 ablation: {e}")
-    
+
+    try:
+        fig_tput_latency()
+    except Exception as e:
+        print(f"  ✗ Tput-latency: {e}")
+
     print("\nDone!")
