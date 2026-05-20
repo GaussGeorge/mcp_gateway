@@ -1,0 +1,53 @@
+paper_item,source_path,destination_path,included,reason,needs_api_key,notes
+Table 2: Commitment Quality (pre-built LaTeX),paper_figures/table_commitment_quality.tex,paper_figures/table_commitment_quality.tex,YES,Pre-built LaTeX table from exp_week4_formal; used by reproduce_main_paper_from_cache.sh step 1,No,
+Table 3: Core Mock Performance,exp1_core/exp1_core_summary.csv,exp1_core/exp1_core_summary.csv,YES,Main performance result §4.2,No,Mock backend; 5 repeats 500 sessions C=200
+Figure Fairness Boxplot (session data),exp1_core/ng_run1_sessions.csv,exp1_core/ng_run1_sessions.csv,YES,Session-level step data for fig_fairness_boxplot in gen_paper_figures.py,No,
+Figure Fairness Boxplot (session data),exp1_core/ng_run2_sessions.csv,exp1_core/ng_run2_sessions.csv,YES,Session-level step data for fig_fairness_boxplot in gen_paper_figures.py,No,
+Figure Fairness Boxplot (session data),exp1_core/ng_run3_sessions.csv,exp1_core/ng_run3_sessions.csv,YES,Session-level step data for fig_fairness_boxplot in gen_paper_figures.py,No,
+Figure Fairness Boxplot (session data),exp1_core/ng_run4_sessions.csv,exp1_core/ng_run4_sessions.csv,YES,Session-level step data for fig_fairness_boxplot in gen_paper_figures.py,No,
+Figure Fairness Boxplot (session data),exp1_core/ng_run5_sessions.csv,exp1_core/ng_run5_sessions.csv,YES,Session-level step data for fig_fairness_boxplot in gen_paper_figures.py,No,
+Figure Fairness Boxplot (session data),exp1_core/srl_run1_sessions.csv,exp1_core/srl_run1_sessions.csv,YES,Session-level step data for fig_fairness_boxplot in gen_paper_figures.py,No,
+Figure Fairness Boxplot (session data),exp1_core/srl_run2_sessions.csv,exp1_core/srl_run2_sessions.csv,YES,Session-level step data for fig_fairness_boxplot in gen_paper_figures.py,No,
+Figure Fairness Boxplot (session data),exp1_core/srl_run3_sessions.csv,exp1_core/srl_run3_sessions.csv,YES,Session-level step data for fig_fairness_boxplot in gen_paper_figures.py,No,
+Figure Fairness Boxplot (session data),exp1_core/srl_run4_sessions.csv,exp1_core/srl_run4_sessions.csv,YES,Session-level step data for fig_fairness_boxplot in gen_paper_figures.py,No,
+Figure Fairness Boxplot (session data),exp1_core/srl_run5_sessions.csv,exp1_core/srl_run5_sessions.csv,YES,Session-level step data for fig_fairness_boxplot in gen_paper_figures.py,No,
+Figure Fairness Boxplot (session data),exp1_core/sbac_run1_sessions.csv,exp1_core/sbac_run1_sessions.csv,YES,Session-level step data for fig_fairness_boxplot in gen_paper_figures.py,No,
+Figure Fairness Boxplot (session data),exp1_core/sbac_run2_sessions.csv,exp1_core/sbac_run2_sessions.csv,YES,Session-level step data for fig_fairness_boxplot in gen_paper_figures.py,No,
+Figure Fairness Boxplot (session data),exp1_core/sbac_run3_sessions.csv,exp1_core/sbac_run3_sessions.csv,YES,Session-level step data for fig_fairness_boxplot in gen_paper_figures.py,No,
+Figure Fairness Boxplot (session data),exp1_core/sbac_run4_sessions.csv,exp1_core/sbac_run4_sessions.csv,YES,Session-level step data for fig_fairness_boxplot in gen_paper_figures.py,No,
+Figure Fairness Boxplot (session data),exp1_core/sbac_run5_sessions.csv,exp1_core/sbac_run5_sessions.csv,YES,Session-level step data for fig_fairness_boxplot in gen_paper_figures.py,No,
+Figure Fairness Boxplot (session data),exp1_core/plangate_full_run1_sessions.csv,exp1_core/plangate_full_run1_sessions.csv,YES,Session-level step data for fig_fairness_boxplot in gen_paper_figures.py,No,
+Figure Fairness Boxplot (session data),exp1_core/plangate_full_run2_sessions.csv,exp1_core/plangate_full_run2_sessions.csv,YES,Session-level step data for fig_fairness_boxplot in gen_paper_figures.py,No,
+Figure Fairness Boxplot (session data),exp1_core/plangate_full_run3_sessions.csv,exp1_core/plangate_full_run3_sessions.csv,YES,Session-level step data for fig_fairness_boxplot in gen_paper_figures.py,No,
+Figure Fairness Boxplot (session data),exp1_core/plangate_full_run4_sessions.csv,exp1_core/plangate_full_run4_sessions.csv,YES,Session-level step data for fig_fairness_boxplot in gen_paper_figures.py,No,
+Figure Fairness Boxplot (session data),exp1_core/plangate_full_run5_sessions.csv,exp1_core/plangate_full_run5_sessions.csv,YES,Session-level step data for fig_fairness_boxplot in gen_paper_figures.py,No,
+Table 4: Mechanism Ablation,exp4_ablation/exp4_ablation_summary.csv,exp4_ablation/exp4_ablation_summary.csv,YES,§4.3 mechanism ablation,No,
+Table 5: Discount Function Ablation,exp8_discountablation/exp8_discountablation_summary.csv,exp8_discountablation/exp8_discountablation_summary.csv,YES,§4.3 discount function ablation,No,
+Figure: Scalability (exp9),exp9_scalestress/exp9_scalestress_summary.csv,exp9_scalestress/exp9_scalestress_summary.csv,YES,Referenced by gen_paper_figures.py fig_exp9_scalability,No,Not explicitly listed in RESULT_MAPPING.md but used by gen_paper_figures.py
+Appendix: Adversarial Robustness,exp10_adversarial/exp10_adversarial_summary.csv,exp10_adversarial/exp10_adversarial_summary.csv,YES,§5.5 / Appendix adversarial robustness,No,
+Figure: Cross-LLM Comparison + Token Efficiency (GLM),exp_real3_glm/summary_all.csv,exp_real3_glm/summary_all.csv,YES,Used by gen_paper_figures.py fig_cross_llm and fig_token_efficiency,Yes (live rerun),Per-run CSVs excluded; only aggregated summary
+Figure: Cross-LLM Comparison + Token Efficiency (DeepSeek),exp_real3_deepseek/summary_all.csv,exp_real3_deepseek/summary_all.csv,YES,Used by gen_paper_figures.py fig_cross_llm and fig_token_efficiency,Yes (live rerun),_corrupted_backup directory excluded
+Appendix: Alpha Sensitivity,exp_alpha_sweep/alpha_sweep_summary.csv,exp_alpha_sweep/alpha_sweep_summary.csv,YES,Appendix α sensitivity sweep,No,
+Appendix: Beta Sensitivity,beta_ablation/beta_summary.csv,beta_ablation/beta_summary.csv,YES,Appendix β sensitivity ablation,No,
+Figure 2 / Rajomon Sensitivity,exp_rajomon_sensitivity/rajomon_sensitivity.csv,exp_rajomon_sensitivity/rajomon_sensitivity.csv,YES,§4.3 / Figure 2 Rajomon price-step sensitivity,No,
+Table 6: Steady Real-LLM GLM C=10,exp_week5_C10/week5_summary.csv,exp_week5_C10/week5_summary.csv,YES,§4.4 Steady GLM-4-Flash C=10,Yes (live rerun),
+Table 6: Steady Real-LLM GLM C=40,exp_week5_C40/week5_summary.csv,exp_week5_C40/week5_summary.csv,YES,§4.4 Steady GLM-4-Flash C=40,Yes (live rerun),
+Table 7: Bursty Real-LLM,exp_bursty_C20_B30/bursty_summary.csv,exp_bursty_C20_B30/bursty_summary.csv,YES,§4.5 Bursty GLM-4-Flash C=20 B=30,Yes (live rerun),
+Table 8 / Appendix: Self-Hosted vLLM,exp_selfhosted_vllm_C20_W8/selfhosted_c20_summary.csv,exp_selfhosted_vllm_C20_W8/selfhosted_c20_summary.csv,YES,§4.5 / Appendix vLLM C=20 W=8,No (GPU for live rerun),GPU required for live rerun
+Table 9: PlanGate-R Recovery,N/A (code only),N/A,N/A,Reproduced by go test ./plangate/... -run TestRuntime,No,No CSV needed
+Pareto Frontier Figure (B-Strengthening),pareto_frontier_selected/pareto_summary.csv,pareto_frontier_selected/pareto_summary.csv,YES,Admission-vs-cascade tradeoff; all PlanGate configs cascade=0,No,
+neutral_multitool_real_llm/ (all CSVs),neutral_multitool_real_llm/,EXCLUDED,NO,Neutral-prompt experiment – generic prompts not PlanGate governance prompt,N/A,~400 raw CSVs excluded
+neutral_real_llm/ (all CSVs),neutral_real_llm/,EXCLUDED,NO,Neutral-prompt experiment – same reason,N/A,~100 raw CSVs excluded
+exp_real3_deepseek/_corrupted_backup/,exp_real3_deepseek/_corrupted_backup/,EXCLUDED,NO,Corrupted data from failed Deepseek runs,N/A,Explicitly named backup directory
+log/_diag*.csv,log/,EXCLUDED,NO,Diagnostic/debug output not experimental results,N/A,
+exp_week5_pilot/ (all CSVs),exp_week5_pilot/,EXCLUDED,NO,Pilot calibration runs superseded by C10/C40,N/A,Single-repeat pilots
+exp_week2_smoke/,exp_week2_smoke/,EXCLUDED,NO,Early smoke test not a paper experiment,N/A,
+exp_week4_formal/week2_smoke_summary.csv,exp_week4_formal/week2_smoke_summary.csv,EXCLUDED,NO,Leftover smoke summary inside paper-used directory,N/A,Only steps.csv data from this dir is paper-used
+exp_pp_smoke/,exp_pp_smoke/,EXCLUDED,NO,Smoke test for progress-priority not a paper experiment,N/A,
+exp_week5_real_llm/,exp_week5_real_llm/,EXCLUDED,NO,Early 1-repeat pilot superseded by exp_week5_C10 (5 repeats),N/A,
+exp_sbac30/,exp_sbac30/,EXCLUDED,NO,Exploratory SBAC-30 config not referenced in paper,N/A,
+exp_conc_sweep_deepseek/,exp_conc_sweep_deepseek/,EXCLUDED,NO,Exploratory DeepSeek concurrency sweep not in paper whitelist,N/A,
+exp_deepseek_n3/,exp_deepseek_n3/,EXCLUDED,NO,DeepSeek C=3 prototype not in paper whitelist,N/A,
+exp_selfhosted_vllm_C10_W8/,exp_selfhosted_vllm_C10_W8/,EXCLUDED,NO,C=10 config; paper uses C=20 (exp_selfhosted_vllm_C20_W8),N/A,
+exp11_bursty/ exp12_longtail/ exp2_heavyratio/ exp3_mixedmode/ exp5_scaleconc/ exp6_scaleconcreact/ exp7_clientreject/,multiple dirs,EXCLUDED,NO,Intermediate mock experiments not in final paper whitelist,N/A,~350 raw CSVs excluded
+evolution_8runs.csv,evolution_8runs.csv,EXCLUDED,NO,8-round tuning evolution log not a standalone paper table/figure,N/A,
