@@ -7,7 +7,7 @@
 # -------------------------------------------------------------------
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$REPO_ROOT"
 
 REPEATS="${REPEATS:-5}"
@@ -34,7 +34,7 @@ echo "    → $GATEWAY_BIN"
 # ── Exp1: Core ───────────────────────────────────────────────────────
 echo ""
 echo "[Exp1] Core performance (500 sessions, C=200, $REPEATS repeats)..."
-python scripts/run_all_experiments.py \
+python scripts/optional_live/run_all_experiments.py \
     --exp Exp1_Core \
     --repeats "$REPEATS" \
     --gateway-binary "$GATEWAY_BIN"
@@ -43,7 +43,7 @@ echo "    → results/exp1_core/"
 # ── Exp4: Mechanism Ablation ─────────────────────────────────────────
 echo ""
 echo "[Exp4] Mechanism ablation ($REPEATS repeats)..."
-python scripts/run_all_experiments.py \
+python scripts/optional_live/run_all_experiments.py \
     --exp Exp4_Ablation \
     --repeats "$REPEATS" \
     --gateway-binary "$GATEWAY_BIN"

@@ -11,7 +11,7 @@
 # -------------------------------------------------------------------
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$REPO_ROOT"
 
 REPEATS="${REPEATS:-5}"
@@ -39,7 +39,7 @@ echo "[1] Rajomon sensitivity (price_step ∈ {5,10,20,50,100})..."
 python scripts/rajomon_sensitivity.py \
     --repeats "$REPEATS" \
     --gateway-binary "$GATEWAY_BIN" 2>/dev/null \
-|| python scripts/run_all_experiments.py \
+|| python scripts/optional_live/run_all_experiments.py \
     --exp Rajomon_Sensitivity \
     --repeats "$REPEATS" \
     --gateway-binary "$GATEWAY_BIN"
@@ -48,7 +48,7 @@ echo "    → results/exp_rajomon_sensitivity/"
 # ── Discount Ablation ────────────────────────────────────────────────
 echo ""
 echo "[2] Discount function ablation..."
-python scripts/run_all_experiments.py \
+python scripts/optional_live/run_all_experiments.py \
     --exp Exp8_DiscountAblation \
     --repeats "$REPEATS" \
     --gateway-binary "$GATEWAY_BIN"
@@ -67,7 +67,7 @@ echo "    → results/exp_alpha_sweep/"
 echo ""
 echo "[4] Beta sensitivity (pure ReAct, mock backend, 5 repeats)..."
 echo "    Expected runtime: ~7–12 minutes"
-python scripts/run_beta_ablation.py --repeats "$REPEATS"
+python scripts/optional_live/run_beta_ablation.py --repeats "$REPEATS"
 echo "    → results/beta_ablation/"
 echo "    → tables/beta_ablation_table.tex"
 echo "    → plots/beta_ablation/"

@@ -7,7 +7,7 @@
 # -------------------------------------------------------------------
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$REPO_ROOT"
 
 GENERATED="$REPO_ROOT/results/generated"
@@ -21,12 +21,12 @@ echo "========================================"
 echo ""
 echo "[1] Beta sensitivity table (Appendix)..."
 if [ -f "results/beta_ablation/beta_summary.csv" ]; then
-    python scripts/run_beta_ablation.py --plot-only 2>/dev/null \
+    python scripts/optional_live/run_beta_ablation.py --plot-only 2>/dev/null \
         && echo "    → tables/beta_ablation_table.tex" \
         && echo "    → plots/beta_ablation/" \
         || echo "    [WARN] plot-only failed; table at tables/beta_ablation_table.tex already exists"
 else
-    echo "    [WARN] No beta_summary.csv — run 'python scripts/run_beta_ablation.py' first (mock, no API, ~7 min)"
+    echo "    [WARN] No beta_summary.csv — run 'python scripts/optional_live/run_beta_ablation.py' first (mock, no API, ~7 min)"
 fi
 
 # ── Adversarial Robustness Table ───────────────────────────────────────

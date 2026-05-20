@@ -63,11 +63,13 @@ mcp_server/           Python MCP backend + tool implementations
   tools/              calculator, weather, web_fetch, mock_heavy,
                       llm_reasoner, deepseek_llm, ...
 scripts/              Experiment runner, analysis, and plotting scripts
-  run_all_experiments.py        Main mock experiment driver
-  run_exp_real3_all.sh          Real-LLM (GLM/DeepSeek) experiment driver
-  reproduce_mock_core.sh        Reproducibility: mock core experiments
-  reproduce_main_paper_from_cache.sh  Re-generate figures from CSV cache
-  gen_paper_figures.py         Paper figure generator
+  _verify_paper_data.py         Primary verification entry point
+  _compute_bursty_stats.py      Bursty table verifier
+  _compute_tput_latency_stats.py  Tput-latency crossing verifier
+  gen_paper_figures.py          Paper figure generator
+  plot_rajomon_sensitivity.py   Rajomon sensitivity figure
+  reproduce_main_paper_from_cache.sh  Regenerate figures/tables from CSV cache
+  optional_live/                (Optional) Live re-run scripts requiring API/GPU
 docs/                 Artifact documentation
   REPRODUCIBILITY.md  Full reproduction guide with expected runtimes
   RESULT_MAPPING.md   Maps paper items to data files
@@ -139,13 +141,13 @@ go test ./... -timeout 120s
 
 ```bash
 # All 12 mock experiments, 5 repeats each
-python scripts/run_all_experiments.py --exp all --repeats 5
+python scripts/optional_live/run_all_experiments.py --exp all --repeats 5
 
 # Single experiment
-python scripts/run_all_experiments.py --exp Exp1_Core --repeats 5
+python scripts/optional_live/run_all_experiments.py --exp Exp1_Core --repeats 5
 
 # With CPU isolation (Linux/WSL2)
-python scripts/run_all_experiments.py --exp all --repeats 5 \
+python scripts/optional_live/run_all_experiments.py --exp all --repeats 5 \
     --gateway-binary ./gateway_linux \
     --cpu-backend 8-15 --cpu-gateway 4-7 --cpu-loadgen 0-3
 ```
@@ -166,7 +168,7 @@ Mock core experiments can be re-run from scratch:
 
 ```bash
 # Re-run mock core experiments from scratch (no API key, ~30–45 min)
-bash scripts/reproduce_mock_core.sh
+bash scripts/optional_live/reproduce_mock_core.sh
 
 # Re-generate paper figures from local CSV results (after re-running)
 python scripts/gen_paper_figures.py
@@ -195,7 +197,7 @@ bash scripts/run_exp_real3_all.sh                    # default: GLM-4-Flash
 bash scripts/run_exp_real3_all.sh --deepseek         # DeepSeek-V3
 
 # Tier 3: Bursty real-LLM
-python scripts/run_real_llm_bursty.py --repeats 3 --burst-size 30
+python scripts/optional_live/run_real_llm_bursty.py --repeats 3 --burst-size 30
 ```
 
 ---
@@ -267,11 +269,11 @@ go test ./... -timeout 120s
 ```bash
 # Linux / macOS / WSL2
 go build -o gateway ./cmd/gateway
-python scripts/run_all_experiments.py --exp Exp1_Core --repeats 1 --gateway-binary ./gateway
+python scripts/optional_live/run_all_experiments.py --exp Exp1_Core --repeats 1 --gateway-binary ./gateway
 
 # Windows PowerShell
 go build -o gateway.exe ./cmd/gateway
-python scripts/run_all_experiments.py --exp Exp1_Core --repeats 1 --gateway-binary gateway.exe
+python scripts/optional_live/run_all_experiments.py --exp Exp1_Core --repeats 1 --gateway-binary gateway.exe
 ```
 > The gateway binary is built locally and excluded from git. Omit `--gateway-binary` to let the script auto-build.
 
@@ -281,10 +283,10 @@ Sanity check: `plangate_full.cascade_failed == 0`, `plangate_full.effective_good
 
 ```bash
 # Linux / macOS / WSL2
-python scripts/run_all_experiments.py --exp Exp4_Ablation --repeats 1 --gateway-binary ./gateway
+python scripts/optional_live/run_all_experiments.py --exp Exp4_Ablation --repeats 1 --gateway-binary ./gateway
 
 # Windows PowerShell
-python scripts/run_all_experiments.py --exp Exp4_Ablation --repeats 1 --gateway-binary gateway.exe
+python scripts/optional_live/run_all_experiments.py --exp Exp4_Ablation --repeats 1 --gateway-binary gateway.exe
 ```
 Sanity check: `wo_budgetlock.effective_goodput` ~83% lower than `plangate_full`.
 

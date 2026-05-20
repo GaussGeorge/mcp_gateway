@@ -8,7 +8,7 @@
 # -------------------------------------------------------------------
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$REPO_ROOT"
 
 # ── Load .env if present ──────────────────────────────────────────────
@@ -84,8 +84,8 @@ echo "    → results/exp_week5_C40/"
 # ── Experiment: Bursty GLM C=20 B=30 ─────────────────────────────────
 echo ""
 echo "[3] Bursty GLM C=20 B=30 (3 repeats per gateway)..."
-if [ -f "scripts/run_real_llm_bursty.py" ]; then
-    python scripts/run_real_llm_bursty.py --repeats 3 --burst-size 30
+if [ -f "scripts/optional_live/run_real_llm_bursty.py" ]; then
+    python scripts/optional_live/run_real_llm_bursty.py --repeats 3 --burst-size 30
 else
     echo "    [SKIP] run_real_llm_bursty.py not found"
 fi
@@ -95,7 +95,7 @@ echo "    → results/exp_bursty_C20_B30/"
 echo ""
 echo "[4] Self-hosted vLLM (optional — requires local GPU + vLLM server at port 8000)..."
 if [ "${RUN_VLLM:-0}" = "1" ]; then
-    python scripts/run_selfhosted_vllm.py \
+    python scripts/optional_live/run_selfhosted_vllm.py \
         --concurrency 20 --workers 8 --repeats 3 \
         --output results/exp_selfhosted_vllm_C20_W8
     echo "    → results/exp_selfhosted_vllm_C20_W8/"
@@ -106,7 +106,7 @@ fi
 # ── Regenerate figures/tables from fresh data ─────────────────────────
 echo ""
 echo "[5] Regenerating tables from new data..."
-bash scripts/reproduce_real_llm_from_cache.sh
+bash scripts/optional_live/reproduce_real_llm_from_cache.sh
 
 echo ""
 echo "========================================"

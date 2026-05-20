@@ -7,7 +7,7 @@
 # -------------------------------------------------------------------
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$REPO_ROOT"
 
 GENERATED="$REPO_ROOT/results/generated"
@@ -79,5 +79,5 @@ echo " By default, paper figures use these cached CSV traces"
 echo " to avoid API cost and variance."
 echo ""
 echo " For live rerun (requires .env credentials), see:"
-echo "   bash scripts/reproduce_real_llm_live.sh"
+echo "   bash scripts/optional_live/reproduce_real_llm_live.sh"
 echo "========================================"

@@ -75,7 +75,7 @@ echo "    → $GENERATED/rajomon_sensitivity.pdf"
 # ── 6. Beta Sensitivity (Appendix) ──────────────────────────────────
 echo ""
 echo "[6] Beta Sensitivity (Appendix)..."
-python scripts/run_beta_ablation.py --plot-only 2>/dev/null \
+python scripts/optional_live/run_beta_ablation.py --plot-only 2>/dev/null \
     || echo "    [WARN] beta ablation plot-only mode skipped; see results/beta_ablation/beta_summary.csv"
 echo "    → tables/beta_ablation_table.tex"
 echo "    → plots/beta_ablation/beta_ablation_cascade_abd_success.{pdf,png}"
