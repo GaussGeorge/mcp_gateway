@@ -108,20 +108,20 @@ All paper tables and figures can be regenerated without re-running any experimen
 
 | File (under `artifact_cache/`) | Paper Section |
 |------|--------------|
-| `exp1_core/exp1_core_summary.csv` | §5.1 Core results (Table 3) |
-| `exp4_ablation/exp4_ablation_summary.csv` | §5.2 Ablation (Table 4) |
-| `exp8_discountablation/exp8_discountablation_summary.csv` | §5.3 Discount ablation |
-| `exp_rajomon_sensitivity/` | §5.3 Rajomon sensitivity |
-| `exp_alpha_sweep/alpha_sweep_summary.csv` | §5.3 Alpha sensitivity |
+| `exp1_core/exp1_core_summary.csv` | §4.2 Core results (Table 3) |
+| `exp4_ablation/exp4_ablation_summary.csv` | §4.3 Ablation (Table 4) |
+| `exp8_discountablation/exp8_discountablation_summary.csv` | §4.3 Discount ablation |
+| `exp_rajomon_sensitivity/` | §4.3 Rajomon sensitivity |
+| `exp_alpha_sweep/alpha_sweep_summary.csv` | §4.3 Alpha sensitivity |
 | `beta_ablation/beta_summary.csv` | Appendix: Beta sensitivity |
-| `exp_week5_C10/week5_summary.csv` | §5.4 Steady GLM C=10 |
-| `exp_week5_C40/week5_summary.csv` | §5.4 Steady GLM C=40 |
-| `exp_bursty_C20_B30/bursty_summary.csv` | §5.4 Bursty GLM |
-| `exp_selfhosted_vllm_C20_W8/selfhosted_c20_summary.csv` | §5.4 vLLM C=20/W=8 |
-| `exp10_adversarial/exp10_adversarial_summary.csv` | §5.5 Adversarial |
-| `exp_tput_latency/tput_latency_agg.csv` | §5.5 Throughput-latency figure |
-| `exp_week4_formal/week2_smoke_summary.csv` | §5.1 Commitment Quality (Table 2) |
-| `paper_figures/table_commitment_quality.tex` | §5.1 Table 2 (pre-built LaTeX) |
+| `exp_week5_C10/week5_summary.csv` | §4.4 Steady GLM C=10 |
+| `exp_week5_C40/week5_summary.csv` | §4.4 Steady GLM C=40 |
+| `exp_bursty_C20_B30/bursty_summary.csv` | §4.6 Bursty GLM |
+| `exp_selfhosted_vllm_C20_W8/selfhosted_c20_summary.csv` | §4.7 vLLM C=20/W=8 |
+| `exp10_adversarial/exp10_adversarial_summary.csv` | §4.5 Adversarial |
+| `exp_tput_latency/tput_latency_agg.csv` | §4.8 Throughput-latency figure |
+| `exp_week4_formal/week2_smoke_summary.csv` | §4.1 Commitment Quality (Table 2) |
+| `paper_figures/table_commitment_quality.tex` | §4.1 Table 2 (pre-built LaTeX) |
 
 ---
 
