@@ -234,54 +234,7 @@ print("SBAC Casc: 34.8, 39.2, 38.0, 38.0, 35.6")
 
 # ============================================================================
 print("\n" + "="*100)
-print("TABLE 7: tab:bursty_longtail - Exp11 and Exp12")
-print("="*100)
-data11 = read_csv('results/exp11_bursty/exp11_bursty_summary.csv')
-data12 = read_csv('results/exp12_longtail/exp12_longtail_summary.csv')
-
-print("\nExp11 (Bursty):")
-for gw in ['ng','srl','sbac','plangate_full']:
-    rows = [r for r in data11 if r['gateway']==gw]
-    succ = avg([float(r['success']) for r in rows])
-    succ_sd = sd([float(r['success']) for r in rows])
-    casc = avg([float(r['cascade_failed']) for r in rows])
-    casc_sd = sd([float(r['cascade_failed']) for r in rows])
-    gps = avg([float(r['effective_goodput_s']) for r in rows])
-    # ABD = cascade / (success + cascade) * 100
-    abd_vals = [float(r['cascade_failed'])/(float(r['success'])+float(r['cascade_failed']))*100 
-                if (float(r['success'])+float(r['cascade_failed']))>0 else 0 for r in rows]
-    abd = avg(abd_vals)
-    label = {'ng':'NG','srl':'SRL','sbac':'SBAC','plangate_full':'PlanGate'}[gw]
-    print(f"  {label}: Succ={succ:.1f}+-{succ_sd:.1f}, Casc={casc:.1f}+-{casc_sd:.1f}, ABD={abd:.1f}%, GP/s={gps:.1f}")
-
-print("\nExp12 (Long-Tail):")
-for gw in ['ng','srl','sbac','plangate_full']:
-    rows = [r for r in data12 if r['gateway']==gw]
-    succ = avg([float(r['success']) for r in rows])
-    succ_sd = sd([float(r['success']) for r in rows])
-    casc = avg([float(r['cascade_failed']) for r in rows])
-    casc_sd = sd([float(r['cascade_failed']) for r in rows])
-    gps = avg([float(r['effective_goodput_s']) for r in rows])
-    abd_vals = [float(r['cascade_failed'])/(float(r['success'])+float(r['cascade_failed']))*100 
-                if (float(r['success'])+float(r['cascade_failed']))>0 else 0 for r in rows]
-    abd = avg(abd_vals)
-    label = {'ng':'NG','srl':'SRL','sbac':'SBAC','plangate_full':'PlanGate'}[gw]
-    print(f"  {label}: Succ={succ:.1f}+-{succ_sd:.1f}, Casc={casc:.1f}+-{casc_sd:.1f}, ABD={abd:.1f}%, GP/s={gps:.1f}")
-
-print("\nPaper Exp11 claims:")
-print("  NG:       Succ=24.6+-4.2, Casc=98.4+-10.6, ABD=79.9%, GP/s=13.8")
-print("  SRL:      Succ=24.6+-2.6, Casc=82.0+-16.9, ABD=76.3%, GP/s=13.5")
-print("  SBAC:     Succ=32.0+-2.4, Casc=25.2+-3.9,  ABD=43.9%, GP/s=20.3")
-print("  PlanGate: Succ=45.8+-6.6, Casc=0.2+-0.4,   ABD=0.4%,  GP/s=26.9")
-print("Paper Exp12 claims:")
-print("  NG:       Succ=18.0+-3.2, Casc=91.2+-1.9,  ABD=83.6%, GP/s=14.2")
-print("  SRL:      Succ=36.2+-2.9, Casc=93.0+-6.0,  ABD=72.0%, GP/s=28.4")
-print("  SBAC:     Succ=43.6+-2.4, Casc=36.0+-3.3,  ABD=45.2%, GP/s=41.4")
-print("  PlanGate: Succ=64.6+-6.4, Casc=0.0+-0.0,   ABD=0.0%,  GP/s=60.6")
-
-# ============================================================================
-print("\n" + "="*100)
-print("TABLE 8: tab:selfhosted - Self-Hosted vLLM (C=20, N=3)")
+print("TABLE 7: tab:selfhosted - Self-Hosted vLLM (C=20, N=3)")
 print("  NOTE: C=10 CSV deprecated — those runs used Brain=qwen (env override), not GLM-4-Flash.")
 print("="*100)
 data_sh = read_csv('results/exp_selfhosted_vllm_C20_W8/selfhosted_c20_summary.csv')

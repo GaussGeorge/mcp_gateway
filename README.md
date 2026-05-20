@@ -68,8 +68,7 @@ scripts/              Experiment runner, analysis, and plotting scripts
   _compute_tput_latency_stats.py  Tput-latency crossing verifier
   gen_paper_figures.py          Paper figure generator
   plot_rajomon_sensitivity.py   Rajomon sensitivity figure
-  reproduce_main_paper_from_cache.sh  Regenerate figures/tables from CSV cache
-  optional_live/                (Optional) Live re-run scripts requiring API/GPU
+  reproduce_main_paper_from_cache.sh  One-click cache verification
 docs/                 Artifact documentation
   REPRODUCIBILITY.md  Full reproduction guide with expected runtimes
   RESULT_MAPPING.md   Maps paper items to data files
@@ -137,19 +136,21 @@ go test ./... -timeout 120s
 
 ---
 
-## Running Controlled Mock Experiments (Tier 1)
+## Running Controlled Mock Experiments (Tier C)
+
+Live mock re-runs require Go 1.21+ and locally built gateway binary.
+Cached CSV verification (Tier A/B) does not require re-running experiments.
 
 ```bash
-# All 12 mock experiments, 5 repeats each
+# Build gateway first
+go build -o gateway ./cmd/gateway          # Linux/macOS
+go build -o gateway.exe ./cmd/gateway      # Windows
+
+# Run Exp1 Core (1 repeat, ~1-5 min)
+python scripts/optional_live/run_all_experiments.py --exp Exp1_Core --repeats 1 --gateway-binary ./gateway
+
+# Run full suite (5 repeats, ~30-45 min)
 python scripts/optional_live/run_all_experiments.py --exp all --repeats 5
-
-# Single experiment
-python scripts/optional_live/run_all_experiments.py --exp Exp1_Core --repeats 5
-
-# With CPU isolation (Linux/WSL2)
-python scripts/optional_live/run_all_experiments.py --exp all --repeats 5 \
-    --gateway-binary ./gateway_linux \
-    --cpu-backend 8-15 --cpu-gateway 4-7 --cpu-loadgen 0-3
 ```
 
 Results are written to `results/exp1_core/`, `results/exp2_heavyratio/`, etc.
@@ -164,10 +165,10 @@ Full cached traces for real-LLM experiments are not tracked in this public branc
 they are distributed separately through the conference artifact submission mechanism,
 not as a public GitHub release.
 
-Mock core experiments can be re-run from scratch:
+Mock core experiments can be re-run from scratch (requires Go + gateway binary):
 
 ```bash
-# Re-run mock core experiments from scratch (no API key, ~30–45 min)
+# Re-run mock core experiments (no API key, ~30–45 min)
 bash scripts/optional_live/reproduce_mock_core.sh
 
 # Re-generate paper figures from local CSV results (after re-running)
@@ -192,9 +193,8 @@ cp .env.example .env
 ```
 
 ```bash
-# Tier 2: Steady real-LLM (GLM-4-Flash or DeepSeek-V3)
-bash scripts/run_exp_real3_all.sh                    # default: GLM-4-Flash
-bash scripts/run_exp_real3_all.sh --deepseek         # DeepSeek-V3
+# Tier 2: Steady real-LLM (GLM-4-Flash or DeepSeek-V3, requires API key)
+bash scripts/optional_live/reproduce_real_llm_live.sh
 
 # Tier 3: Bursty real-LLM
 python scripts/optional_live/run_real_llm_bursty.py --repeats 3 --burst-size 30
@@ -247,16 +247,11 @@ make smoke               # Go unit tests (< 1 min)
 make reproduce-core      # Exp1_Core mock (~2 min)
 make reproduce-ablation  # Exp4_Ablation mock (~1 min)
 make reproduce-recovery  # PlanGate-R Go tests (< 2 min)
-make pareto-dryrun       # Pareto sweep dry-run (instant)
 ```
 
-**One-click targets (Windows PowerShell):**
+**Windows PowerShell — unit tests only:**
 ```powershell
-.\scripts\artifact_smoke.ps1 -Target smoke
-.\scripts\artifact_smoke.ps1 -Target reproduce-core
-.\scripts\artifact_smoke.ps1 -Target reproduce-ablation
-.\scripts\artifact_smoke.ps1 -Target reproduce-recovery
-.\scripts\artifact_smoke.ps1 -Target pareto-dryrun
+go test ./... -timeout 120s
 ```
 
 **1. Unit tests (no server, no API key, < 1 min):**
@@ -264,7 +259,7 @@ make pareto-dryrun       # Pareto sweep dry-run (instant)
 go test ./... -timeout 120s
 ```
 
-**2. PlanGate core mock smoke — validates PlanGate reduces cascade vs NG/SBAC (no API key, ~1–5 min, verified 1.2 min on Windows):**
+**2. PlanGate core mock smoke — validates PlanGate reduces cascade vs NG/SBAC (no API key, ~1–5 min):**
 
 ```bash
 # Linux / macOS / WSL2
@@ -279,7 +274,7 @@ python scripts/optional_live/run_all_experiments.py --exp Exp1_Core --repeats 1 
 
 Sanity check: `plangate_full.cascade_failed == 0`, `plangate_full.effective_goodput` is highest.
 
-**3. PlanGate mechanism ablation smoke — validates budget-lock matters (no API key, ~1–3 min, verified 0.8 min on Windows):**
+**3. PlanGate mechanism ablation smoke (no API key, ~1–3 min):**
 
 ```bash
 # Linux / macOS / WSL2
@@ -315,9 +310,8 @@ go test ./plangate/... -run "TestRuntime" -v -timeout 120s
 - Large external tokenizer assets are not tracked; see
   [`scripts/deepseek_v3_tokenizer/README.md`](scripts/deepseek_v3_tokenizer/README.md)
   for how to obtain `tokenizer.json` if needed for token-accounting scripts.
-- One-click reproduction: `make <target>` (Linux/macOS/WSL2) or
-  `.\scripts\artifact_smoke.ps1 -Target <target>` (Windows). Run `make help` for the full target list.
-- `figures-from-cache` target requires the conference supplementary artifact unpacked to `artifact_cache/`.
+- One-click cache reproduction: `bash scripts/reproduce_main_paper_from_cache.sh` (Linux/macOS/WSL2)
+- One-click mock rerun: `make reproduce-core` (Linux/macOS/WSL2) or build gateway and run `scripts/optional_live/run_all_experiments.py`
 
 ---
 
