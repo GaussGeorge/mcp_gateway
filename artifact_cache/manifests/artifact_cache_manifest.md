@@ -19,7 +19,8 @@ experiments are excluded.
 
 | Paper Item | Source CSV (under `results/`) | Destination (under `artifact_cache/`) | Included? | API Key for Live Rerun? | Notes |
 |-----------|-------------------------------|---------------------------------------|-----------|------------------------|-------|
-| **Table 2**: Commitment Quality | `paper_figures/table_commitment_quality.tex` | `paper_figures/table_commitment_quality.tex` | ✅ YES | No | Pre-built LaTeX from `exp_week4_formal`; used by `reproduce_main_paper_from_cache.sh` step 1 |
+| **Table 2**: Commitment Quality (CSV verification) | `exp_week4_formal/week2_smoke_summary.csv` | `exp_week4_formal/week2_smoke_summary.csv` | ✅ YES | No | Verified by `scripts/_verify_paper_data.py` for Commitment Quality metrics |
+| **Table 2**: Commitment Quality (pre-built LaTeX reference) | `paper_figures/table_commitment_quality.tex` | `paper_figures/table_commitment_quality.tex` | ✅ YES | No | Pre-built reference LaTeX table from `exp_week4_formal`; retained for reference |
 | **Table 3**: Core Mock Performance | `exp1_core/exp1_core_summary.csv` | `exp1_core/exp1_core_summary.csv` | ✅ YES | No | §4.2 / Table 3; mock backend, no API |
 | **Figure: Fairness Boxplot** | `exp1_core/{gw}_run{1..5}_sessions.csv` (20 files) | `exp1_core/{gw}_run{1..5}_sessions.csv` | ✅ YES | No | Session-level step data for `fig_fairness_boxplot()` in `gen_paper_figures.py` |
 | **Table 4**: Mechanism Ablation | `exp4_ablation/exp4_ablation_summary.csv` | `exp4_ablation/exp4_ablation_summary.csv` | ✅ YES | No | §4.3 mechanism ablation |
@@ -52,7 +53,7 @@ experiments are excluded.
 | `log/_diag*`, `log/_diag2*` | Diagnostic/debug output, not experimental results | 2 CSVs |
 | `exp_week5_pilot/` | Pilot runs (C=20/30/40, single repeat each) used to calibrate C=10/C=40 final runs | ~17 CSVs |
 | `exp_week2_smoke/` | Smoke-test from week 2, not a paper experiment | 1 CSV |
-| `exp_week4_formal/week2_smoke_summary.csv` | Leftover smoke summary inside paper-used dir; only steps.csv data is used | 1 CSV |
+| `exp_week4_formal/week2_smoke_summary.csv` | INCLUDED (paper-used) — verified by `_verify_paper_data.py` for Commitment Quality | 0 CSV excluded |
 | `exp_pp_smoke/` | Smoke test for progress-priority, not a paper experiment | ~30 CSVs |
 | `exp_week5_real_llm/` | Early 1-repeat pilot run superseded by `exp_week5_C10` (5 repeats) | ~5 CSVs |
 | `exp_sbac30/` | Exploratory SBAC-30 config test, not referenced in paper | 1 CSV |
@@ -72,7 +73,7 @@ experiments are excluded.
 |-----------|--------------|---------|--------|
 | Table 2 pre-built LaTeX | `paper_figures/table_commitment_quality.tex` | ✅ Yes | Include |
 |Exp9 scalestress (scalability figure) | `exp9_scalestress/exp9_scalestress_summary.csv` | ✅ Yes | Include — referenced by `gen_paper_figures.py` |
-| `exp_week4_formal/` raw steps.csv | `exp_week4_formal/{gw}/*/steps.csv` | ✅ Yes | **NOT included** in cache (only pre-built `.tex` is needed) |
+| `exp_week4_formal/` raw steps.csv | `exp_week4_formal/{gw}/*/steps.csv` | ✅ Yes | Included in cache for traceability; primary verifier uses `week2_smoke_summary.csv` |
 | `results/paper_figures/PNG/`, `PDF/` | `paper_figures/PNG/*.png`, `PDF/*.pdf` | ✅ Yes | **NOT included** — these are generated outputs, not source data |
 | PlanGate-R Recovery CSV | N/A (code only) | N/A | Use `go test ./plangate/... -run TestRuntime` |
 
