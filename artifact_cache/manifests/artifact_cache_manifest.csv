@@ -34,6 +34,8 @@ Table 6: Steady Real-LLM GLM C=10,exp_week5_C10/week5_summary.csv,exp_week5_C10/
 Table 6: Steady Real-LLM GLM C=40,exp_week5_C40/week5_summary.csv,exp_week5_C40/week5_summary.csv,YES,§4.4 Steady GLM-4-Flash C=40,Yes (live rerun),
 Table 7: Bursty Real-LLM,exp_bursty_C20_B30/bursty_summary.csv,exp_bursty_C20_B30/bursty_summary.csv,YES,§4.5 Bursty GLM-4-Flash C=20 B=30,Yes (live rerun),
 Table 8 / Appendix: Self-Hosted vLLM,exp_selfhosted_vllm_C20_W8/selfhosted_c20_summary.csv,exp_selfhosted_vllm_C20_W8/selfhosted_c20_summary.csv,YES,§4.5 / Appendix vLLM C=20 W=8,No (GPU for live rerun),GPU required for live rerun
+Table 10: Throughput-Latency Sweep (summary),exp_tput_latency/tput_latency_summary.csv,exp_tput_latency/tput_latency_summary.csv,YES,§4.8 tput-latency table verification input,No,
+Figure: Throughput-Latency Sweep (aggregated),exp_tput_latency/tput_latency_agg.csv,exp_tput_latency/tput_latency_agg.csv,YES,Used by gen_paper_figures.py fig_tput_latency(),No,
 Table 9: PlanGate-R Recovery,N/A (code only),N/A,N/A,Reproduced by go test ./plangate/... -run TestRuntime,No,No CSV needed
 Pareto Frontier Figure (B-Strengthening),pareto_frontier_selected/pareto_summary.csv,pareto_frontier_selected/pareto_summary.csv,YES,Admission-vs-cascade tradeoff; all PlanGate configs cascade=0,No,
 neutral_multitool_real_llm/ (all CSVs),neutral_multitool_real_llm/,EXCLUDED,NO,Neutral-prompt experiment – generic prompts not PlanGate governance prompt,N/A,~400 raw CSVs excluded
@@ -42,7 +44,7 @@ exp_real3_deepseek/_corrupted_backup/,exp_real3_deepseek/_corrupted_backup/,EXCL
 log/_diag*.csv,log/,EXCLUDED,NO,Diagnostic/debug output not experimental results,N/A,
 exp_week5_pilot/ (all CSVs),exp_week5_pilot/,EXCLUDED,NO,Pilot calibration runs superseded by C10/C40,N/A,Single-repeat pilots
 exp_week2_smoke/,exp_week2_smoke/,EXCLUDED,NO,Early smoke test not a paper experiment,N/A,
-exp_week4_formal/week2_smoke_summary.csv,exp_week4_formal/week2_smoke_summary.csv,EXCLUDED,NO,Leftover smoke summary inside paper-used directory,N/A,Only steps.csv data from this dir is paper-used
+Table 2: Commitment Quality (CSV),exp_week4_formal/week2_smoke_summary.csv,exp_week4_formal/week2_smoke_summary.csv,YES,Primary CSV used by scripts/_verify_paper_data.py for Commitment Quality verification,No,
 exp_pp_smoke/,exp_pp_smoke/,EXCLUDED,NO,Smoke test for progress-priority not a paper experiment,N/A,
 exp_week5_real_llm/,exp_week5_real_llm/,EXCLUDED,NO,Early 1-repeat pilot superseded by exp_week5_C10 (5 repeats),N/A,
 exp_sbac30/,exp_sbac30/,EXCLUDED,NO,Exploratory SBAC-30 config not referenced in paper,N/A,
