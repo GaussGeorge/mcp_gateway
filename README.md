@@ -91,15 +91,13 @@ mcp_server/           Python MCP backend + tool implementations
                       llm_reasoner, deepseek_llm, ...
 scripts/              Experiment runner, analysis, and plotting scripts
   run_all_experiments.py        Main mock experiment driver
-  run_exp_real3_all.sh          Real-LLM (GLM/DeepSeek) experiment driver
   run_gateway_overhead_benchmark.py  Gateway-overhead benchmark driver
   reproduce_mock_core.sh        Reproducibility: mock core experiments
   reproduce_main_paper_from_cache.sh  Re-generate figures from CSV cache
   gen_paper_figures.py         Paper figure generator
 docs/                 Artifact documentation
   REPRODUCIBILITY.md  Full reproduction guide with expected runtimes
-  RESULT_MAPPING.md   Maps paper items to data files
-  experiment_code_mapping.md
+  TABLE_FIGURE_MAPPING.md  Maps paper items to data files and scripts
 ```
 
 ---
@@ -202,7 +200,7 @@ python scripts/gen_paper_figures.py
 
 See [docs/REPRODUCIBILITY.md](docs/REPRODUCIBILITY.md) for full instructions,
 expected runtimes, and troubleshooting.
-See [docs/RESULT_MAPPING.md](docs/RESULT_MAPPING.md) for a mapping of paper
+See [TABLE_FIGURE_MAPPING.md](TABLE_FIGURE_MAPPING.md) for a mapping of paper
 items to specific data files.
 
 ---
@@ -219,8 +217,8 @@ cp .env.example .env
 
 ```bash
 # Tier 2: Steady real-LLM (GLM-4-Flash or DeepSeek-V3)
-bash scripts/run_exp_real3_all.sh                    # default: GLM-4-Flash
-bash scripts/run_exp_real3_all.sh --deepseek         # DeepSeek-V3
+python scripts/run_real_llm_week5.py --llm glm --concurrency 10
+python scripts/run_real_llm_week5.py --llm deepseek --concurrency 10
 
 # Tier 3: Bursty real-LLM
 python scripts/run_real_llm_bursty.py --repeats 3 --burst-size 30
@@ -264,8 +262,8 @@ by 10.1% per run.
 > Mock reproduction does **not** require API keys.
 > PlanGate-R reproduction is P&S controlled mock only.
 > Exact paper tables require full runs; minimal smoke validates qualitative trends.
-> See [docs/minimal_reproduction.md](docs/minimal_reproduction.md) and
-> [docs/paper_mapping.md](docs/paper_mapping.md) for full details.
+> See [docs/REPRODUCIBILITY.md](docs/REPRODUCIBILITY.md) and
+> [TABLE_FIGURE_MAPPING.md](TABLE_FIGURE_MAPPING.md) for full details.
 
 **One-click targets (Linux/macOS/WSL2):**
 ```bash

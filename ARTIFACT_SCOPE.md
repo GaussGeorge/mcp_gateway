@@ -32,7 +32,7 @@ The following experiments and their cached results are part of the paper:
 | 10 | Bursty Real-LLM | `results/exp_bursty_C20_B30/` | GLM-4-Flash bursty, C=20, burst=30 |
 | 11 | Self-Hosted vLLM | `results/exp_selfhosted_vllm_C20_W8/` | vLLM C=20, workers=8 |
 | 12 | Adversarial Robustness (Appendix) | `results/exp10_adversarial/` | 10% malicious agents |
-| 13 | Pareto Frontier Tradeoff (B-Strengthening) | `results/pareto_frontier_selected/` | n=3 selected repeats; scripts in `scripts/run_pareto_frontier.py`; notes in `docs/pareto_frontier_notes.md` |
+| 13 | Pareto Frontier Tradeoff (B-Strengthening) | `artifact_cache/pareto_frontier_selected/` | n=3 selected repeats; see `TABLE_FIGURE_MAPPING.md` for data/script mapping |
 
 Additional mock experiments (Exp2–Exp12 series) are referenced in the paper
 for breadth evaluation: `results/exp2_heavyratio/` through `results/exp12_longtail/`.
@@ -75,16 +75,14 @@ The minimal reproduction path (no API key required):
   `python scripts/run_all_experiments.py --exp Exp4_Ablation --repeats 1` (~1 min, no API key)  
   `go test ./plangate/... -run "TestRuntime"` — PlanGate-R recovery smoke (< 2 min, no API)
 - **Level 2 — From supplementary cache**: regenerate paper tables/figures using cached CSVs  
-  Cached CSVs are **not** committed to this public repo; they are distributed via the  
-  conference supplementary artifact. Unpack to `artifact_cache/` before running from-cache scripts.
+  Cached CSVs are distributed in `artifact_cache/`. All verification scripts read from  
+  frozen data without requiring a live re-run.
 - **Level 3 (optional)** — Live real-LLM rerun (requires `.env` API credentials)
 
 See `Makefile` (Linux/macOS/WSL2) or `scripts/artifact_smoke.ps1` (Windows) for one-click targets.
 
-Full cached traces for real-LLM experiments are not tracked in this public repository.
-For conference submission, they are provided through the conference supplementary
-artifact mechanism. Mock experiments can be re-run from scratch using the commands
-in `docs/minimal_reproduction.md`.
+Full cached traces for real-LLM experiments are provided in `artifact_cache/`.
+Mock experiments can be re-run from scratch using commands in [README.md](README.md).
 
 See `README.md` § "Minimal Reproduction" for exact commands.
 

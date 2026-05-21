@@ -2,7 +2,7 @@
 
 This document covers prerequisites, expected runtimes, common issues, and FAQ for reproducing all results in the PlanGate paper.
 
-For a quick mapping of paper items to data files and commands, see [RESULT_MAPPING.md](RESULT_MAPPING.md).  
+For a quick mapping of paper items to data files and commands, see [../TABLE_FIGURE_MAPPING.md](../TABLE_FIGURE_MAPPING.md).  
 For the scope declaration (what is and isn't in the artifact), see [../ARTIFACT_SCOPE.md](../ARTIFACT_SCOPE.md).
 
 ---
