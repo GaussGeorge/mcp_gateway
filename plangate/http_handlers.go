@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"sync/atomic"
 	"time"
 
 	mcpgov "mcp-governance"
@@ -16,6 +17,42 @@ import (
 func writeJSON(w http.ResponseWriter, v interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(v)
+}
+
+// buildReservationFromShared reconstructs a lightweight HTTPSessionReservation
+// from a SharedPSRecord retrieved from the shared state store.
+// The releaseFn releases both the local budgetMgr entry (no-op if absent) and
+// the shared store slot, ensuring idempotent cleanup.
+func (s *MCPDPServer) buildReservationFromShared(rec *SharedPSRecord) *HTTPSessionReservation {
+	res := &HTTPSessionReservation{
+		SessionID:    rec.SessionID,
+		TotalCost:    rec.TotalCost,
+		LockedPrices: rec.LockedPrices,
+		CurrentStep:  rec.CurrentStep,
+		ExpiresAt:    time.Unix(0, rec.ExpiresUnix),
+	}
+	// releaseFn: release the shared store slot (deduct global count).
+	if s.sharedStateStore != nil {
+		store := s.sharedStateStore
+		sid := rec.SessionID
+		res.releaseFn = func() {
+			_ = store.ReleaseSession(context.Background(), sid)
+		}
+	}
+	return res
+}
+
+// newStateMissError returns a JSON-RPC error that signals a cross-node state
+// miss to the caller. Error code -32010 is PlanGate-specific (not in JSON-RPC
+// or MCP standard ranges). The caller (load generator) recognises this code
+// and increments state_miss_count.
+func newStateMissError(id interface{}, sessionID string) *mcpgov.JSONRPCResponse {
+	return mcpgov.NewErrorResponse(id, -32010,
+		"PlanGate state miss: reservation not found on this node",
+		map[string]interface{}{
+			"session_id": sessionID,
+			"state_miss": true,
+		})
 }
 
 // ServeHTTP 实现 http.Handler，处理所有 MCP JSON-RPC 请求
@@ -63,6 +100,11 @@ func (s *MCPDPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// 附加网关处理耗时到响应头（供延迟分解实验使用）
 	gatewayElapsed := time.Since(gatewayStart)
 	w.Header().Set("X-Gateway-Latency-Us", strconv.FormatInt(gatewayElapsed.Microseconds(), 10))
+
+	// 附加节点 ID（多节点实验路由追踪）
+	if s.nodeID != "" {
+		w.Header().Set("X-Gateway-Node", s.nodeID)
+	}
 
 	writeJSON(w, resp)
 }
@@ -118,6 +160,22 @@ func (s *MCPDPServer) handleToolsCall(ctx context.Context, r *http.Request, req 
 	if sessionID != "" && !s.disableBudgetLock {
 		if res, ok := s.budgetMgr.Get(sessionID); ok {
 			return s.handleReservedStep(ctx, req, res)
+		}
+		// Local reservation not found — try shared store (multi-node fallback).
+		if s.sharedStateStore != nil {
+			rec, err := s.sharedStateStore.GetReservation(ctx, sessionID)
+			if err == nil && rec != nil {
+				// Reconstruct a lightweight reservation from shared state.
+				res := s.buildReservationFromShared(rec)
+				return s.handleReservedStep(ctx, req, res)
+			}
+		}
+		// X-Session-Step > 0 with no reservation found anywhere → genuine state miss.
+		stepIdx, _ := strconv.Atoi(r.Header.Get(HeaderSessionStep))
+		if stepIdx > 0 {
+			atomic.AddInt64(&s.stateMissCount, 1)
+			// Return a special error so the caller can detect and count it.
+			return newStateMissError(req.ID, sessionID)
 		}
 	}
 

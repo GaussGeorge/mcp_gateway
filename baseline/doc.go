@@ -1,13 +1,15 @@
 // doc.go
-// Package baseline 提供 MCP 服务治理实验的两个基线对比方法。
+// Package baseline 提供 MCP 服务治理实验的基线对比方法。
 //
 // # 方法概览
 //
-// 本包实现了实验设计中定义的两个 baseline 网关，与主方法 Dynamic Pricing (DP)
+// 本包实现了实验设计中定义的 baseline 网关，与主方法 Dynamic Pricing (DP)
 // 进行对比实验：
 //
 //   - NGGateway (No Governance): 无治理基线，所有请求直接透传
 //   - SRLGateway (Static Rate Limit): 静态限流基线，使用令牌桶 + 并发数限制
+//   - EnvoyApproxGateway: Envoy-style request-level 近似（local/global rate limit + circuit breaker）
+//   - KongApproxGateway: Kong-style request-level 近似（global quota + per-consumer quota）
 //
 // # 实验公平性保证
 //
@@ -18,6 +20,7 @@
 //  3. 工具注册一致性：使用相同的 RegisterTool API 注册工具
 //  4. 指标采集一致性：响应中统一携带 _meta（price, name），便于下游指标统一收集
 //  5. 统计接口一致性：均提供 GetStats 方法获取运行时统计
+//  6. Proxy baseline 约束：不得读取完整 DAG、不得做未来步骤 reservation、不得实现 session commitment
 //
 // # 使用示例
 //

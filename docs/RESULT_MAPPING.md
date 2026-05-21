@@ -118,8 +118,9 @@ All paths are relative to the repository root.
   - Summary: `results/exp_alpha_sweep/alpha_sweep_summary.csv`
 - **Reproduce from cache**:
   ```bash
-  python scripts/update_paper_figures.py --exp alpha_sweep
+  python scripts/run_alpha_sweep.py --plot-only
   ```
+  *(注：`update_paper_figures.py` 已归档至 `scripts/archive/`，请使用上方命令)*
 
 ---
 
@@ -239,6 +240,24 @@ plots/beta_ablation/
 
 ---
 
+## Proxy Baseline Metric Semantics (Paper Integration Guardrail)
+
+For `scripts/run_proxy_baseline_sweep.py` and `scripts/_compute_proxy_baseline_stats.py`:
+
+- `success_sessions_per_s`:
+  - Definition: `success / elapsed_seconds`
+  - Meaning: raw successful-session throughput.
+
+- `effective_goodput_s`:
+  - Definition: `sum(session.effective_goodput for SUCCESS sessions) / elapsed_seconds`
+  - Meaning: weighted effective goodput rate, where each successful session contributes its full-chain weighted utility (`effective_goodput`), not a flat `1` count.
+
+- Reporting rule:
+  - Do not substitute `effective_goodput_s` for successful-session throughput.
+  - When discussing admission aggressiveness (e.g., high `REJECTED@S0`), report `success_sessions_per_s` and `effective_goodput_s` side-by-side.
+
+---
+
 ## Mapping: scripts → experiments
 
 | Script | Experiment |
@@ -252,6 +271,7 @@ plots/beta_ablation/
 | `scripts/run_selfhosted_vllm.py` | Self-hosted vLLM |
 | `scripts/plot_rajomon_sensitivity.py` | Rajomon sensitivity figure |
 | `scripts/update_paper_tables.py` | Table regeneration from cached CSV |
-| `scripts/update_paper_figures.py` | Figure regeneration from cached CSV |
+| `scripts/gen_paper_figures.py` | Figure regeneration from cached CSV (canonical) |
+| `scripts/plot_rajomon_sensitivity.py` | Rajomon sensitivity figure |
 | `scripts/analyze_real_llm.py` | Real-LLM summary from cached CSV |
 | `scripts/aggregate_results.py` | Mock summary from cached CSV |

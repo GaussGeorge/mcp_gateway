@@ -119,6 +119,45 @@ func (s *MCPDPServer) handlePlanAndSolveFirstStep(
 	// sessionCap 是一个 buffered channel，容量 = maxConcurrentSessions（默认 30）
 	// 即使通过了 Eq.(1) 的预算检查，也必须获取并发槽位才能真正准入
 	// 【设计意图】双重门控：Eq.(1) 过滤「肯定失败」的请求；sessionCap 限制「同时活跃数」
+	//
+	// 多节点共享状态路径：若安装了 sharedStateStore，使用全局 Redis cap + 去重，
+	// 跳过本地 sessionCap channel（避免双重计数）。
+	if s.sharedStateStore != nil {
+		maxSlots := 0
+		if s.sessionCap != nil {
+			maxSlots = cap(s.sessionCap)
+		}
+		result, err := s.sharedStateStore.TryAdmitSession(ctx, plan.SessionID, maxSlots, 60*time.Second)
+		if err != nil {
+			log.Printf("[PlanGate Pre-flight] session=%s shared-store TryAdmit error: %v (degrading to local)", plan.SessionID, err)
+			// Gracefully degrade: fall through to local sessionCap below
+		} else {
+			switch result {
+			case AdmitDuplicate:
+				atomic.AddInt64(&s.duplicateAdmissionCount, 1)
+				log.Printf("[PlanGate Pre-flight] session=%s DUPLICATE admission (shared store)", plan.SessionID)
+				return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeOverloaded,
+					"Pre-flight rejected: duplicate admission detected by shared store",
+					map[string]interface{}{
+						"session_id":          plan.SessionID,
+						"mode":                "plan_and_solve",
+						"rejected_at":         "step_0",
+						"duplicate_admission": true,
+					})
+			case AdmitCapFull:
+				log.Printf("[PlanGate Pre-flight] session=%s REJECTED (global session cap, shared store)", plan.SessionID)
+				return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeOverloaded,
+					"Pre-flight rejected: global concurrent session cap reached",
+					map[string]interface{}{
+						"session_id":  plan.SessionID,
+						"mode":        "plan_and_solve",
+						"rejected_at": "step_0",
+					})
+			default: // AdmitNew — proceed
+			}
+			goto sharedAdmitDone
+		}
+	}
 	if s.sessionCap != nil {
 		select {
 		case s.sessionCap <- struct{}{}:
@@ -139,6 +178,7 @@ func (s *MCPDPServer) handlePlanAndSolveFirstStep(
 			return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeInternalError, "context cancelled while waiting for session cap", nil)
 		}
 	}
+sharedAdmitDone:
 
 	// 5. §3.3 创新点 2: Budget Reservation — 对每个工具价格拍「准入时刻快照」
 	// >>> Eq.(2): LockedPrices[t_i] = P_eff(t_i)|_{admission time}
@@ -155,14 +195,31 @@ func (s *MCPDPServer) handlePlanAndSolveFirstStep(
 		//   a) 会话正常完成最后一步（executeStepDirect 检测 CurrentStep >= len(Steps)）
 		//   b) 会话中途被拒绝（handleReservedStep 中 tokens < lockedPrice）
 		//   c) 预留 TTL 到期（cleanupLoop 后台清理）
-		if s.sessionCap != nil {
+		if s.sharedStateStore != nil {
+			store := s.sharedStateStore
+			sid := plan.SessionID
+			res.releaseFn = func() { _ = store.ReleaseSession(context.Background(), sid) }
+			// 持久化到共享 store（若启用），使其他节点可以服务后续步骤
+			sharedRec := &SharedPSRecord{
+				SessionID:    plan.SessionID,
+				TotalCost:    totalCost,
+				LockedPrices: res.LockedPrices,
+				CurrentStep:  0,
+				TotalSteps:   len(plan.Steps),
+				ExpiresUnix:  res.ExpiresAt.UnixNano(),
+			}
+			if err := s.sharedStateStore.SaveReservation(ctx, sharedRec, 60*time.Second); err != nil {
+				log.Printf("[PlanGate Pre-flight] session=%s shared-store SaveReservation error: %v", plan.SessionID, err)
+				// Non-fatal: local node can still service this session
+			}
+		} else if s.sessionCap != nil {
 			cap := s.sessionCap
 			res.releaseFn = func() { <-cap }
 		}
 		log.Printf("[PlanGate Pre-flight] session=%s ADMITTED, reservation created", plan.SessionID)
 	} else {
 		// 消融模式（w/o BL）：不创建价格锁，但仍需管理 sessionCap 槽位（否则槽位泄漏）
-		if s.sessionCap != nil {
+		if s.sessionCap != nil && s.sharedStateStore == nil {
 			res := s.budgetMgr.Reserve(s.governor, &plan, totalCost)
 			cap := s.sessionCap
 			res.releaseFn = func() { <-cap }
@@ -237,7 +294,7 @@ func (s *MCPDPServer) handleReservedStep(
 
 	// token 余额 ≥ 锁定价格 → 直接执行，绕过实时 LoadShedding
 	// executeStepDirect 内部会推进 CurrentStep 计数，并在最后一步时自动释放槽位
-	return s.executeStepDirect(ctx, req, res.SessionID)
+	return s.executeStepDirectWithShared(ctx, req, res.SessionID, res)
 }
 
 // handleReActMode ReAct 模式兜底路径：完全委托给标准 MCPGovernor 进行负载削减判断
@@ -633,6 +690,14 @@ func (s *MCPDPServer) handleReActSunkCostStep(
 //   后续每步在 handleReservedStep 中已用 lockedPrice 做了 token 余额检查
 //   因此调用此函数时，「准入判定」已完成，无需再经过 MCPGovernor 的动态定价流程
 func (s *MCPDPServer) executeStepDirect(ctx context.Context, req *mcpgov.JSONRPCRequest, sessionID string) *mcpgov.JSONRPCResponse {
+	return s.executeStepDirectWithShared(ctx, req, sessionID, nil)
+}
+
+// executeStepDirectWithShared executes a P&S step using an optional shared reservation.
+// If sharedRes is non-nil, it uses that instead of the local budgetMgr.
+func (s *MCPDPServer) executeStepDirectWithShared(
+	ctx context.Context, req *mcpgov.JSONRPCRequest, sessionID string, sharedRes *HTTPSessionReservation,
+) *mcpgov.JSONRPCResponse {
 	var params mcpgov.MCPToolCallParams
 	if err := json.Unmarshal(req.Params, &params); err != nil {
 		return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeInvalidParams, "无效的工具调用参数", err.Error())
@@ -647,14 +712,28 @@ func (s *MCPDPServer) executeStepDirect(ctx context.Context, req *mcpgov.JSONRPC
 	// Capture reservation state BEFORE advancing the step counter.
 	// Using the pre-Advance CurrentStep makes the completion logic explicit
 	// and avoids relying on mutated pointer state after Advance.
-	res, hasRes := s.budgetMgr.Get(sessionID)
+	var res *HTTPSessionReservation
+	var hasRes bool
 	var preAdvanceStep int
 	var totalSteps int
-	if hasRes {
-		res.mu.Lock()
+
+	if sharedRes != nil {
+		// Shared-state mode: use the provided reservation record
+		res = sharedRes
+		hasRes = true
 		preAdvanceStep = res.CurrentStep
-		totalSteps = len(res.Plan.Steps)
-		res.mu.Unlock()
+		totalSteps = 0 // will be set from AdvanceReservationStep result
+	} else {
+		// Local mode: use budgetMgr
+		localRes, ok := s.budgetMgr.Get(sessionID)
+		if ok {
+			res = localRes
+			hasRes = true
+			res.mu.Lock()
+			preAdvanceStep = res.CurrentStep
+			totalSteps = len(res.Plan.Steps)
+			res.mu.Unlock()
+		}
 	}
 
 	result, err := handler(ctx, params)
@@ -671,8 +750,43 @@ func (s *MCPDPServer) executeStepDirect(ctx context.Context, req *mcpgov.JSONRPC
 		return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeInternalError, err.Error(), nil)
 	}
 
-	// 执行成功 → 推进 CurrentStep 计数（用于判断是否到达 DAG 最后一步）
-	s.budgetMgr.Advance(sessionID)
+	// Advance the step counter and check for completion
+	var complete bool
+	var nextStep int
+	if sharedRes != nil && s.sharedStateStore != nil {
+		// Shared-state mode: use remote advancement
+		newStep, totalStepsFromStore, isComplete, err := s.sharedStateStore.AdvanceReservationStep(ctx, sessionID)
+		if err != nil {
+			log.Printf("[PlanGate Execute] session=%s shared AdvanceReservationStep failed: %v", sessionID, err)
+			// Recovery: still mark the step complete locally and release
+			res.Release()
+			return mcpgov.NewSuccessResponse(req.ID, result) // Tool executed OK, just can't track step
+		}
+		nextStep = newStep
+		totalSteps = totalStepsFromStore
+		complete = isComplete
+	} else if hasRes && s.sharedStateStore != nil {
+		// Shared-store enabled, but this step is served by the admitting node via
+		// local reservation. We must still advance shared current_step to keep
+		// cross-node completion/release semantics correct.
+		s.budgetMgr.Advance(sessionID)
+		newStep, totalStepsFromStore, isComplete, err := s.sharedStateStore.AdvanceReservationStep(ctx, sessionID)
+		if err != nil {
+			log.Printf("[PlanGate Execute] session=%s local+shared AdvanceReservationStep failed: %v", sessionID, err)
+			// Conservative fallback to local completion check
+			nextStep, complete = nextPSStepState(preAdvanceStep, totalSteps)
+		} else {
+			nextStep = newStep
+			totalSteps = totalStepsFromStore
+			complete = isComplete
+		}
+	} else {
+		// Local mode: use budgetMgr
+		if hasRes {
+			s.budgetMgr.Advance(sessionID)
+		}
+		nextStep, complete = nextPSStepState(preAdvanceStep, totalSteps)
+	}
 
 	// 在响应 meta 中附加网关标识
 	if result.Meta == nil {
@@ -692,33 +806,39 @@ func (s *MCPDPServer) executeStepDirect(ctx context.Context, req *mcpgov.JSONRPC
 		if lp, exists := res.LockedPrices[params.Name]; exists {
 			result.Meta.Price = strconv.FormatInt(lp, 10) // 告知 Agent「此步实际扣费价格」
 		}
-		nextStep, complete := nextPSStepState(preAdvanceStep, totalSteps)
 		if complete {
 			// DAG 所有步骤执行完毕 → 「正常完成」路径，释放槽位 + 删除 checkpoint
 			res.Release()
+			// For shared-state mode, also explicitly release from store if needed
+			if sharedRes != nil && s.sharedStateStore != nil {
+				_ = s.sharedStateStore.ReleaseSession(ctx, sessionID)
+			}
 			s.deleteCheckpointOnSuccess(ctx, sessionID)
 		} else {
 			// P&S 中间步骤成功 → 保存活跃进度 checkpoint（PlanGate-R Phase 3，默认 no-op）
 			// Status 不显式设置 → saveCheckpointAfterStep 默认 StatusActiveCheckpoint，
 			// 确保 ListRecoverable 不会把正常进行中的会话当作待恢复 session。
-			completedIdx := preAdvanceStep // step just executed (= nextStep - 1)
-			var stepID string
-			if completedIdx >= 0 && completedIdx < totalSteps {
-				stepID = res.Plan.Steps[completedIdx].StepID
+			// NOTE: For shared-state mode, checkpoint is local-node informational only
+			if sharedRes == nil && res != nil && res.Plan != nil {
+				completedIdx := preAdvanceStep // step just executed (= nextStep - 1)
+				var stepID string
+				if completedIdx >= 0 && completedIdx < totalSteps {
+					stepID = res.Plan.Steps[completedIdx].StepID
+				}
+				var remainingJSON []byte
+				if nextStep < totalSteps {
+					remainingJSON, _ = json.Marshal(res.Plan.Steps[nextStep:])
+				}
+				s.saveCheckpointAfterStep(ctx, &SessionCheckpoint{
+					SessionID:           res.SessionID,
+					Mode:                AgentModePlanSolve,
+					CurrentStep:         nextStep,
+					CompletedSteps:      []StepRecord{{StepID: stepID, StepIndex: completedIdx, ToolName: params.Name, CompletedAt: time.Now()}},
+					LockedPriceSnapshot: res.LockedPrices,
+					BudgetSnapshot:      res.TotalCost,
+					RemainingPlanJSON:   remainingJSON,
+				})
 			}
-			var remainingJSON []byte
-			if nextStep < totalSteps {
-				remainingJSON, _ = json.Marshal(res.Plan.Steps[nextStep:])
-			}
-			s.saveCheckpointAfterStep(ctx, &SessionCheckpoint{
-				SessionID:           res.SessionID,
-				Mode:                AgentModePlanSolve,
-				CurrentStep:         nextStep,
-				CompletedSteps:      []StepRecord{{StepID: stepID, StepIndex: completedIdx, ToolName: params.Name, CompletedAt: time.Now()}},
-				LockedPriceSnapshot: res.LockedPrices,
-				BudgetSnapshot:      res.TotalCost,
-				RemainingPlanJSON:   remainingJSON,
-			})
 		}
 	}
 

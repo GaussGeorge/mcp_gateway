@@ -1,0 +1,19 @@
+# Python dependencies for PlanGate artifact
+#
+# Install with:
+#   pip install -r requirements.txt
+#
+# Tier A (frozen verification) and Tier B (mock re-run) only require the
+# "Core" group below.  Tier C (live real-LLM) additionally requires the
+# "Real-LLM / Tier C" group.
+
+# ── Core (analysis, plotting, table verification) ──────────────────────────
+pandas>=1.5
+numpy>=1.21
+matplotlib>=3.5
+scipy>=1.9
+
+# ── Real-LLM / Tier C  (optional — only needed for live re-runs) ────────────
+# openai>=1.0.0
+# httpx>=0.24.0
+# tavily-python>=0.3.0

@@ -199,12 +199,12 @@ for gw, rows in bursty_data.items():
 
 # ========================
 # 7. Bursty real-LLM experiments (exp_week5_real_llm or similar)
-# Paper: PARTIAL -21.1% (p<0.002), cascade -17.9% (p<0.05), from 174±33 to 143±22
+# Paper (v7, N=7 corrected): PARTIAL -19% (p<0.02), cascade -18% (one-tailed p<0.05), from 174+/-38 to 143+/-25
 # ========================
 print()
 print("=" * 70)
 print("7. Bursty real-LLM experiments")
-print("   Paper: PARTIAL reduction -21.1% p<0.002, cascade -17.9% p<0.05 (174+/-33 -> 143+/-22)")
+print("   Paper (v7): PARTIAL reduction ~-19% p<0.02, cascade ~-18% one-tailed p<0.05 (174+/-38 -> 143+/-25, N=7)")
 print("          Token: 6120 vs 6788 NG, waste 28.8% -> 21.0%")
 print("-" * 70)
 
@@ -217,14 +217,14 @@ for d in ['exp_week5_real_llm', 'exp_real3_deepseek', 'exp_real3_glm', 'exp_week
 
 # ========================
 # 8. Steady real-LLM P95 tail latency (C=10 and C=40)
-# Paper: C=10 PlanGate P95=49.6s, baselines 50.8-54.5s; C=40 PlanGate 55.5s, baselines 56.1-59.4s
+# Paper (v7): C=10 PlanGate 88.4% success (PENALTY regime, p<0.01 vs baselines); C=40 PlanGate P95=55.5s (no-regret)
 # ========================
 print()
 print("=" * 70)
 print("8. Steady real-LLM P95 latency")
-print("   Paper: C=10 PlanGate P95=49.6s, baselines 50.8-54.5s")
+print("   Paper (v7): C=10 PlanGate 88.4%+/-2.4% (PENALTY, p<0.01 vs NG 94.0%); C=40 PlanGate P95=55.5s (no-regret)")
 print("          C=40 PlanGate P95=55.5s, baselines 56.1-59.4s")
-print("          C=10 success 95.2-96.1%, C=40 success 95.7-96.4%")
+print("          C=10 success 88.4-94.0% (PG=88.4% penalty, NG/Raj=94.0%, PP=92.1%), C=40 success 95.7-96.4%")
 print("-" * 70)
 for d in ['exp_week5_C10', 'exp_week5_C40']:
     path = f'results/{d}'

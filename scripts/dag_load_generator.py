@@ -64,6 +64,43 @@ np.random.seed(SEED)
 
 
 # ══════════════════════════════════════════════════
+# 1b. 多目标路由全局配置（多网关实验用）
+# ══════════════════════════════════════════════════
+# _TARGET_URLS: 可用网关 URL 列表。单目标时只含 args.target。
+# _ROUTING:     single | random | sticky | round_robin
+# _SESSION_AFFINITY: session_id → gateway URL (sticky 模式用)
+_TARGET_URLS: List[str] = []
+_ROUTING: str = "single"
+_SESSION_AFFINITY: Dict[str, str] = {}
+_ROUND_ROBIN_IDX: int = 0
+_ROUND_ROBIN_LOCK = None  # will be set to threading.Lock in run()
+
+
+def _pick_gateway_url(session_id: str, step_idx: int) -> str:
+    """根据路由策略选择目标网关 URL。
+    - single: 始终返回 _TARGET_URLS[0]
+    - sticky: 每个 session 首次调用时分配并固定一个 gateway
+    - random: 每步随机选择一个 gateway
+    - round_robin: 每步轮询（线程安全，步骤级）
+    """
+    global _ROUND_ROBIN_IDX
+    if not _TARGET_URLS:
+        return ""
+    if len(_TARGET_URLS) == 1 or _ROUTING == "single":
+        return _TARGET_URLS[0]
+    if _ROUTING == "sticky":
+        if session_id not in _SESSION_AFFINITY:
+            _SESSION_AFFINITY[session_id] = random.choice(_TARGET_URLS)
+        return _SESSION_AFFINITY[session_id]
+    if _ROUTING == "round_robin":
+        idx = _ROUND_ROBIN_IDX % len(_TARGET_URLS)
+        _ROUND_ROBIN_IDX += 1
+        return _TARGET_URLS[idx]
+    # random (default multi-target)
+    return random.choice(_TARGET_URLS)
+
+
+# ══════════════════════════════════════════════════
 # 2. CPU 亲和性
 # ══════════════════════════════════════════════════
 def set_cpu_affinity(cores: List[int]):
@@ -206,7 +243,7 @@ class StepResult:
     session_id:  str
     step_id:     str
     tool_name:   str
-    status:      str   # "success" | "rejected" | "error"
+    status:      str   # "success" | "rejected" | "error" | "state_miss"
     latency_ms:  float
     budget:      int
     tokens:      int
@@ -215,6 +252,9 @@ class StepResult:
     regime:      str = ""
     timestamp:   float = 0.0
     gateway_latency_us: float = 0.0  # 网关处理耗时 (μs)，来自 X-Gateway-Latency-Us header
+    gateway_url:  str = ""           # 实际命中的网关 URL（多目标路由实验用）
+    state_miss:   bool = False       # 服务端检测到 cross-node state miss
+    duplicate_admission: bool = False  # 服务端检测到 duplicate step-0 admission
 
 
 # ══════════════════════════════════════════════════
@@ -273,6 +313,7 @@ async def send_tool_call(
     plan: SessionPlan,
     step_idx: int,
     req_id: int,
+    gateway_url: str = "",
 ) -> StepResult:
     """发送单步工具调用"""
     step = plan.steps[step_idx]
@@ -298,6 +339,8 @@ async def send_tool_call(
 
     # 所有模式均发送 Session-ID（ReAct 模式需要用于沉没成本会话跟踪）
     headers["X-Session-ID"] = plan.session_id
+    # 多网关实验：发送步骤索引，支持服务端 state miss 检测
+    headers["X-Session-Step"] = str(step_idx)
 
     # P&S 模式: 首步额外带完整 DAG
     if plan.mode == AgentMode.PLAN_AND_SOLVE:
@@ -337,6 +380,8 @@ async def send_tool_call(
 
             locked_price = ""
             regime = ""
+            step_state_miss = False
+            step_dup_admission = False
 
             if "error" in body and body["error"] is not None:
                 code = body["error"].get("code", 0)
@@ -344,9 +389,14 @@ async def send_tool_call(
                 if isinstance(data, dict):
                     regime = data.get("regime", "")
                     locked_price = str(data.get("locked_price", ""))
+                    step_state_miss = bool(data.get("state_miss", False))
+                    step_dup_admission = bool(data.get("duplicate_admission", False))
 
                 if code in (-32001, -32002, -32003):
                     status = "rejected"
+                elif code == -32010:  # PlanGate state miss code
+                    status = "state_miss"
+                    step_state_miss = True
                 else:
                     status = "error"
             else:
@@ -377,6 +427,9 @@ async def send_tool_call(
                 regime=regime,
                 timestamp=ts,
                 gateway_latency_us=gw_lat_us,
+                gateway_url=gateway_url or url,
+                state_miss=step_state_miss,
+                duplicate_admission=step_dup_admission,
             )
 
     except asyncio.TimeoutError:
@@ -454,7 +507,11 @@ async def execute_session(
                     return plan
 
         req_counter[0] += 1
-        result = await send_tool_call(http_session, url, plan, i, req_counter[0])
+        # 多目标路由：根据 _ROUTING 策略选择目标 URL
+        step_url = url
+        if len(_TARGET_URLS) > 1:
+            step_url = _pick_gateway_url(plan.session_id, i)
+        result = await send_tool_call(http_session, step_url, plan, i, req_counter[0], gateway_url=step_url)
         plan.step_results.append({
             "step_id": result.step_id,
             "tool_name": result.tool_name,
@@ -465,6 +522,9 @@ async def execute_session(
             "timestamp": result.timestamp,
             "shadow_would_reject": shadow_would_reject,
             "gateway_latency_us": result.gateway_latency_us,
+            "gateway_url": result.gateway_url,
+            "state_miss": result.state_miss,
+            "duplicate_admission": result.duplicate_admission,
         })
 
         tool_weight = TOOL_CATALOG[step.tool_name]["weight"]
@@ -483,8 +543,6 @@ async def execute_session(
                 plan.state = SessionState.CASCADE_FAILED
             plan.end_time = time.time()
             return plan
-
-    # 全部步骤成功
     plan.state = SessionState.SUCCESS
     plan.end_time = time.time()
 
@@ -697,6 +755,24 @@ def print_stats(stats: AggregatedStats, plans_ref=None):
         print(f"  E2E_P99:   {e2e_p99:.1f}")
         print(f"  E2E_Mean:  {sum(e2e)/len(e2e):.1f}")
 
+    # ── 多网关跨节点统计 ──
+    if plans_ref is not None:
+        all_steps = [sr for p in plans_ref for sr in p.step_results]
+        state_miss_total = sum(1 for sr in all_steps if sr.get("state_miss"))
+        dup_total = sum(1 for sr in all_steps if sr.get("duplicate_admission"))
+        cross_node_sessions = sum(
+            1 for p in plans_ref
+            if len({sr.get("gateway_url", "") for sr in p.step_results
+                    if sr.get("gateway_url", "")}) >= 2
+        )
+        if len(_TARGET_URLS) > 1 or state_miss_total > 0 or dup_total > 0:
+            print(f"\n  ── 多网关共享状态 ──")
+            print(f"  路由策略:           {_ROUTING}")
+            print(f"  网关数量:           {len(_TARGET_URLS)}")
+            print(f"  跨节点会话数:       {cross_node_sessions}  ({_pct(cross_node_sessions, len(plans_ref))})")
+            print(f"  state_miss 步骤:    {state_miss_total}")
+            print(f"  dup_admission 步骤: {dup_total}")
+
     # 客户端价格预测统计
     if stats.client_shadow_checks > 0:
         match_rate = _pct(stats.client_shadow_match, stats.client_shadow_reject) if stats.client_shadow_reject > 0 else "N/A"
@@ -734,6 +810,7 @@ def save_step_csv(plans: List[SessionPlan], path: str):
             "budget", "locked_price", "regime",
             "raw_goodput", "effective_goodput", "shadow_would_reject",
             "gateway_latency_us",
+            "gateway_url", "state_miss", "duplicate_admission",
         ])
         for plan in plans:
             for sr in plan.step_results:
@@ -753,6 +830,9 @@ def save_step_csv(plans: List[SessionPlan], path: str):
                     f"{plan.total_weight:.1f}",
                     sr.get("shadow_would_reject", False),
                     f"{sr.get('gateway_latency_us', 0.0):.1f}",
+                    sr.get("gateway_url", ""),
+                    sr.get("state_miss", False),
+                    sr.get("duplicate_admission", False),
                 ])
 
 
@@ -813,6 +893,16 @@ def _get_burst_rate(phases: List[Tuple[float, float]], elapsed: float) -> float:
 # 11. 主调度器
 # ══════════════════════════════════════════════════
 async def run(args):
+    # 初始化多网关路由全局变量
+    global _TARGET_URLS, _ROUTING, _SESSION_AFFINITY
+    _TARGET_URLS = list(args.targets) if getattr(args, "targets", None) else [args.target]
+    _ROUTING = getattr(args, "routing", "single")
+    _SESSION_AFFINITY.clear()
+    if len(_TARGET_URLS) > 1:
+        print(f"[DAG发压机] 多网关模式: {len(_TARGET_URLS)} 个目标, 路由策略={_ROUTING}")
+        for i, u in enumerate(_TARGET_URLS):
+            print(f"[DAG发压机]   GW-{i}: {u}")
+
     # 初始化客户端价格表
     global _price_table
     global _hard_reject_enabled
@@ -995,6 +1085,11 @@ def main():
                              "e.g. '10:15,50:10,10:15,80:10,10:10' 覆盖 --arrival-rate")
     parser.add_argument("--longtail-ratio", type=float, default=0.0,
                         help="长尾会话占比 0.0-1.0, 长尾会话10-15步 (default: 0.0)")
+    parser.add_argument("--targets", nargs="+", default=None,
+                        help="多目标网关 URL 列表（覆盖 --target，用于多网关实验）")
+    parser.add_argument("--routing", default="single",
+                        choices=["single", "random", "sticky", "round_robin"],
+                        help="多目标路由策略: single/random/sticky/round_robin (default: single)")
     args = parser.parse_args()
 
     # CPU 亲和性

@@ -1,5 +1,5 @@
 // cmd/gateway/main.go
-// MCP 网关统一入口 — 支持四种治理策略 (NG / SRL / DP / DP-NoRegime)
+// MCP 网关统一入口 — 支持 NG/SRL/DP/PlanGate 及 Envoy/Kong 近似基线
 // 网关接收发压机请求 → 应用治理逻辑 → 代理到 Python MCP 后端
 //
 // 用法:
@@ -7,6 +7,8 @@
 //   go run ./cmd/gateway --mode dp-noregime --port 9004 --backend http://127.0.0.1:8080
 //   go run ./cmd/gateway --mode ng          --port 9001 --backend http://127.0.0.1:8080
 //   go run ./cmd/gateway --mode srl         --port 9002 --backend http://127.0.0.1:8080
+//   go run ./cmd/gateway --mode envoy-approx --port 9006 --backend http://127.0.0.1:8080
+//   go run ./cmd/gateway --mode kong-approx  --port 9007 --backend http://127.0.0.1:8080
 package main
 
 import (
@@ -85,15 +87,33 @@ func (d *proxyOverloadDetector) run() {
 }
 
 func main() {
-	mode := flag.String("mode", "dp", "网关模式: ng | srl | dp | dp-noregime")
+	mode := flag.String("mode", "dp", "网关模式: ng | srl | dp | dp-noregime | envoy-approx | kong-approx")
 	port := flag.Int("port", 9003, "网关监听端口")
 	backendURL := flag.String("backend", "http://127.0.0.1:8080", "Python MCP 后端地址")
 	host := flag.String("host", "127.0.0.1", "网关绑定地址")
+
+	// Multi-gateway experiment flags
+	nodeID := flag.String("node-id", "", "网关节点 ID，用于 X-Gateway-Node header（默认: host:port）")
+	stateStore := flag.String("plangate-state-store", "inmemory",
+		"PlanGate 会话状态存储后端 (inmemory|redis); 默认 inmemory 保持旧行为")
+	redisAddr := flag.String("plangate-redis-addr", "127.0.0.1:6379",
+		"Redis 地址 (仅在 --plangate-state-store=redis 时使用)")
 
 	// SRL 参数
 	srlQPS := flag.Float64("srl-qps", 50, "SRL: 令牌桶速率 (req/s)")
 	srlBurst := flag.Int64("srl-burst", 100, "SRL: 令牌桶最大容量")
 	srlMaxConc := flag.Int64("srl-max-conc", 20, "SRL: 最大并发连接数")
+
+	// Proxy approximation 参数（Envoy/Kong）
+	proxyGlobalQPS := flag.Float64("proxy-global-qps", 65, "ProxyApprox: 全局 QPS")
+	proxyGlobalBurst := flag.Int64("proxy-global-burst", 400, "ProxyApprox: 全局 burst")
+	proxyMaxConc := flag.Int64("proxy-max-conc", 55, "ProxyApprox: 全局最大并发")
+	proxyRouteQPS := flag.Float64("proxy-route-qps", 35, "EnvoyApprox: route 级 QPS")
+	proxyRouteBurst := flag.Int64("proxy-route-burst", 100, "EnvoyApprox: route 级 burst")
+	proxyRouteMaxConc := flag.Int64("proxy-route-max-conc", 20, "EnvoyApprox: route 级最大并发")
+	kongSessionQPS := flag.Float64("kong-session-qps", 2, "KongApprox: per-consumer/session QPS")
+	kongSessionBurst := flag.Int64("kong-session-burst", 5, "KongApprox: per-consumer/session burst")
+	kongSessionTTL := flag.Int("kong-session-ttl", 300, "KongApprox: per-consumer key TTL (秒)")
 
 	// Rajomon 参数
 	rajomonPriceStep := flag.Int64("rajomon-price-step", 100, "Rajomon: 过载涨价步长")
@@ -165,6 +185,15 @@ func main() {
 		handler = setupNG(tools, *backendURL)
 	case "srl":
 		handler = setupSRL(tools, *backendURL, *srlQPS, *srlBurst, *srlMaxConc)
+	case "envoy-approx":
+		handler = setupEnvoyApprox(tools, *backendURL,
+			*proxyGlobalQPS, *proxyGlobalBurst, *proxyMaxConc,
+			*proxyRouteQPS, *proxyRouteBurst, *proxyRouteMaxConc)
+	case "kong-approx":
+		handler = setupKongApprox(tools, *backendURL,
+			*proxyGlobalQPS, *proxyGlobalBurst,
+			*kongSessionQPS, *kongSessionBurst,
+			time.Duration(*kongSessionTTL)*time.Second)
 	case "dp":
 		handler = setupDP(tools, *backendURL)
 	case "dp-noregime":
@@ -178,6 +207,9 @@ func main() {
 			sunkCostBeta:  *plangateSunkBeta,
 			discountFunc: *plangateDiscountFunc,
 			recoveryConfig: buildRecoveryConfig(*enableRecovery, *recoveryTTL, *recoveryMaxAttempts, *recoveryStore),
+			nodeID: resolveNodeID(*nodeID, *host, *port),
+			stateStoreType: *stateStore,
+			redisAddr: *redisAddr,
 		})
 	case "mcpdp-no-budgetlock":
 		handler = setupMCPDPVariant(tools, *backendURL, mcpdpVariant{
@@ -230,7 +262,7 @@ func main() {
 	case "pp":
 		handler = setupPP(tools, *backendURL, *ppMaxSessions)
 	default:
-		log.Fatalf("未知模式: %s (可选: ng, srl, dp, dp-noregime, mcpdp, mcpdp-no-budgetlock, mcpdp-no-sessioncap, mcpdp-real, mcpdp-real-no-sessioncap, rajomon, rajomon-session, dagor, sbac, pp)", *mode)
+		log.Fatalf("未知模式: %s (可选: ng, srl, envoy-approx, kong-approx, dp, dp-noregime, mcpdp, mcpdp-no-budgetlock, mcpdp-no-sessioncap, mcpdp-real, mcpdp-real-no-sessioncap, rajomon, rajomon-session, dagor, sbac, pp)", *mode)
 	}
 
 	addr := fmt.Sprintf("%s:%d", *host, *port)
@@ -386,6 +418,45 @@ func setupSRL(tools []mcpgov.MCPTool, backendURL string, qps float64, burst, max
 	return gw
 }
 
+func setupEnvoyApprox(tools []mcpgov.MCPTool, backendURL string,
+	globalQPS float64, globalBurst, globalMaxConc int64,
+	routeQPS float64, routeBurst, routeMaxConc int64) http.Handler {
+
+	gw := baseline.NewEnvoyApproxGateway("envoy-approx-gateway", baseline.EnvoyApproxConfig{
+		GlobalQPS:     globalQPS,
+		GlobalBurst:   globalBurst,
+		GlobalMaxConc: globalMaxConc,
+		RouteQPS:      routeQPS,
+		RouteBurst:    routeBurst,
+		RouteMaxConc:  routeMaxConc,
+	})
+
+	for _, tool := range tools {
+		gw.RegisterTool(tool, makeProxyHandler(backendURL, tool.Name, nil))
+		log.Printf("  [EnvoyApprox] 注册工具: %s", tool.Name)
+	}
+	return gw
+}
+
+func setupKongApprox(tools []mcpgov.MCPTool, backendURL string,
+	globalQPS float64, globalBurst int64,
+	sessionQPS float64, sessionBurst int64, sessionTTL time.Duration) http.Handler {
+
+	gw := baseline.NewKongApproxGateway("kong-approx-gateway", baseline.KongApproxConfig{
+		GlobalQPS:    globalQPS,
+		GlobalBurst:  globalBurst,
+		SessionQPS:   sessionQPS,
+		SessionBurst: sessionBurst,
+		SessionTTL:   sessionTTL,
+	})
+
+	for _, tool := range tools {
+		gw.RegisterTool(tool, makeProxyHandler(backendURL, tool.Name, nil))
+		log.Printf("  [KongApprox] 注册工具: %s", tool.Name)
+	}
+	return gw
+}
+
 func setupDP(tools []mcpgov.MCPTool, backendURL string) http.Handler {
 	// 构建 callMap: 每个工具无下游依赖
 	callMap := make(map[string][]string)
@@ -505,6 +576,18 @@ type mcpdpVariant struct {
 	sessionCapWait        time.Duration // Session Cap 排队等待超时 (0=立即拒绝)
 	discountFunc          string        // 折扣函数名称 (quadratic|linear|exponential|logarithmic)
 	recoveryConfig        plangate.RecoveryConfig // PlanGate-R, default disabled
+	// Multi-gateway experiment fields
+	nodeID         string // X-Gateway-Node header value; "" = use host:port
+	stateStoreType string // "inmemory" (default, unchanged) | "redis"
+	redisAddr      string // Redis address for stateStoreType="redis"
+}
+
+// resolveNodeID returns nodeID if non-empty, otherwise "host:port".
+func resolveNodeID(nodeID, host string, port int) string {
+	if nodeID != "" {
+		return nodeID
+	}
+	return fmt.Sprintf("%s:%d", host, port)
 }
 
 func setupMCPDPVariant(tools []mcpgov.MCPTool, backendURL string, v mcpdpVariant) http.Handler {
@@ -518,7 +601,7 @@ func setupMCPDPVariant(tools []mcpgov.MCPTool, backendURL string, v mcpdpVariant
 		"rateLimiting":          false,
 		"loadShedding":          true,
 		"pinpointQueuing":       false,
-		"latencyThreshold":      50 * time.Millisecond,
+		"latencyThreshold":      10 * time.Second, // proxy 模式: latencyCheck 不应由后端步骤延迟触发
 		"priceStep":             v.priceStep,
 		"priceStrategy":         "expdecay",
 		"priceDecayStep":        int64(1),
@@ -570,6 +653,17 @@ func setupMCPDPVariant(tools []mcpgov.MCPTool, backendURL string, v mcpdpVariant
 	}
 	server.SetSunkCostBeta(beta)
 	log.Printf("  [%s] sunk-cost alpha=%.2f beta=%.2f", v.name, v.sunkCostAlpha, beta)
+
+	// Multi-gateway: node ID and shared state store
+	if v.nodeID != "" {
+		server.SetNodeID(v.nodeID)
+		log.Printf("  [%s] node-id: %s", v.name, v.nodeID)
+	}
+	if v.stateStoreType == "redis" && v.redisAddr != "" {
+		store := plangate.NewRedisSessionStateStore(v.redisAddr)
+		server.SetSharedStateStore(store)
+		log.Printf("  [%s] plangate-state-store: redis @ %s", v.name, v.redisAddr)
+	}
 
 	// PlanGate-R: apply recovery config (no-op when Enabled=false)
 	if v.recoveryConfig.Enabled {

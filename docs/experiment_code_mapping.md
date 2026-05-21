@@ -270,7 +270,7 @@
 
 ### Tier 3 — Bursty Real LLM + Self-hosted
 
-#### Bursty Real-LLM (N=9)
+#### Bursty Real-LLM (N=7)
 
 | 项目 | 文件 |
 |---|---|
@@ -280,9 +280,11 @@
 | **网关代码** | NG / Rajomon / PP / PlanGate-Real (mcpdp-real, α=0.7, max_sessions=12) |
 | **参数** | 200 agents, C=20, burst_size=30, burst_gap=8s, max_steps=15, budget=1000, GLM-4-Flash |
 | **结果目录** | `results/exp_bursty_C20_B30/` |
-| **统计分析** | `scripts/compute_bursty_n9.py`（N=9 统计 + t 检验） |
+| **统计分析** | `scripts/_compute_bursty_stats.py`（N=7 统计 + t 检验） |
 
-#### Self-hosted vLLM C=10
+#### Self-hosted vLLM C=10 — **[DEPRECATED]**
+
+> **废弃原因**：该组实验中 Brain 被环境变量覆盖为 `qwen`（公司 API GLM-4-Flash 未生效），导致后端无延迟、无争用、成功率 100%，不能证明容量边界。**论文 Table 8 已切换为 C=20 数据。**
 
 | 项目 | 文件 |
 |---|---|
@@ -294,7 +296,7 @@
 | **参数** | 50 agents, C=10, burst_size=15, burst_gap=6s, max_steps=10, budget=800, max_workers=8 |
 | **结果目录** | `results/exp_selfhosted_vllm_C10_W8/` |
 
-#### Self-hosted vLLM C=20
+#### Self-hosted vLLM C=20 — **[CURRENT — 主论文 Table 8]**
 
 | 项目 | 文件 |
 |---|---|
@@ -325,19 +327,14 @@
 | Mock Cascade Comparison | `gen_paper_figures.py` | `fig_mock_cascade()` | `exp_week4_formal/` |
 | Ablation Study | `gen_paper_figures.py` | `fig_ablation()` | `exp4_ablation/` |
 | Scalability | `gen_paper_figures.py` | `fig_scalability()` | `exp9_scalestress/` |
-| Token Efficiency | `gen_paper_figures.py` | `fig_token_efficiency()` | `exp1_core/` |
-| Fairness (Steps Boxplot) | `gen_paper_figures.py` | `fig_fairness()` | `exp1_core/` |
+| Token Efficiency | `gen_paper_figures.py` | `fig_token_efficiency()` | `exp_real3_glm/` + `exp_real3_deepseek/` |
+| Fairness (Steps Boxplot) | `gen_paper_figures.py` | `fig_fairness_boxplot()` | `exp1_core/` |
 | DeepSeek Concurrency Sweep | `gen_paper_figures.py` | `fig_deepseek_sweep()` | `exp_conc_sweep_deepseek/` or `exp_deepseek_n3/` |
 | Adversarial Robustness | `gen_paper_figures.py` | `fig_adversarial()` | `exp10_adversarial/` |
 | Rajomon Sensitivity | `gen_paper_figures.py` | `fig_rajomon_sensitivity()` | `exp_rajomon_sensitivity/` |
 | Discount Function Ablation | `gen_paper_figures.py` | `fig_discount_ablation()` | `exp8_discountablation/` |
 | Cross-LLM Comparison | `gen_paper_figures.py` | `fig_cross_llm()` | `exp_week5_*` / `exp_bursty_*` |
-| 心电图 (Price Timeseries) | `plot_paper_charts.py` | `plot_chart1_heartbeat()` | 网关运行日志 |
-| 8 轮调优演进图 | `plot_paper_charts.py` | `plot_chart2_evolution()` | `results/evolution_8runs.csv` |
-| 成功率 vs 吞吐 | `plot_paper_charts.py` | `plot_chart3_success_vs_goodput()` | `exp_week4_formal/` |
-| 单任务 Token 效率 | `plot_paper_charts.py` | `plot_chart4_token_efficiency()` | `exp_week4_formal/` |
-| 尾延迟 P50 vs P95 | `plot_paper_charts.py` | `plot_chart5_tail_latency()` | `exp_week4_formal/` |
-| 步数公平性箱线图 | `plot_paper_charts.py` | `plot_chart6_fairness()` | `exp_week4_formal/` |
+| 心电图 / 调优演进 / 旧成功率图 | *(归档)* `scripts/archive/plot_paper_charts.py` | — | 早期开发图，不在最终论文中 |
 | Rajomon 敏感性 (独立) | `plot_rajomon_sensitivity.py` | `main()` | `exp_rajomon_sensitivity/` |
 
 ---
@@ -410,11 +407,11 @@ python scripts/run_real_llm_bursty.py --repeats 5
 # Step 9: Bursty 补充 (run6-7)
 python scripts/run_bursty_extra2.py --start-run 6 --count 2
 
-# Step 10: N=9 统计汇总
-python scripts/compute_bursty_n9.py
+# Step 10: N=7 统计汇总
+python scripts/_compute_bursty_stats.py
 
-# Step 11: Self-hosted vLLM C=10（需本地 vLLM 服务）
-python scripts/run_selfhosted_vllm.py --repeats 3
+# Step 11: Self-hosted vLLM C=10 — [DEPRECATED, 勿运行，见文档说明]
+# python scripts/run_selfhosted_vllm.py --repeats 3
 
 # Step 12: Self-hosted vLLM C=20
 python scripts/run_selfhosted_c20.py --repeats 3

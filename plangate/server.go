@@ -2,6 +2,7 @@ package plangate
 
 import (
 	"fmt"
+	"sync/atomic"
 	"time"
 
 	mcpgov "mcp-governance"
@@ -16,6 +17,10 @@ const (
 	// 必须同时传 X-Session-ID 指定原始会话。
 	// 值必须为 "resume"，其他值走常规路径。
 	HeaderRecoveryMode = "X-Recovery-Mode"
+	// HeaderSessionStep 携带当前 P&S 步骤索引（0-based）。
+	// 由多网关实验发压机设置，用于服务端检测 cross-node state miss：
+	// 若 X-Session-Step > 0 且本节点/共享 store 均找不到 session → state miss。
+	HeaderSessionStep = "X-Session-Step"
 )
 
 // IntensityProvider 治理强度提供者接口
@@ -82,6 +87,17 @@ type MCPDPServer struct {
 	recoveredSuccessCount int64
 	skippedStepsTotal     int64
 	recoveryAttempts      int64
+
+	// Multi-gateway shared state (Phase: multi-node experiment).
+	// nodeID identifies this gateway instance (host:port by default).
+	// sharedStateStore is nil when --plangate-state-store=inmemory (default);
+	// in that case the local budgetMgr / sessionCap paths are used unchanged.
+	nodeID             string
+	sharedStateStore   SessionStateStore
+	// Atomic counters exposed via X-PlanGate-State-Miss / X-PlanGate-Duplicate-Admission
+	// response headers and queryable via /debug/multigateway endpoint.
+	stateMissCount          int64
+	duplicateAdmissionCount int64
 }
 
 // getGovernanceIntensity 获取当前治理强度
@@ -262,4 +278,35 @@ func (s *MCPDPServer) GetExternalSignalTracker() *ExternalSignalTracker {
 // GetReputationManager 获取信誉管理器（供外部查询统计）
 func (s *MCPDPServer) GetReputationManager() *ReputationManager {
 	return s.reputationMgr
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Multi-gateway instrumentation setters / getters
+// ─────────────────────────────────────────────────────────────────────────────
+
+// SetNodeID sets the gateway node identifier returned in X-Gateway-Node headers.
+// Defaults to empty string (header omitted). Typically set to host:port.
+func (s *MCPDPServer) SetNodeID(nodeID string) {
+	s.nodeID = nodeID
+}
+
+// SetSharedStateStore installs a cross-node SessionStateStore.
+// When non-nil, P&S step-0 admission uses the shared store for global-cap +
+// dedup enforcement, and P&S continuation steps fall back to the shared store
+// when the local budgetMgr lacks the reservation (cross-node routing case).
+// Pass nil to restore local-only behaviour (default).
+func (s *MCPDPServer) SetSharedStateStore(store SessionStateStore) {
+	s.sharedStateStore = store
+}
+
+// GetStateMissCount returns the number of P&S continuation steps that arrived
+// at this node but found no reservation locally or in the shared store.
+func (s *MCPDPServer) GetStateMissCount() int64 {
+	return atomic.LoadInt64(&s.stateMissCount)
+}
+
+// GetDuplicateAdmissionCount returns the number of step-0 requests that were
+// detected as duplicate admissions (session already admitted on another node).
+func (s *MCPDPServer) GetDuplicateAdmissionCount() int64 {
+	return atomic.LoadInt64(&s.duplicateAdmissionCount)
 }

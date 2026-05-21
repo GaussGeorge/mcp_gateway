@@ -4,8 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"log"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 	"time"
 
@@ -70,6 +73,8 @@ func BenchmarkPriceComputation_SunkCostFull(b *testing.B) {
 // ── 会话查找开销 ──
 
 func BenchmarkSessionLookup_BudgetReservation(b *testing.B) {
+	restoreLogs := silenceBenchmarkLogs(b)
+	defer restoreLogs()
 	mgr := NewHTTPBudgetReservationManager(5 * time.Minute)
 	gov := makeTestGovernor()
 	// 预填充 1000 个会话
@@ -102,24 +107,16 @@ func BenchmarkSessionLookup_ReactSession(b *testing.B) {
 // ── 完整准入链路开销（含 JSON 解析、DAG 验证、价格计算） ──
 
 func BenchmarkFullAdmission_PlanAndSolve(b *testing.B) {
-	server := makeTestServer(30)
-	dagJSON := makeDAGJSON(5, 500)
-	rpcReq := makeToolCallRPC("calculate")
+	benchmarkPSAdmission(b, 5)
+}
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		sessionID := fmt.Sprintf("bench-ps-%d", i)
-		req := httptest.NewRequest(http.MethodPost, "/", nil)
-		req.Header.Set(HeaderPlanDAG, dagJSON)
-		req.Header.Set(HeaderSessionID, sessionID)
-		req.Header.Set(HeaderTotalBudget, "500")
-		_ = server.handlePlanAndSolveFirstStep(
-			context.Background(), req, rpcReq, dagJSON, sessionID,
-		)
-	}
+func BenchmarkPSAdmission_5Step(b *testing.B) {
+	benchmarkPSAdmission(b, 5)
 }
 
 func BenchmarkFullAdmission_ReActFirstStep(b *testing.B) {
+	restoreLogs := silenceBenchmarkLogs(b)
+	defer restoreLogs()
 	server := makeTestServer(30)
 	rpcReq := makeToolCallRPC("calculate")
 
@@ -163,6 +160,8 @@ func BenchmarkHTTPOverhead_ToolsList(b *testing.B) {
 }
 
 func BenchmarkHTTPOverhead_ToolsCall_ReAct(b *testing.B) {
+	restoreLogs := silenceBenchmarkLogs(b)
+	defer restoreLogs()
 	server := makeTestServer(1000) // 大容量避免准入瓶颈
 	paramBytes, _ := json.Marshal(map[string]interface{}{
 		"name":      "calculate",
@@ -218,6 +217,8 @@ func BenchmarkConcurrentSessionLookup(b *testing.B) {
 }
 
 func BenchmarkConcurrentBudgetReservationLookup(b *testing.B) {
+	restoreLogs := silenceBenchmarkLogs(b)
+	defer restoreLogs()
 	mgr := NewHTTPBudgetReservationManager(5 * time.Minute)
 	gov := makeTestGovernor()
 	for i := 0; i < 10000; i++ {
@@ -250,6 +251,71 @@ func BenchmarkGovernanceIntensity(b *testing.B) {
 }
 
 // ═══════════════════════════ 辅助函数 ═══════════════════════════
+
+func silenceBenchmarkLogs(b *testing.B) func() {
+	b.Helper()
+	prevOutput := log.Writer()
+	prevFlags := log.Flags()
+	prevPrefix := log.Prefix()
+	log.SetOutput(io.Discard)
+	log.SetFlags(0)
+	log.SetPrefix("")
+	return func() {
+		log.SetOutput(prevOutput)
+		log.SetFlags(prevFlags)
+		log.SetPrefix(prevPrefix)
+	}
+}
+
+func benchmarkPSAdmission(b *testing.B, steps int) {
+	server := makeTestServer(30)
+	dagJSON := makeDAGJSON(steps, 500)
+	restoreLogs := silenceBenchmarkLogs(b)
+	defer restoreLogs()
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		sessionID := fmt.Sprintf("bench-ps-%d", i)
+		req := httptest.NewRequest(http.MethodPost, "/", nil)
+		req.Header.Set(HeaderPlanDAG, dagJSON)
+		req.Header.Set(HeaderSessionID, sessionID)
+		req.Header.Set(HeaderTotalBudget, "500")
+
+		var plan HTTPDAGPlan
+		if err := json.Unmarshal([]byte(dagJSON), &plan); err != nil {
+			b.Fatalf("unmarshal DAG: %v", err)
+		}
+		if budgetStr := req.Header.Get(HeaderTotalBudget); budgetStr != "" {
+			if budget, err := strconv.ParseInt(budgetStr, 10, 64); err == nil {
+				plan.Budget = budget
+			}
+		}
+		if err := validateHTTPDAG(&plan); err != nil {
+			b.Fatalf("validate DAG: %v", err)
+		}
+
+		totalCost := server.calculateDAGTotalCost(&plan)
+		if plan.Budget < totalCost {
+			b.Fatalf("unexpected benchmark budget miss: budget=%d cost=%d", plan.Budget, totalCost)
+		}
+
+		if server.sessionCap != nil {
+			select {
+			case server.sessionCap <- struct{}{}:
+			default:
+				b.Fatalf("session cap unexpectedly full in benchmark")
+			}
+		}
+
+		res := server.budgetMgr.Reserve(server.governor, &plan, totalCost)
+		if server.sessionCap != nil {
+			capCh := server.sessionCap
+			res.releaseFn = func() { <-capCh }
+		}
+		res.Release()
+	}
+}
 
 func makeTestGovernor() *mcpgov.MCPGovernor {
 	callMap := map[string][]string{

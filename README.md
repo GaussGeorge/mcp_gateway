@@ -1,5 +1,39 @@
 ﻿# PlanGate: Session Commitment for Multi-Step LLM Agent Tool Governance
 
+This artifact supports the paper's tables and figures.
+
+**Quick verification (no API key required):**
+```bash
+# Set up frozen CSV results from artifact_cache/
+python scripts/setup_frozen_results.py
+
+# Verify all paper tables against frozen CSVs
+python scripts/_verify_paper_data.py
+
+# Verify bursty N=7 table
+python scripts/_compute_bursty_stats.py
+
+# Verify tput-latency table
+python scripts/_compute_tput_latency_stats.py --show-crossings
+
+# Run gateway-overhead collection and aggregation
+python scripts/run_gateway_overhead_benchmark.py --skip-live
+python scripts/_compute_gateway_overhead_stats.py
+
+# Regenerate all paper figures
+python scripts/gen_paper_figures.py
+python scripts/plot_rajomon_sensitivity.py
+```
+
+See [TABLE_FIGURE_MAPPING.md](TABLE_FIGURE_MAPPING.md) for the full
+table/figure → data → script mapping.
+
+No API keys are required for cached-result verification (Tier A) or mock
+re-runs (Tier B). Live real-LLM re-runs (Tier C) optionally require a
+provider key or GPU.
+
+---
+
 PlanGate is an MCP-compatible gateway that reduces **governance-induced cascading compute waste**
 in multi-step LLM agent workloads by aligning admission decisions with multi-step session
 semantics — enforcing *session commitment*: atomic admission, temporal isolation, and
@@ -18,6 +52,29 @@ Additionally, **PlanGate-R** is a checkpoint-aware recovery extension evaluated
 in a controlled mock runtime (P&S only; no real LLM; no ReAct semantic
 recovery). It is not a primary contribution.
 
+## Gateway Processing Overhead
+
+The gateway-overhead benchmark is split into two layers:
+
+1. Go in-process microbenchmarks for DAG validation, price computation, session lookup, P&S admission, and HTTP routing (primary overhead evidence).
+2. Live mock/back-end traces that record `X-Gateway-Latency-Us` for successful admitted steps, step-0 rejections, and all handled requests (appendix diagnostic only).
+
+Outputs are written under `results/exp_gateway_overhead/`:
+
+- `go_bench_overhead.txt`
+- `go_bench_overhead.csv`
+- `gateway_overhead_agg.csv`
+- `gateway_overhead_cdf.csv`
+
+Note: `X-Gateway-Latency-Us` is a gateway-observed service-time signal and may include proxied backend/tool execution. Use `go_bench_overhead.txt/csv` for pure gateway processing-overhead claims.
+
+Recommended entry points:
+
+```bash
+python scripts/run_gateway_overhead_benchmark.py --skip-live
+python scripts/_compute_gateway_overhead_stats.py
+```
+
 ---
 
 ## Repository Structure
@@ -35,6 +92,7 @@ mcp_server/           Python MCP backend + tool implementations
 scripts/              Experiment runner, analysis, and plotting scripts
   run_all_experiments.py        Main mock experiment driver
   run_exp_real3_all.sh          Real-LLM (GLM/DeepSeek) experiment driver
+  run_gateway_overhead_benchmark.py  Gateway-overhead benchmark driver
   reproduce_mock_core.sh        Reproducibility: mock core experiments
   reproduce_main_paper_from_cache.sh  Re-generate figures from CSV cache
   gen_paper_figures.py         Paper figure generator
@@ -52,10 +110,15 @@ docs/                 Artifact documentation
 |---|---|---|
 | Go | >= 1.23 | `go version` |
 | Python | >= 3.10 | `python --version` |
+| OS | Linux / macOS / Windows (WSL2) | Native Windows: PowerShell scripts also provided |
 
 Install Python dependencies:
 
 ```bash
+# Core only (Tier A verification + Tier B mock re-run, no API key needed)
+pip install -r requirements.txt
+
+# Tier C (real-LLM live re-run): also install mcp_server/requirements.txt
 pip install -r mcp_server/requirements.txt
 ```
 
@@ -94,9 +157,8 @@ python mcp_server/server.py --host 127.0.0.1 --port 8080 --max-workers 10 &
 ./gateway --mode mcpdp --backend http://127.0.0.1:8080 --port 9200 \
           --max-sessions 200 --base-price 10 --alpha 0.5 &
 
-# 3. Smoke test (50 sessions, no API key needed)
-python scripts/smoke_test_multitool.py \
-    --gateway http://127.0.0.1:9200 --sessions 50
+# 3. Run Go unit tests (validates core logic; no API key)
+go test ./... -timeout 120s
 ```
 
 ---

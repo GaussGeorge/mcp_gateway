@@ -1,0 +1,23 @@
+goos: windows
+goarch: amd64
+pkg: mcp-governance/plangate
+cpu: Intel(R) Xeon(R) Silver 4216 CPU @ 2.10GHz
+BenchmarkDAGValidation_5Steps-32                 	  639706	      1738 ns/op	     112 B/op	       7 allocs/op
+BenchmarkDAGValidation_10Steps-32                	  124660	     10422 ns/op	    1928 B/op	      26 allocs/op
+BenchmarkDAGValidation_20Steps-32                	   54172	     24063 ns/op	    5544 B/op	      52 allocs/op
+BenchmarkPriceComputation_Quadratic-32           	1000000000	         0.3580 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPriceComputation_SunkCostFull-32        	1000000000	         0.4004 ns/op	       0 B/op	       0 allocs/op
+BenchmarkSessionLookup_BudgetReservation-32      	 3411554	       331.8 ns/op	      21 B/op	       1 allocs/op
+BenchmarkSessionLookup_ReactSession-32           	 3904914	       332.9 ns/op	      21 B/op	       1 allocs/op
+BenchmarkFullAdmission_PlanAndSolve-32           	   23932	     42075 ns/op	    7929 B/op	      63 allocs/op
+BenchmarkPSAdmission_5Step-32                    	   27578	     40409 ns/op	    7929 B/op	      63 allocs/op
+BenchmarkFullAdmission_ReActFirstStep-32         	  120426	     10978 ns/op	    1569 B/op	      31 allocs/op
+BenchmarkHTTPOverhead_Initialize-32              	   75064	     13506 ns/op	    7309 B/op	      29 allocs/op
+BenchmarkHTTPOverhead_ToolsList-32               	  129112	     13919 ns/op	    7309 B/op	      29 allocs/op
+BenchmarkHTTPOverhead_ToolsCall_ReAct-32         	   99400	     15811 ns/op	    7307 B/op	      32 allocs/op
+BenchmarkHTTPOverhead_Ping-32                    	   79239	     14097 ns/op	    7293 B/op	      29 allocs/op
+BenchmarkConcurrentSessionLookup-32              	54821215	        21.53 ns/op	      23 B/op	       1 allocs/op
+BenchmarkConcurrentBudgetReservationLookup-32    	56714258	        21.12 ns/op	      23 B/op	       1 allocs/op
+BenchmarkGovernanceIntensity-32                  	59556896	        21.02 ns/op	       0 B/op	       0 allocs/op
+PASS
+ok  	mcp-governance/plangate	27.209s

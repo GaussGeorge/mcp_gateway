@@ -6,6 +6,11 @@ ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 BASE = os.path.join(ROOT, "results", "exp_bursty_C20_B30")
 
 def read_all_data(gw):
+    """One data point per run directory: the first non-neutral row.
+    Neutral rows have backend_llm_tokens==0 (or backend_tokens==0) and
+    are artefacts of the experiment harness; they must be excluded.
+    Old format uses 'cascade_wasted_steps'; new format uses 'cascade_steps'.
+    """
     data = []
     gw_dir = os.path.join(BASE, gw)
     for i in range(1, 10):
@@ -15,13 +20,25 @@ def read_all_data(gw):
         with open(summary_file) as f:
             reader = csv.DictReader(f)
             for row in reader:
+                # Skip neutral/non-bursty rows injected by the harness:
+                # they have zero backend tokens (no real LLM calls took place).
+                backend_tok = int(row.get("backend_llm_tokens",
+                                         row.get("backend_tokens", 0)))
+                if backend_tok == 0:
+                    continue
+                # Cascade column name differs between old and new format.
+                cascade = int(row.get("cascade_steps",
+                              row.get("cascade_wasted_steps",
+                              row.get("cascade", 0))))
                 data.append({
                     "run": i,
                     "success": int(row.get("success", 0)),
                     "partial": int(row.get("partial", 0)),
-                    "all_rejected": int(row.get("all_rejected", row.get("rejected", 0))),
-                    "cascade_steps": int(row.get("cascade_steps", row.get("cascade", 0))),
+                    "all_rejected": int(row.get("all_rejected",
+                                               row.get("rejected", 0))),
+                    "cascade_steps": cascade,
                 })
+                break  # one data point per run directory
     return data
 
 def t_test_2sample(a, b):
@@ -46,8 +63,7 @@ for gw in ["ng", "plangate_real"]:
     print(f"  PARTIAL: {statistics.mean(partials):.1f} +/- {statistics.stdev(partials):.1f}")
     print(f"  SUCCESS: {statistics.mean(successes):.1f} +/- {statistics.stdev(successes):.1f}")
     print(f"  Rej0: {statistics.mean(rejecteds):.1f} +/- {statistics.stdev(rejecteds):.1f}")
-    if any(c > 0 for c in cascades):
-        print(f"  Cascade: {statistics.mean(cascades):.1f} +/- {statistics.stdev(cascades):.1f}")
+    print(f"  Cascade: {statistics.mean(cascades):.1f} +/- {statistics.stdev(cascades):.1f}")
     
     abds = [100*d["partial"]/(d["success"]+d["partial"]) if (d["success"]+d["partial"])>0 else 0 for d in data]
     print(f"  ABD: {statistics.mean(abds):.1f} +/- {statistics.stdev(abds):.1f}%")
@@ -70,8 +86,9 @@ for metric_name, ng_vals, pg_vals in [
     print(f"{metric_name}: t({df})={t:.2f}, NG={statistics.mean(ng_vals):.0f}+/-{statistics.stdev(ng_vals):.0f}, PG={statistics.mean(pg_vals):.0f}+/-{statistics.stdev(pg_vals):.0f}, reduction={pct:.1f}%")
 
 # Paper comparison
-print("\n=== Paper values vs Computed ===")
-print("Paper: NG PARTIAL 91+/-11, PG PARTIAL 75+/-12, t(12)=2.59")
-print("Paper: NG Rej0 89+/-11, PG Rej0 109+/-12, t(12)=3.28")
-print("Paper: NG ABD 82.3+/-3.9, PG ABD 82.7+/-5.3")
-print("Paper: NG SR 9.8+/-2.4, PG SR 7.9+/-2.4")
+print("\n=== Paper values (v7, N=7 corrected) vs Computed ===")
+print("Paper: NG PARTIAL 94+/-14, PG PARTIAL 76+/-12, t(12)=2.73, p<0.02  [doomed -19%]")
+print("Paper: NG Rej0    86+/-15, PG Rej0    108+/-12, t(12)=3.13, p<0.01")
+print("Paper: NG ABD     82.5+/-3.5, PG ABD  82.4+/-5.7 (n.s.)")
+print("Paper: NG SR      10.0+/-2.4, PG SR   8.1+/-2.8")
+print("Paper: NG Cascade ~174+/-38,  PG Cascade ~143+/-25  [cascade -18%, one-tailed p<0.05]")
