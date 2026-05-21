@@ -1,8 +1,8 @@
 # PlanGate Supplementary Artifact Cache
 
 **Version**: 2026-05-15  
-**Repository**: https://github.com/GaussGeorge/mcp_gateway  
-**Branch**: b-paper-strengthening-pareto
+**Repository**: anonymous artifact repository  
+**Branch**: artifact-public-v9
 
 ---
 
