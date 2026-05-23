@@ -13,6 +13,7 @@ LOG_PATH="results/log/cloudlab/backend_${PORT}.log"
 
 printf 'cloudlab-backend port=%s max_workers=%s\n' "${PORT}" "${MAX_WORKERS}" > "${LOG_PATH}"
 nohup .venv/bin/python mcp_server/server.py \
+  --host 0.0.0.0 \
   --port "${PORT}" \
   --max-workers "${MAX_WORKERS}" \
   --queue-timeout 1.0 \

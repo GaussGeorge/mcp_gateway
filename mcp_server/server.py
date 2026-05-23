@@ -154,6 +154,8 @@ _QUEUE_TIMEOUT = 1.0        # 由 main() 中 --queue-timeout 覆盖
 _in_flight_count = 0
 _in_flight_lock = threading.Lock()
 _CONGESTION_FACTOR = 0.5    # penalty_ms = (excess^1.5) * factor, capped at 2000ms
+_FAIL_ONCE_SEEN = set()
+_FAIL_ONCE_LOCK = threading.Lock()
 # 工具执行延迟注入：模拟真实云工具的物理耗时（秒）
 # 由 CLI --tool-delay-lightweight/medium/heavyweight 填充
 _TOOL_EXEC_DELAYS = {}      # {"lightweight": (1.5, 3.0), "medium": (2.5, 5.0), ...}
@@ -186,7 +188,8 @@ def handle_tools_call(req_id, params):
     """
     global _in_flight_count
     tool_name = params.get("name", "")
-    arguments = params.get("arguments", {})
+    arguments = params.get("arguments") or {}
+    call_meta = params.get("_meta", {}) or {}
 
     tool = registry.get(tool_name)
     if not tool:
@@ -224,10 +227,17 @@ def handle_tools_call(req_id, params):
                     delay = random.uniform(delay_range[0], delay_range[1])
                     time.sleep(delay)
 
+                injected_error = maybe_inject_failure(req_id, tool_name, arguments, call_meta)
+                if injected_error is not None:
+                    return injected_error
+
                 result_text = tool.handler(arguments)
             finally:
                 _global_semaphore.release()
         else:
+            injected_error = maybe_inject_failure(req_id, tool_name, arguments, call_meta)
+            if injected_error is not None:
+                return injected_error
             result_text = tool.handler(arguments)
 
         elapsed_ms = (time.time() - start) * 1000
@@ -260,6 +270,63 @@ def handle_tools_call(req_id, params):
     finally:
         with _in_flight_lock:
             _in_flight_count -= 1
+
+
+def maybe_inject_failure(req_id, tool_name, arguments, call_meta):
+    """Inject a single synthetic backend failure for controlled P3 experiments."""
+    injection = {}
+    if isinstance(call_meta, dict):
+        nested = call_meta.get("failure_injection")
+        if isinstance(nested, dict):
+            injection.update(nested)
+        elif call_meta.get("inject_failure"):
+            injection.update(call_meta)
+
+    if isinstance(arguments, dict):
+        arg_meta = arguments.get("_meta")
+        if isinstance(arg_meta, dict):
+            injection.update(arg_meta)
+        extra = arguments.get("__failure_injection")
+        if isinstance(extra, dict):
+            injection.update(extra)
+
+    if not injection.get("inject_failure"):
+        return None
+
+    fail_once_key = str(injection.get("fail_once_key") or "").strip()
+    if not fail_once_key:
+        fail_once_key = f"adhoc:{tool_name}:{time.time_ns()}"
+
+    with _FAIL_ONCE_LOCK:
+        if fail_once_key in _FAIL_ONCE_SEEN:
+            return None
+        _FAIL_ONCE_SEEN.add(fail_once_key)
+
+    failure_type = str(injection.get("failure_type") or "backend_timeout").strip().lower()
+    if failure_type == "tool_unavailable":
+        message = f"injected backend unavailable for {tool_name}"
+    elif failure_type == "backend_overloaded":
+        message = f"injected backend overloaded for {tool_name}"
+    else:
+        message = f"injected backend timeout for {tool_name}"
+
+    log.warning(
+        "Injected synthetic failure tool=%s key=%s type=%s",
+        tool_name,
+        fail_once_key,
+        failure_type,
+    )
+    return make_error(
+        req_id,
+        -32603,
+        message,
+        {
+            "inject_failure": True,
+            "retryable": True,
+            "fail_once_key": fail_once_key,
+            "failure_type": failure_type,
+        },
+    )
 
 
 def handle_ping(req_id, params):

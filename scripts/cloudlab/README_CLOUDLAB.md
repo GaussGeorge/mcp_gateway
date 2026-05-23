@@ -8,16 +8,14 @@ PlanGate experiments across:
 - multiple gateway nodes
 - multiple backend nodes
 
-The current harness covers P0-P2:
+The current harness covers P0-P3:
 
 - inventory-driven SSH orchestration
 - setup/build/start/stop/collect/validate
 - shared Redis multi-gateway smoke runs
 - per-run summary and aggregate CSV generation
-
-It intentionally does not implement failure/amendment workload injection yet.
-`--failure-rate` and `--amendment-rate` are accepted for API stability, but any
-non-zero value fails fast until the recovery/amendment workload runner lands.
+- distributed P3 recovery/amendment workload runs through
+  `scripts/p3_recovery_amendment_runner.py`
 
 ## Files
 
@@ -30,6 +28,10 @@ non-zero value fails fast until the recovery/amendment workload runner lands.
 - `run_cloudlab_experiment.py`: main orchestrator
 - `collect_results.py`: fetch loader outputs, logs, and Redis info
 - `validate_results.py`: validate merged `steps.csv` and gateway logs
+- `../p3_recovery_amendment_runner.py`: policy-aware P3 workload runner used by
+  `--workload p3`
+- `../compute_p3_recovery_amendment_stats.py`: writes `p3_summary.csv` and
+  `p3_adversarial_summary.csv`
 
 ## Inventory
 
@@ -47,7 +49,21 @@ python scripts/cloudlab/run_cloudlab_experiment.py \
   --dry-run
 ```
 
-2. Small shared-random smoke:
+2. Correctness smoke:
+
+```bash
+python scripts/cloudlab/run_cloudlab_experiment.py \
+  --inventory scripts/cloudlab/inventory.json \
+  --profile small \
+  --sessions 20 \
+  --concurrency 2 \
+  --repeats 1 \
+  --arrival-rate 2 \
+  --results-dir results/cloudlab_smoke_c2 \
+  --commitment-secret cloudlab-shared-secret
+```
+
+3. Stress smoke:
 
 ```bash
 python scripts/cloudlab/run_cloudlab_experiment.py \
@@ -56,11 +72,15 @@ python scripts/cloudlab/run_cloudlab_experiment.py \
   --sessions 200 \
   --concurrency 40 \
   --repeats 1 \
-  --results-dir results/cloudlab_smoke \
-  --commitment-secret cloudlab-shared-secret
+  --arrival-rate 50 \
+  --results-dir results/cloudlab_smoke_c40 \
+  --commitment-secret cloudlab-shared-secret \
+  --validation-mode stress \
+  --skip-setup \
+  --skip-build
 ```
 
-3. Medium-scale baseline matrix:
+4. Medium-scale baseline matrix:
 
 ```bash
 python scripts/cloudlab/run_cloudlab_experiment.py \
@@ -75,14 +95,58 @@ python scripts/cloudlab/run_cloudlab_experiment.py \
   --commitment-secret cloudlab-shared-secret
 ```
 
-If you pass any non-zero `--failure-rate` or `--amendment-rate`, the harness
-fails fast with a clear message. That is deliberate for now: P3 workload
-injection is a follow-up step, while this cut is meant to stabilize the
-distributed Redis/shared-secret path first.
+5. P3 small stress:
+
+```bash
+python scripts/cloudlab/run_cloudlab_experiment.py \
+  --inventory scripts/cloudlab/inventory.json \
+  --profile small \
+  --workload p3 \
+  --policies naive_retry plangate_r plangate_ar \
+  --sessions 100 \
+  --concurrency 10 \
+  --failure-rate 0.1 0.2 0.3 \
+  --amendment-rate 1.0 \
+  --validation-mode stress \
+  --results-dir results/cloudlab_p3_small \
+  --commitment-secret cloudlab-shared-secret
+```
+
+In CloudLab P3 mode, the harness starts Redis/backends/gateways itself and the
+P3 runner only sends workload with:
+
+- `--gateway-urls http://gw1:9601 http://gw2:9602 ...`
+- `--routing random`
+- `--no-start-services`
+
+## CloudLab Small Validation
+
+Validated on 6 CloudLab `m510` bare-metal nodes running Ubuntu 22.04:
+
+- 1 loader
+- 1 Redis
+- 2 gateways
+- 2 backends
+
+Correctness smoke result:
+
+- `sessions = 20`
+- `concurrency = 2`
+- `success = 20/20`
+- `cross_node_sessions = 17/20`
+- `state_miss = 0`
+- `duplicate_admission = 0`
+- `cascade_failed = 0`
+- `validation_passed = True`
+
+This confirms that the P0-P2 correctness smoke validates distributed shared
+state plus commitment-token replay across multiple gateways. The `C=40` run is
+intended as a stress smoke, so it should use `--validation-mode stress` rather
+than the default 95% correctness threshold.
 
 ## What gets validated
 
-For each collected run, `validate_results.py` checks:
+For `--workload standard`, `validate_results.py` checks:
 
 - `total_sessions == expected sessions`
 - `state_miss == 0`
@@ -91,6 +155,15 @@ For each collected run, `validate_results.py` checks:
 - `cascade_failed == 0` for no-failure smoke
 - commitment invalid/mismatch/expired counts are zero
 - all gateway logs advertise the same commitment-token mode and Redis address
+- `success_rate >= 95%` only in `--validation-mode correctness`
+
+In `--validation-mode stress`, standard validation still requires:
+
+- `state_miss == 0`
+- `duplicate_admission == 0`
+- `cascade_failed == 0`
+- commitment invalid/mismatch/expired counts are zero
+- `cross_node_sessions > 0` for multi-gateway random routing
 
 The local results root also gets:
 
@@ -102,11 +175,45 @@ The local results root also gets:
 - backend logs
 - `redis_info.txt`
 
+For `--workload p3`, each run gets:
+
+- `p3_summary.csv`
+- `p3_adversarial_summary.csv`
+- policy-level `naive_retry/steps.csv`, `naive_retry/sessions.csv`
+- policy-level `plangate_r/steps.csv`, `plangate_r/sessions.csv`
+- policy-level `plangate_ar/steps.csv`, `plangate_ar/sessions.csv`
+- merged top-level `steps.csv` and `sessions.csv`
+- loader logs
+- gateway logs
+- backend logs
+- `redis_info.txt`
+
+P3 validation checks:
+
+- all requested policies are present
+- failure-rate rows cover the requested set
+- `plangate_ar v2_commitment_issued > 0`
+- `plangate_ar false_accept = 0`
+- `plangate_ar executed_after_rejected_amendment = 0`
+- `plangate_ar avg_total_tool_calls < naive_retry`
+- `plangate_ar success_rate >= plangate_r`
+- invalid amendment rows reject `unknown_tool`, `dag_cycle`,
+  `budget_overflow`, `stale_parent`, `checkpoint_hash_mismatch`, and
+  `modify_completed_prefix`
+- `state_miss = 0`
+- `duplicate_admission = 0`
+- commitment invalid/mismatch/expired counts are zero
+- `cross_node_sessions > 0` for multi-gateway random routing
+
 ## Notes
 
 - Every gateway must share the same `--commitment-secret`.
+- `start_backend.sh` binds backends to `0.0.0.0` so CloudLab peers can reach them.
+- `setup_node.sh` installs Go 1.23.12 from the official tarball path when the
+  node does not already provide Go 1.23+.
 - The harness drives the existing token-aware `dag_load_generator.py`; it sends
   both `--target` and `--targets` for backward compatibility with the current
   loader CLI.
-- Recovery is enabled on the gateways, but distributed recovery/amendment
-  workload injection is not part of this P0-P2 harness cut yet.
+- In P3 mode, the runner never starts gateway/backend processes on loader
+  nodes; that lifecycle stays under the CloudLab harness so ports and logs stay
+  well-behaved.

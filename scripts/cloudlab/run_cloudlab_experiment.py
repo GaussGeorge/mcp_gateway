@@ -16,6 +16,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import asdict, dataclass
 from itertools import product
+from pathlib import Path
 from typing import Dict, Iterable, List, Sequence, Tuple
 from urllib.error import URLError
 from urllib.request import Request, urlopen
@@ -24,8 +25,12 @@ from urllib.request import Request, urlopen
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 if SCRIPT_DIR not in sys.path:
     sys.path.insert(0, SCRIPT_DIR)
+SCRIPTS_ROOT = os.path.dirname(SCRIPT_DIR)
+if SCRIPTS_ROOT not in sys.path:
+    sys.path.insert(0, SCRIPTS_ROOT)
 
 import collect_results
+import compute_p3_recovery_amendment_stats as p3_stats
 import validate_results
 
 
@@ -70,6 +75,8 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run distributed PlanGate CloudLab experiments")
     parser.add_argument("--inventory", required=True)
     parser.add_argument("--profile", required=True, choices=sorted(PROFILE_COUNTS))
+    parser.add_argument("--workload", choices=["standard", "p3"], default="standard")
+    parser.add_argument("--policies", nargs="+", default=["naive_retry", "plangate_r", "plangate_ar"])
     parser.add_argument("--sessions", type=int, default=1000)
     parser.add_argument("--concurrency", nargs="+", type=int, default=[100])
     parser.add_argument("--repeats", type=int, default=3)
@@ -79,6 +86,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--commitment-secret", default="")
     parser.add_argument("--arrival-rate", type=float, default=DEFAULT_ARRIVAL_RATE)
     parser.add_argument("--backend-workers", type=int, default=DEFAULT_BACKEND_WORKERS)
+    parser.add_argument("--routing", default="random", choices=["single", "random", "sticky", "round_robin"])
+    parser.add_argument("--min-success-rate", type=float, default=0.95)
+    parser.add_argument("--validation-mode", choices=["correctness", "stress"], default="correctness")
     parser.add_argument("--skip-setup", action="store_true")
     parser.add_argument("--skip-build", action="store_true")
     parser.add_argument("--skip-validate", action="store_true")
@@ -131,15 +141,16 @@ def build_topology(inventory: Dict[str, object], profile: str) -> Topology:
 
 
 def ensure_supported_workload(args: argparse.Namespace) -> None:
-    nonzero_failure = [rate for rate in args.failure_rate if abs(rate) > 1e-9]
-    nonzero_amendment = [rate for rate in args.amendment_rate if abs(rate) > 1e-9]
-    if nonzero_failure or nonzero_amendment:
-        raise SystemExit(
-            "failure/amendment workload injection is not implemented in this CloudLab harness yet; "
-            "use --failure-rate 0 --amendment-rate 0 for P0-P2 runs."
-        )
     if not args.commitment_secret and not args.dry_run:
         raise SystemExit("--commitment-secret is required for non-dry-run multi-gateway CloudLab experiments")
+    if args.workload == "standard":
+        nonzero_failure = [rate for rate in args.failure_rate if abs(rate) > 1e-9]
+        nonzero_amendment = [rate for rate in args.amendment_rate if abs(rate) > 1e-9]
+        if nonzero_failure or nonzero_amendment:
+            raise SystemExit(
+                "failure/amendment workload injection is only supported with --workload p3; "
+                "use --workload standard --failure-rate 0 --amendment-rate 0 for P0-P2 runs."
+            )
 
 
 def unique_hosts(topology: Topology) -> List[str]:
@@ -295,11 +306,41 @@ def scenario_run_dirs(results_dir: str, profile: str, concurrency: int, failure_
     return local_dir, remote_dir
 
 
+def p3_run_dirs(
+    results_dir: str,
+    profile: str,
+    concurrency: int,
+    amendment_rate: float,
+    repeat: int,
+    *,
+    collapse_to_root: bool,
+) -> Tuple[str, str]:
+    if collapse_to_root:
+        return os.path.abspath(results_dir), "p3_root"
+    pieces = [
+        f"profile_{profile}",
+        f"C{concurrency}",
+        "Fmulti",
+        f"A{format_rate(amendment_rate)}",
+        f"run{repeat}",
+    ]
+    local_dir = os.path.abspath(os.path.join(results_dir, *pieces))
+    remote_dir = posixpath.join(*pieces)
+    return local_dir, remote_dir
+
+
 def remote_results_root(repo_dir: str, results_dir: str) -> str:
     if posixpath.isabs(results_dir):
         return results_dir
     normalized = results_dir.replace("\\", "/").lstrip("./")
     return posixpath.join(repo_dir, normalized)
+
+
+def resolve_remote_run_dir(repo_dir: str, results_dir: str, remote_run_dir_suffix: str) -> str:
+    remote_root = remote_results_root(repo_dir, results_dir)
+    if remote_run_dir_suffix in ("", ".", "./"):
+        return remote_root
+    return posixpath.join(remote_root, remote_run_dir_suffix)
 
 
 def run_loaders(
@@ -311,11 +352,11 @@ def run_loaders(
     concurrency: int,
     arrival_rate: float,
     backend_workers: int,
+    routing: str,
     dry_run: bool = False,
 ) -> List[Tuple[str, str]]:
     del backend_workers  # reserved for future loader-side tuning
-    remote_root = remote_results_root(topology.repo_dir, results_dir)
-    remote_run_dir = posixpath.join(remote_root, remote_run_dir_suffix)
+    remote_run_dir = resolve_remote_run_dir(topology.repo_dir, results_dir, remote_run_dir_suffix)
     session_slices = split_integer(sessions, len(topology.loaders))
     concurrency_slices = split_integer(concurrency, len(topology.loaders))
     gateway_urls = [svc.url for svc in topology.gateways]
@@ -338,7 +379,7 @@ def run_loaders(
             "python scripts/dag_load_generator.py "
             f"--target {shlex.quote(first_target)} "
             f"--targets {targets_arg} "
-            "--routing random "
+            f"--routing {shlex.quote(routing)} "
             f"--sessions {loader_sessions} "
             f"--concurrency {loader_concurrency} "
             f"--ps-ratio {DEFAULT_PS_RATIO} "
@@ -355,6 +396,60 @@ def run_loaders(
         outputs.append((host, remote_csv))
 
     run_parallel("run-loaders", jobs, topology.user, dry_run=dry_run)
+    return outputs
+
+
+def run_p3_loaders(
+    topology: Topology,
+    *,
+    results_dir: str,
+    remote_run_dir_suffix: str,
+    sessions: int,
+    concurrency: int,
+    failure_rates: Sequence[float],
+    amendment_rate: float,
+    policies: Sequence[str],
+    routing: str,
+    commitment_secret: str,
+    dry_run: bool = False,
+) -> List[Tuple[str, str, str]]:
+    remote_run_dir = resolve_remote_run_dir(topology.repo_dir, results_dir, remote_run_dir_suffix)
+    session_slices = split_integer(sessions, len(topology.loaders))
+    concurrency_slices = split_integer(concurrency, len(topology.loaders))
+    gateway_urls = [svc.url for svc in topology.gateways]
+    gateway_args = " ".join(shlex.quote(url) for url in gateway_urls)
+    policies_arg = " ".join(shlex.quote(policy) for policy in policies)
+    failure_arg = " ".join(format_rate(rate) for rate in failure_rates)
+
+    jobs: List[Tuple[str, str]] = []
+    outputs: List[Tuple[str, str, str]] = []
+    for idx, host in enumerate(topology.loaders):
+        loader_sessions = session_slices[idx]
+        loader_concurrency = max(concurrency_slices[idx], 1) if loader_sessions > 0 else 0
+        if loader_sessions <= 0 or loader_concurrency <= 0:
+            continue
+        remote_loader_dir = posixpath.join(remote_run_dir, "loaders", host)
+        loader_log = posixpath.join(remote_run_dir, "loaders", f"loader_{host}.log")
+        command = (
+            f"cd {shlex.quote(topology.repo_dir)} && mkdir -p {shlex.quote(remote_loader_dir)} && "
+            ". .venv/bin/activate && "
+            "python scripts/p3_recovery_amendment_runner.py "
+            f"--policies {policies_arg} "
+            f"--sessions {loader_sessions} "
+            f"--concurrency {loader_concurrency} "
+            f"--failure-rate {failure_arg} "
+            f"--amendment-rate {format_rate(amendment_rate)} "
+            f"--results-dir {shlex.quote(remote_loader_dir)} "
+            f"--commitment-secret {shlex.quote(commitment_secret)} "
+            f"--gateway-urls {gateway_args} "
+            f"--routing {shlex.quote(routing)} "
+            "--no-start-services "
+            f"> {shlex.quote(loader_log)} 2>&1"
+        )
+        jobs.append((host, command))
+        outputs.append((host, remote_loader_dir, loader_log))
+
+    run_parallel("run-p3-loaders", jobs, topology.user, dry_run=dry_run)
     return outputs
 
 
@@ -397,6 +492,8 @@ def print_dry_run(topology: Topology, args: argparse.Namespace) -> None:
     print(json.dumps(
         {
             "profile": args.profile,
+            "workload": args.workload,
+            "policies": args.policies,
             "redis": {"host": topology.redis_host, "port": topology.redis_port},
             "loaders": list(topology.loaders),
             "gateways": [asdict(svc) for svc in topology.gateways],
@@ -406,10 +503,21 @@ def print_dry_run(topology: Topology, args: argparse.Namespace) -> None:
             "failure_rate": args.failure_rate,
             "amendment_rate": args.amendment_rate,
             "repeats": args.repeats,
+            "routing": args.routing,
+            "min_success_rate": args.min_success_rate,
+            "validation_mode": args.validation_mode,
         },
         indent=2,
         sort_keys=True,
     ))
+
+
+def compute_p3_summaries(local_run_dir: str) -> None:
+    rows = p3_stats.collect_policy_rows(Path(local_run_dir))
+    main_summary = p3_stats.summarize_main(rows)
+    adversarial_summary = p3_stats.summarize_adversarial(rows)
+    p3_stats.write_csv(Path(local_run_dir) / "p3_summary.csv", main_summary)
+    p3_stats.write_csv(Path(local_run_dir) / "p3_adversarial_summary.csv", adversarial_summary)
 
 
 def main() -> int:
@@ -417,16 +525,27 @@ def main() -> int:
     ensure_supported_workload(args)
     inventory = load_inventory(args.inventory)
     topology = build_topology(inventory, args.profile)
+    single_p3_root = args.workload == "p3" and len(args.concurrency) == 1 and len(args.amendment_rate) == 1 and args.repeats == 1
 
     if args.dry_run:
-        _sample_local_dir, sample_remote_suffix = scenario_run_dirs(
-            args.results_dir,
-            args.profile,
-            args.concurrency[0],
-            args.failure_rate[0],
-            args.amendment_rate[0],
-            1,
-        )
+        if args.workload == "standard":
+            _sample_local_dir, sample_remote_suffix = scenario_run_dirs(
+                args.results_dir,
+                args.profile,
+                args.concurrency[0],
+                args.failure_rate[0],
+                args.amendment_rate[0],
+                1,
+            )
+        else:
+            _sample_local_dir, sample_remote_suffix = p3_run_dirs(
+                args.results_dir,
+                args.profile,
+                args.concurrency[0],
+                args.amendment_rate[0],
+                1,
+                collapse_to_root=single_p3_root,
+            )
         print_dry_run(topology, args)
         check_ssh(topology, dry_run=True)
         setup_nodes(topology, dry_run=True)
@@ -436,16 +555,32 @@ def main() -> int:
         start_backends(topology, args.backend_workers, dry_run=True)
         start_gateways(topology, args.commitment_secret or "<shared-secret>", dry_run=True)
         verify_gateways(topology, dry_run=True)
-        run_loaders(
-            topology,
-            results_dir=args.results_dir,
-            remote_run_dir_suffix=sample_remote_suffix,
-            sessions=args.sessions,
-            concurrency=args.concurrency[0],
-            arrival_rate=args.arrival_rate,
-            backend_workers=args.backend_workers,
-            dry_run=True,
-        )
+        if args.workload == "standard":
+            run_loaders(
+                topology,
+                results_dir=args.results_dir,
+                remote_run_dir_suffix=sample_remote_suffix,
+                sessions=args.sessions,
+                concurrency=args.concurrency[0],
+                arrival_rate=args.arrival_rate,
+                backend_workers=args.backend_workers,
+                routing=args.routing,
+                dry_run=True,
+            )
+        else:
+            run_p3_loaders(
+                topology,
+                results_dir=args.results_dir,
+                remote_run_dir_suffix=sample_remote_suffix,
+                sessions=args.sessions,
+                concurrency=args.concurrency[0],
+                failure_rates=args.failure_rate,
+                amendment_rate=args.amendment_rate[0],
+                policies=args.policies,
+                routing=args.routing,
+                commitment_secret=args.commitment_secret or "<shared-secret>",
+                dry_run=True,
+            )
         return 0
 
     check_ssh(topology, dry_run=False)
@@ -456,17 +591,37 @@ def main() -> int:
 
     summary_rows: List[Dict[str, object]] = []
     validation_failures = 0
-    scenarios = list(product(args.concurrency, args.failure_rate, args.amendment_rate, range(1, args.repeats + 1)))
+    if args.workload == "standard":
+        scenarios = list(product(args.concurrency, args.failure_rate, args.amendment_rate, range(1, args.repeats + 1)))
+    else:
+        scenarios = list(product(args.concurrency, args.amendment_rate, range(1, args.repeats + 1)))
 
     try:
-        for concurrency, failure_rate, amendment_rate, repeat in scenarios:
-            local_run_dir, remote_run_suffix = scenario_run_dirs(
-                args.results_dir, args.profile, concurrency, failure_rate, amendment_rate, repeat
-            )
-            print(
-                f"[cloudlab] run profile={args.profile} concurrency={concurrency} "
-                f"failure_rate={failure_rate} amendment_rate={amendment_rate} repeat={repeat}"
-            )
+        for scenario in scenarios:
+            if args.workload == "standard":
+                concurrency, failure_rate, amendment_rate, repeat = scenario
+                local_run_dir, remote_run_suffix = scenario_run_dirs(
+                    args.results_dir, args.profile, concurrency, failure_rate, amendment_rate, repeat
+                )
+                print(
+                    f"[cloudlab] run workload=standard profile={args.profile} concurrency={concurrency} "
+                    f"failure_rate={failure_rate} amendment_rate={amendment_rate} repeat={repeat}"
+                )
+            else:
+                concurrency, amendment_rate, repeat = scenario
+                failure_rate = None
+                local_run_dir, remote_run_suffix = p3_run_dirs(
+                    args.results_dir,
+                    args.profile,
+                    concurrency,
+                    amendment_rate,
+                    repeat,
+                    collapse_to_root=single_p3_root,
+                )
+                print(
+                    f"[cloudlab] run workload=p3 profile={args.profile} concurrency={concurrency} "
+                    f"failure_rates={args.failure_rate} amendment_rate={amendment_rate} repeat={repeat}"
+                )
 
             stop_cluster(topology, dry_run=False)
             start_redis(topology, dry_run=False)
@@ -474,18 +629,98 @@ def main() -> int:
             start_gateways(topology, args.commitment_secret, dry_run=False)
             verify_gateways(topology, dry_run=False)
 
-            loader_outputs = run_loaders(
+            if args.workload == "standard":
+                loader_outputs = run_loaders(
+                    topology,
+                    results_dir=args.results_dir,
+                    remote_run_dir_suffix=remote_run_suffix,
+                    sessions=args.sessions,
+                    concurrency=concurrency,
+                    arrival_rate=args.arrival_rate,
+                    backend_workers=args.backend_workers,
+                    routing=args.routing,
+                    dry_run=False,
+                )
+
+                merged_steps = collect_results.collect_run_artifacts(
+                    user=topology.user,
+                    repo_dir=topology.repo_dir,
+                    redis_host=topology.redis_host,
+                    redis_port=topology.redis_port,
+                    loader_outputs=loader_outputs,
+                    gateway_hosts=[svc.host for svc in topology.gateways],
+                    backend_hosts=[svc.host for svc in topology.backends],
+                    local_run_dir=local_run_dir,
+                )
+
+                summary = validate_results.summarize_steps_csv(merged_steps)
+                errors: List[str] = []
+                if not args.skip_validate:
+                    errors = validate_results.validate_summary(
+                        summary,
+                        expected_sessions=args.sessions,
+                        gateway_count=len(topology.gateways),
+                        routing=args.routing,
+                        failure_rate=float(failure_rate or 0.0),
+                        min_success_rate=args.min_success_rate,
+                        validation_mode=args.validation_mode,
+                        gateway_log_dir=os.path.join(local_run_dir, "logs", "gateways"),
+                        expected_commitment_mode="optional",
+                        expected_redis_addr=f"{topology.redis_host}:{topology.redis_port}",
+                    )
+                    validate_results.write_summary(
+                        os.path.join(local_run_dir, "validation.json"),
+                        summary,
+                        errors,
+                    )
+                    if errors:
+                        validation_failures += 1
+                        print(f"[cloudlab] validation errors for {local_run_dir}:")
+                        for error in errors:
+                            print(f"  - {error}")
+
+                summary_rows.append(
+                    {
+                        "workload": args.workload,
+                        "profile": args.profile,
+                        "concurrency": concurrency,
+                        "failure_rate": failure_rate,
+                        "amendment_rate": amendment_rate,
+                        "repeat": repeat,
+                        "total_sessions": summary.total_sessions,
+                        "success_sessions": summary.success_sessions,
+                        "success_rate": round(summary.success_rate, 6),
+                        "cascade_failed": summary.cascade_failed,
+                        "state_miss": summary.state_miss,
+                        "duplicate_admission": summary.duplicate_admission,
+                        "cross_node_sessions": summary.cross_node_sessions,
+                        "gateway_p95_latency_us": round(summary.gateway_p95_latency_us, 3),
+                        "effective_goodput": round(summary.effective_goodput, 6),
+                        "elapsed_seconds": round(summary.elapsed_seconds, 6),
+                        "steps_csv": merged_steps,
+                        "validation_mode": args.validation_mode,
+                        "validation_passed": not errors,
+                    }
+                )
+                write_summary_csv(summary_rows, os.path.join(os.path.abspath(args.results_dir), "summary.csv"))
+                write_aggregate_csv(summary_rows, os.path.join(os.path.abspath(args.results_dir), "aggregate.csv"))
+                continue
+
+            loader_outputs = run_p3_loaders(
                 topology,
                 results_dir=args.results_dir,
                 remote_run_dir_suffix=remote_run_suffix,
                 sessions=args.sessions,
                 concurrency=concurrency,
-                arrival_rate=args.arrival_rate,
-                backend_workers=args.backend_workers,
+                failure_rates=args.failure_rate,
+                amendment_rate=amendment_rate,
+                policies=args.policies,
+                routing=args.routing,
+                commitment_secret=args.commitment_secret,
                 dry_run=False,
             )
 
-            merged_steps = collect_results.collect_run_artifacts(
+            collect_results.collect_p3_run_artifacts(
                 user=topology.user,
                 repo_dir=topology.repo_dir,
                 redis_host=topology.redis_host,
@@ -494,27 +729,35 @@ def main() -> int:
                 gateway_hosts=[svc.host for svc in topology.gateways],
                 backend_hosts=[svc.host for svc in topology.backends],
                 local_run_dir=local_run_dir,
+                policies=args.policies,
             )
+            compute_p3_summaries(local_run_dir)
 
-            summary = validate_results.summarize_steps_csv(merged_steps)
-            errors: List[str] = []
+            errors = []
+            p3_summary = validate_results.summarize_p3_outputs(local_run_dir)
             if not args.skip_validate:
-                errors = validate_results.validate_summary(
-                    summary,
-                    expected_sessions=args.sessions,
+                errors = validate_results.validate_p3_results(
+                    results_dir=local_run_dir,
+                    expected_policies=args.policies,
+                    expected_failure_rates=args.failure_rate,
                     gateway_count=len(topology.gateways),
-                    routing="random",
-                    failure_rate=failure_rate,
-                    min_success_rate=0.95,
+                    routing=args.routing,
+                    validation_mode=args.validation_mode,
+                    min_success_rate=args.min_success_rate,
                     gateway_log_dir=os.path.join(local_run_dir, "logs", "gateways"),
                     expected_commitment_mode="optional",
                     expected_redis_addr=f"{topology.redis_host}:{topology.redis_port}",
                 )
-                validate_results.write_summary(
-                    os.path.join(local_run_dir, "validation.json"),
-                    summary,
-                    errors,
-                )
+                with open(os.path.join(local_run_dir, "validation.json"), "w", encoding="utf-8") as handle:
+                    json.dump(
+                        {
+                            "summary": validate_results.p3_summary_to_dict(p3_summary),
+                            "errors": errors,
+                        },
+                        handle,
+                        indent=2,
+                        sort_keys=True,
+                    )
                 if errors:
                     validation_failures += 1
                     print(f"[cloudlab] validation errors for {local_run_dir}:")
@@ -523,28 +766,26 @@ def main() -> int:
 
             summary_rows.append(
                 {
+                    "workload": args.workload,
                     "profile": args.profile,
                     "concurrency": concurrency,
-                    "failure_rate": failure_rate,
+                    "failure_rates": ",".join(format_rate(rate) for rate in args.failure_rate),
                     "amendment_rate": amendment_rate,
                     "repeat": repeat,
-                    "total_sessions": summary.total_sessions,
-                    "success_sessions": summary.success_sessions,
-                    "success_rate": round(summary.success_rate, 6),
-                    "cascade_failed": summary.cascade_failed,
-                    "state_miss": summary.state_miss,
-                    "duplicate_admission": summary.duplicate_admission,
-                    "cross_node_sessions": summary.cross_node_sessions,
-                    "gateway_p95_latency_us": round(summary.gateway_p95_latency_us, 3),
-                    "effective_goodput": round(summary.effective_goodput, 6),
-                    "elapsed_seconds": round(summary.elapsed_seconds, 6),
-                    "steps_csv": merged_steps,
+                    "policies": ",".join(args.policies),
+                    "cross_node_sessions": p3_summary.cross_node_sessions,
+                    "state_miss": p3_summary.state_miss,
+                    "duplicate_admission": p3_summary.duplicate_admission,
+                    "commitment_invalid": p3_summary.commitment_invalid,
+                    "commitment_mismatch": p3_summary.commitment_mismatch,
+                    "commitment_expired": p3_summary.commitment_expired,
+                    "p3_summary_csv": os.path.join(local_run_dir, "p3_summary.csv"),
+                    "p3_adversarial_summary_csv": os.path.join(local_run_dir, "p3_adversarial_summary.csv"),
+                    "validation_mode": args.validation_mode,
                     "validation_passed": not errors,
                 }
             )
-
             write_summary_csv(summary_rows, os.path.join(os.path.abspath(args.results_dir), "summary.csv"))
-            write_aggregate_csv(summary_rows, os.path.join(os.path.abspath(args.results_dir), "aggregate.csv"))
     finally:
         stop_cluster(topology, dry_run=False)
 

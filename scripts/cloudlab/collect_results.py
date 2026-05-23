@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import csv
 import os
+import posixpath
 import shutil
 import subprocess
 from typing import Iterable, List, Sequence, Tuple
@@ -147,6 +148,103 @@ def collect_run_artifacts(
     merged_steps = os.path.join(local_run_dir, "steps.csv")
     merge_csv_files(loader_csvs, merged_steps)
     return merged_steps
+
+
+def collect_p3_run_artifacts(
+    *,
+    user: str,
+    repo_dir: str,
+    redis_host: str,
+    redis_port: int,
+    loader_outputs: Sequence[Tuple[str, str, str]],
+    gateway_hosts: Sequence[str],
+    backend_hosts: Sequence[str],
+    local_run_dir: str,
+    policies: Sequence[str],
+) -> Tuple[str, str]:
+    os.makedirs(local_run_dir, exist_ok=True)
+    loader_local_dir = os.path.join(local_run_dir, "loaders")
+    gateway_log_dir = os.path.join(local_run_dir, "logs", "gateways")
+    backend_log_dir = os.path.join(local_run_dir, "logs", "backends")
+    redis_dir = os.path.join(local_run_dir, "redis")
+    os.makedirs(loader_local_dir, exist_ok=True)
+    os.makedirs(gateway_log_dir, exist_ok=True)
+    os.makedirs(backend_log_dir, exist_ok=True)
+    os.makedirs(redis_dir, exist_ok=True)
+
+    policy_session_inputs = {policy: [] for policy in policies}
+    policy_step_inputs = {policy: [] for policy in policies}
+    all_sessions: List[str] = []
+    all_steps: List[str] = []
+
+    for host, remote_results_dir, remote_loader_log in loader_outputs:
+        local_results_dir = os.path.join(loader_local_dir, host)
+        scp_from_remote(user, host, remote_results_dir, local_results_dir, recursive=True)
+        scp_from_remote(
+            user,
+            host,
+            remote_loader_log,
+            os.path.join(loader_local_dir, f"{host}.log"),
+            allow_missing=True,
+        )
+        for policy in policies:
+            local_policy_dir = os.path.join(local_results_dir, policy)
+            local_sessions = os.path.join(local_policy_dir, "sessions.csv")
+            local_steps = os.path.join(local_policy_dir, "steps.csv")
+            if os.path.isfile(local_sessions):
+                policy_session_inputs[policy].append(local_sessions)
+                all_sessions.append(local_sessions)
+            if os.path.isfile(local_steps):
+                policy_step_inputs[policy].append(local_steps)
+                all_steps.append(local_steps)
+
+    for host in gateway_hosts:
+        host_dir = os.path.join(gateway_log_dir, host)
+        os.makedirs(host_dir, exist_ok=True)
+        scp_from_remote(
+            user,
+            host,
+            f"{repo_dir}/results/log/cloudlab/",
+            host_dir,
+            recursive=True,
+            allow_missing=True,
+        )
+
+    for host in backend_hosts:
+        host_dir = os.path.join(backend_log_dir, host)
+        os.makedirs(host_dir, exist_ok=True)
+        scp_from_remote(
+            user,
+            host,
+            f"{repo_dir}/results/log/cloudlab/",
+            host_dir,
+            recursive=True,
+            allow_missing=True,
+        )
+
+    redis_info = fetch_remote_text(
+        user,
+        redis_host,
+        f"redis-cli -h 127.0.0.1 -p {redis_port} INFO",
+    )
+    with open(os.path.join(redis_dir, "redis_info.txt"), "w", encoding="utf-8") as handle:
+        handle.write(redis_info)
+
+    for policy in policies:
+        local_policy_dir = os.path.join(local_run_dir, policy)
+        os.makedirs(local_policy_dir, exist_ok=True)
+        if policy_session_inputs[policy]:
+            merge_csv_files(policy_session_inputs[policy], os.path.join(local_policy_dir, "sessions.csv"))
+        if policy_step_inputs[policy]:
+            merge_csv_files(policy_step_inputs[policy], os.path.join(local_policy_dir, "steps.csv"))
+
+    merged_sessions = os.path.join(local_run_dir, "sessions.csv")
+    merged_steps = os.path.join(local_run_dir, "steps.csv")
+    if all_sessions:
+        merge_csv_files(all_sessions, merged_sessions)
+    if all_steps:
+        merge_csv_files(all_steps, merged_steps)
+    return merged_sessions, merged_steps
 
 
 def parse_host_path(values: Iterable[str]) -> List[Tuple[str, str]]:
