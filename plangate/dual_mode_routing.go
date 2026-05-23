@@ -92,7 +92,7 @@ func (s *MCPDPServer) handlePlanAndSolveFirstStep(
 	// >>> Eq.(1): C_total = Σ_{i=1}^{n} P_eff(t_i)
 	// P_eff(t_i) = P_own × w_{t_i}，其中 w_{t_i} 是该工具的权重系数（重型工具定价更高）
 	// 关键：此时使用的是「当前实时市场价格」，后续步骤将锁定该快照（Eq.2）
-	totalCost := s.calculateDAGTotalCost(&plan)
+	totalCost, lockedPrices := s.snapshotDAGPrices(&plan)
 
 	log.Printf("[PlanGate Pre-flight] session=%s budget=%d totalCost=%d steps=%d",
 		plan.SessionID, plan.Budget, totalCost, len(plan.Steps))
@@ -198,7 +198,7 @@ sharedAdmitDone:
 	var res *HTTPSessionReservation
 	var sharedRec *SharedPSRecord
 	if !s.disableBudgetLock {
-		res = s.budgetMgr.Reserve(s.governor, &plan, totalCost)
+		res = s.budgetMgr.ReserveWithLockedPrices(&plan, totalCost, lockedPrices)
 		res.PlanHash = planHash
 		priceHash, err := hashLockedPrices(res.LockedPrices)
 		if err != nil {
@@ -887,11 +887,21 @@ func (s *MCPDPServer) executeStepDirectWithShared(
 //
 // 注意：此函数使用「调用时刻的实时价格」，返回值后续会被 Eq.(2) 锁定为快照
 // 因此 calculateDAGTotalCost 的结果既是「准入门槛」也是「后续价格锁的基础」
-func (s *MCPDPServer) calculateDAGTotalCost(plan *HTTPDAGPlan) int64 {
+func (s *MCPDPServer) snapshotDAGPrices(plan *HTTPDAGPlan) (int64, map[string]int64) {
+	lockedPrices := make(map[string]int64)
 	var total int64
 	for _, step := range plan.Steps {
-		// 逐步累加：每个 DAG 步骤对应一个工具，取其当前有效价格
-		total += s.governor.GetToolEffectivePrice(step.ToolName)
+		price, ok := lockedPrices[step.ToolName]
+		if !ok {
+			price = s.governor.GetToolEffectivePrice(step.ToolName)
+			lockedPrices[step.ToolName] = price
+		}
+		total += price
 	}
+	return total, lockedPrices
+}
+
+func (s *MCPDPServer) calculateDAGTotalCost(plan *HTTPDAGPlan) int64 {
+	total, _ := s.snapshotDAGPrices(plan)
 	return total
 }

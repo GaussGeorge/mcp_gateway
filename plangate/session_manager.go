@@ -66,6 +66,17 @@ func (m *HTTPBudgetReservationManager) Reserve(gov *mcpgov.MCPGovernor, plan *HT
 	for _, step := range plan.Steps {
 		locked[step.ToolName] = gov.GetToolEffectivePrice(step.ToolName)
 	}
+	return m.ReserveWithLockedPrices(plan, totalCost, locked)
+}
+
+// ReserveWithLockedPrices creates a reservation from an already-captured price
+// snapshot. This keeps the step-0 total_cost commitment and later checkpoints
+// tied to the same admission-time view.
+func (m *HTTPBudgetReservationManager) ReserveWithLockedPrices(plan *HTTPDAGPlan, totalCost int64, lockedPrices map[string]int64) *HTTPSessionReservation {
+	locked := make(map[string]int64, len(lockedPrices))
+	for toolName, price := range lockedPrices {
+		locked[toolName] = price
+	}
 	res := &HTTPSessionReservation{
 		SessionID:    plan.SessionID,
 		Plan:         plan,
