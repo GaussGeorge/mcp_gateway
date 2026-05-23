@@ -20,8 +20,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
-import aiohttp
-
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 ROOT_DIR = SCRIPT_DIR.parent
@@ -56,6 +54,27 @@ INVALID_AMENDMENT_KINDS = [
     "stale_parent",
     "checkpoint_hash_mismatch",
 ]
+
+aiohttp = None
+
+
+class MissingDependencyError(RuntimeError):
+    pass
+
+
+def ensure_aiohttp() -> Any:
+    global aiohttp
+    if aiohttp is not None:
+        return aiohttp
+    try:
+        import aiohttp as aiohttp_module
+    except ModuleNotFoundError as exc:
+        raise MissingDependencyError(
+            "missing Python dependency 'aiohttp'. Activate .venv first or run "
+            "`python -m pip install -r requirements.txt` from the repository root."
+        ) from exc
+    aiohttp = aiohttp_module
+    return aiohttp
 
 
 def now_ms() -> float:
@@ -1304,6 +1323,8 @@ async def async_main(args: argparse.Namespace) -> int:
         print(json.dumps(plan, indent=2, ensure_ascii=False))
         return 0
 
+    ensure_aiohttp()
+
     try:
         if start_services:
             services = start_local_services(args)
@@ -1326,8 +1347,12 @@ async def async_main(args: argparse.Namespace) -> int:
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
-    args = parse_args(argv)
-    return asyncio.run(async_main(args))
+    try:
+        args = parse_args(argv)
+        return asyncio.run(async_main(args))
+    except MissingDependencyError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
 
 
 if __name__ == "__main__":

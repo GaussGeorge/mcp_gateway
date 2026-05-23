@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 
+import asyncio
+import contextlib
 import csv
 import importlib.util
+import io
+import json
 import sys
 import tempfile
 import unittest
@@ -116,6 +120,41 @@ class P3RunnerUnitTests(unittest.TestCase):
         }
         self.assertTrue(runner.is_retryable_recovery_response(retryable))
         self.assertFalse(runner.is_retryable_recovery_response(non_retryable))
+
+    def test_dry_run_external_gateway_mode_does_not_require_aiohttp(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            args = runner.parse_args(
+                [
+                    "--commitment-secret",
+                    "unit-secret",
+                    "--gateway-urls",
+                    "http://gw-a:9601",
+                    "http://gw-b:9602",
+                    "--routing",
+                    "random",
+                    "--no-start-services",
+                    "--dry-run",
+                    "--results-dir",
+                    tmp,
+                ]
+            )
+            previous = runner.aiohttp
+            runner.aiohttp = None
+            out = io.StringIO()
+            try:
+                with contextlib.redirect_stdout(out):
+                    rc = asyncio.run(runner.async_main(args))
+            finally:
+                runner.aiohttp = previous
+
+            self.assertEqual(0, rc)
+            plan = json.loads(out.getvalue())
+            self.assertEqual(
+                ["http://gw-a:9601", "http://gw-b:9602"],
+                plan["gateway_urls"],
+            )
+            self.assertEqual("random", plan["routing"])
+            self.assertFalse(plan["start_services"])
 
     def test_compute_stats_splits_main_and_adversarial(self):
         with tempfile.TemporaryDirectory() as tmp:
