@@ -29,21 +29,26 @@ coverage.out
 
 # Results / large experiment data
 results/
+artifact_cache/
+plangate-artifact/
 
 # Logs
 *.log
 log.txt
 *_output.txt
 n9_stats_output.txt
+logs/
 
 # Local caches and editor state
+.claude/
+.gocache/
 .idea/
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.example.json
 
 # Paper drafts and generated manuscript assets
-# Keep only paper/v9 and paper/figures for artifact submission
+# Keep paper/v9, paper/v10, and paper/figures for artifact submission
 paper/v2/
 paper/v3/
 paper/v4/
@@ -69,6 +74,7 @@ plan/
 *.zip
 *.tar.gz
 *.7z
+supplementary_artifact_cache_SHA256.txt
 
 # Python coverage / profiling
 .coverage

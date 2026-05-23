@@ -2,6 +2,7 @@ package plangate
 
 import (
 	"encoding/json"
+	"sort"
 	"time"
 )
 
@@ -29,21 +30,21 @@ const (
 type SessionStatus string
 
 const (
-	StatusNew             SessionStatus = "NEW"
-	StatusRunning         SessionStatus = "RUNNING"
-	StatusCommitted       SessionStatus = "COMMITTED"
+	StatusNew       SessionStatus = "NEW"
+	StatusRunning   SessionStatus = "RUNNING"
+	StatusCommitted SessionStatus = "COMMITTED"
 	// StatusActiveCheckpoint marks a mid-session progress snapshot saved after a
 	// successful tool step. The session is still in-flight; this record is NOT
 	// eligible for recovery and will NOT be returned by ListRecoverable.
 	// Phase 4 may transition this to StatusCheckpointed when an interruption is
 	// detected (e.g. gateway restart, budget exhaustion).
 	StatusActiveCheckpoint SessionStatus = "ACTIVE_CHECKPOINT"
-	StatusCheckpointed    SessionStatus = "CHECKPOINTED"
-	StatusRecoveryQueued  SessionStatus = "RECOVERY_QUEUED"
-	StatusRecovering      SessionStatus = "RECOVERING"
-	StatusSucceeded       SessionStatus = "SUCCEEDED"
-	StatusFailedTerminal  SessionStatus = "FAILED_TERMINAL"
-	StatusExpired         SessionStatus = "EXPIRED"
+	StatusCheckpointed     SessionStatus = "CHECKPOINTED"
+	StatusRecoveryQueued   SessionStatus = "RECOVERY_QUEUED"
+	StatusRecovering       SessionStatus = "RECOVERING"
+	StatusSucceeded        SessionStatus = "SUCCEEDED"
+	StatusFailedTerminal   SessionStatus = "FAILED_TERMINAL"
+	StatusExpired          SessionStatus = "EXPIRED"
 )
 
 // FailureCategory is the high-level class of a failure event.
@@ -101,7 +102,7 @@ type StepRecord struct {
 	StepID         string    `json:"step_id,omitempty"`
 	StepIndex      int       `json:"step_index"`
 	ToolName       string    `json:"tool_name"`
-	OutputRef      string    `json:"output_ref,omitempty"`     // opaque content-address / reference ID
+	OutputRef      string    `json:"output_ref,omitempty"`    // opaque content-address / reference ID
 	OutputDigest   string    `json:"output_digest,omitempty"` // sha256 hex of raw output, for integrity
 	IdempotencyKey string    `json:"idempotency_key,omitempty"`
 	CompletedAt    time.Time `json:"completed_at"`
@@ -138,10 +139,18 @@ type SessionCheckpoint struct {
 	// ── P&S specific ──────────────────────────────────────────────────────────
 	// RemainingPlanJSON: serialized remaining HTTPDAGPlan (subgraph of unexecuted steps).
 	// Populated by Phase 3 runtime integration; nil in Phase 2 tests.
-	RemainingPlanJSON   []byte             `json:"remaining_plan_json,omitempty"`
-	LockedPriceSnapshot map[string]int64   `json:"locked_price_snapshot,omitempty"`
-	ToolWeightSnapshot  map[string]float64 `json:"tool_weight_snapshot,omitempty"`
-	BudgetSnapshot      int64              `json:"budget_snapshot,omitempty"`
+	RemainingPlanJSON    []byte             `json:"remaining_plan_json,omitempty"`
+	LockedPriceSnapshot  map[string]int64   `json:"locked_price_snapshot,omitempty"`
+	ToolWeightSnapshot   map[string]float64 `json:"tool_weight_snapshot,omitempty"`
+	BudgetSnapshot       int64              `json:"budget_snapshot,omitempty"`
+	OriginalPlanHash     string             `json:"original_plan_hash,omitempty"`
+	CurrentPlanHash      string             `json:"current_plan_hash,omitempty"`
+	AmendmentVersion     int                `json:"amendment_version,omitempty"`
+	AmendmentChainHash   string             `json:"amendment_chain_hash,omitempty"`
+	LastAmendmentID      string             `json:"last_amendment_id,omitempty"`
+	LastAmendmentReason  string             `json:"last_amendment_reason,omitempty"`
+	ParentCommitmentHash string             `json:"parent_commitment_hash,omitempty"`
+	DeltaHash            string             `json:"delta_hash,omitempty"`
 
 	// ── ReAct specific ────────────────────────────────────────────────────────
 	// Phase 2/3: gateway-visible summaries only (tool names, response status lines).
@@ -248,4 +257,79 @@ func (c *SessionCheckpoint) MarshalJSON() ([]byte, error) {
 	// Update CheckpointBytes on the receiver so the next Load reflects the real size.
 	c.CheckpointBytes = len(b)
 	return b, nil
+}
+
+func hashCheckpointForCommitment(cp *SessionCheckpoint) (string, error) {
+	if cp == nil {
+		return "", nil
+	}
+
+	remainingPlanHash := ""
+	if len(cp.RemainingPlanJSON) > 0 {
+		remainingPlanHash = sha256Base64URL(cp.RemainingPlanJSON)
+	}
+	priceHash := ""
+	if len(cp.LockedPriceSnapshot) > 0 {
+		var err error
+		priceHash, err = hashLockedPrices(cp.LockedPriceSnapshot)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	completed := make([]struct {
+		StepID       string `json:"step_id,omitempty"`
+		StepIndex    int    `json:"step_index"`
+		ToolName     string `json:"tool_name"`
+		OutputDigest string `json:"output_digest,omitempty"`
+	}, len(cp.CompletedSteps))
+	for i, step := range cp.CompletedSteps {
+		completed[i] = struct {
+			StepID       string `json:"step_id,omitempty"`
+			StepIndex    int    `json:"step_index"`
+			ToolName     string `json:"tool_name"`
+			OutputDigest string `json:"output_digest,omitempty"`
+		}{
+			StepID:       step.StepID,
+			StepIndex:    step.StepIndex,
+			ToolName:     step.ToolName,
+			OutputDigest: step.OutputDigest,
+		}
+	}
+	sort.SliceStable(completed, func(i, j int) bool {
+		if completed[i].StepIndex != completed[j].StepIndex {
+			return completed[i].StepIndex < completed[j].StepIndex
+		}
+		if completed[i].StepID != completed[j].StepID {
+			return completed[i].StepID < completed[j].StepID
+		}
+		return completed[i].ToolName < completed[j].ToolName
+	})
+
+	material := struct {
+		SessionID          string      `json:"session_id"`
+		CurrentStep        int         `json:"current_step"`
+		CompletedSteps     interface{} `json:"completed_steps"`
+		RemainingPlanHash  string      `json:"remaining_plan_hash,omitempty"`
+		CurrentPlanHash    string      `json:"current_plan_hash,omitempty"`
+		AmendmentVersion   int         `json:"amendment_version,omitempty"`
+		AmendmentChainHash string      `json:"amendment_chain_hash,omitempty"`
+		LockedPriceHash    string      `json:"locked_price_hash,omitempty"`
+		BudgetSnapshot     int64       `json:"budget_snapshot,omitempty"`
+	}{
+		SessionID:          cp.SessionID,
+		CurrentStep:        cp.CurrentStep,
+		CompletedSteps:     completed,
+		RemainingPlanHash:  remainingPlanHash,
+		CurrentPlanHash:    cp.CurrentPlanHash,
+		AmendmentVersion:   cp.AmendmentVersion,
+		AmendmentChainHash: cp.AmendmentChainHash,
+		LockedPriceHash:    priceHash,
+		BudgetSnapshot:     cp.BudgetSnapshot,
+	}
+	data, err := json.Marshal(material)
+	if err != nil {
+		return "", err
+	}
+	return sha256Base64URL(data), nil
 }

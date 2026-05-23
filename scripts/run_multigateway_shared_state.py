@@ -20,12 +20,14 @@ Usage:
   python scripts/run_multigateway_shared_state.py --modes single local_random
   python scripts/run_multigateway_shared_state.py --concurrency 20 40 --repeats 2
   python scripts/run_multigateway_shared_state.py --modes shared_random --redis-addr 127.0.0.1:6379
+  python scripts/run_multigateway_shared_state.py --modes shared_random --commitment-token-secret test-shared-secret
 """
 
 import argparse
 import csv
 import json
 import os
+import secrets
 import sys
 import time
 import subprocess
@@ -71,6 +73,7 @@ DEFAULT_MODES = ["single", "local_random", "local_sticky", "shared_random"]
 DEFAULT_CONC_LEVELS = [20, 40, 60]
 DEFAULT_REPEATS = 5
 DEFAULT_REDIS_ADDR = "127.0.0.1:6379"
+DEFAULT_COMMITMENT_TOKEN_MODE = "optional"
 
 # ==============================
 # Mode → routing & gateway config
@@ -100,14 +103,13 @@ def find_or_build_gateway() -> str:
         return GATEWAY_BINARY
     bin_name = "gateway.exe" if sys.platform == "win32" else "gateway"
     bin_path = os.path.join(ROOT_DIR, bin_name)
-    if not os.path.isfile(bin_path):
-        print(f"  Building gateway: go build -o {bin_name} ./cmd/gateway")
-        result = subprocess.run(
-            ["go", "build", "-o", bin_path, "./cmd/gateway"],
-            cwd=ROOT_DIR, capture_output=True, text=True, timeout=120,
-        )
-        if result.returncode != 0:
-            raise RuntimeError(f"Gateway build failed:\n{result.stderr}")
+    print(f"  Building gateway: go build -o {bin_name} ./cmd/gateway")
+    result = subprocess.run(
+        ["go", "build", "-o", bin_path, "./cmd/gateway"],
+        cwd=ROOT_DIR, capture_output=True, text=True, timeout=120,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(f"Gateway build failed:\n{result.stderr}")
     GATEWAY_BINARY = bin_path
     return bin_path
 
@@ -210,6 +212,8 @@ def start_plangate_gateway(
     use_redis: bool,
     redis_addr: str,
     log_tag: str,
+    commitment_token_mode: str = DEFAULT_COMMITMENT_TOKEN_MODE,
+    commitment_token_secret: str = "",
 ) -> subprocess.Popen:
     binary = find_or_build_gateway()
     cmd = [
@@ -226,6 +230,9 @@ def start_plangate_gateway(
     ]
     if use_redis:
         cmd += ["--plangate-redis-addr", redis_addr]
+    cmd += ["--commitment-token-mode", commitment_token_mode]
+    if commitment_token_mode != "off" and commitment_token_secret:
+        cmd += ["--commitment-token-secret", commitment_token_secret]
 
     os.makedirs(LOG_DIR, exist_ok=True)
     log_path = os.path.join(LOG_DIR, f"_gw_{log_tag}_{port}.log")
@@ -493,6 +500,8 @@ def run_sweep(
     repeats: int,
     redis_addr: str,
     results_dir: str,
+    commitment_token_mode: str,
+    commitment_token_secret: str,
     dry_run: bool = False,
 ):
     os.makedirs(results_dir, exist_ok=True)
@@ -507,6 +516,7 @@ def run_sweep(
     print(f"  Budget:       {BUDGET}  Heavy={HEAVY_RATIO}")
     print(f"  PG_MaxSess:   {PG_MAX_SESSIONS}  PG_PriceStep={PG_PRICE_STEP}")
     print(f"  Redis:        {redis_addr}")
+    print(f"  Commitment:   mode={commitment_token_mode}  shared_secret={'yes' if commitment_token_secret else 'no'}")
     print(f"{'='*70}\n")
 
     if dry_run:
@@ -517,7 +527,8 @@ def run_sweep(
                 for r in range(1, repeats + 1):
                     print(f"  mode={mode}  conc={conc}  run={r}  "
                           f"gateways={meta['n_gateways']}  routing={meta['routing']}  "
-                          f"redis={meta['use_redis']}")
+                          f"redis={meta['use_redis']}  commitment={commitment_token_mode}  "
+                          f"secret={'yes' if commitment_token_secret else 'no'}")
         return
 
     start_backend()
@@ -536,13 +547,13 @@ def run_sweep(
                 try:
                     s = socket.create_connection((host, int(port_str)), timeout=2)
                     s.close()
-                    print(f"  [Redis] {redis_addr} 可达 ✓")
+                    print(f"  [Redis] {redis_addr} reachable")
                 except Exception as e:
                     print(f"  [WARN] Redis {redis_addr} 不可达: {e}")
                     print(f"  [WARN] 跳过 {mode} 模式")
                     continue
 
-            print(f"\n{'─'*60}")
+            print(f"\n{'-'*60}")
             print(f"  模式: {mode}  (n_gw={n_gw}, routing={routing}, redis={use_redis})")
 
             for conc in conc_levels:
@@ -564,6 +575,7 @@ def run_sweep(
                         gw_a = start_plangate_gateway(
                             GW_A_PORT, f"gw-a:{GW_A_PORT}", use_redis, redis_addr,
                             f"{mode}_run{run_idx}_a",
+                            commitment_token_mode, commitment_token_secret,
                         )
                         gw_procs.append(gw_a)
 
@@ -572,6 +584,7 @@ def run_sweep(
                             gw_b = start_plangate_gateway(
                                 GW_B_PORT, f"gw-b:{GW_B_PORT}", use_redis, redis_addr,
                                 f"{mode}_run{run_idx}_b",
+                                commitment_token_mode, commitment_token_secret,
                             )
                             gw_procs.append(gw_b)
                             targets.append(f"http://{GATEWAY_HOST}:{GW_B_PORT}")
@@ -637,6 +650,39 @@ def run_sweep(
 # CLI
 # ============================================================
 
+def commitment_secret_required(modes: List[str], commitment_token_mode: str) -> bool:
+    return (
+        commitment_token_mode == "strict"
+        and any(MODE_META[mode]["use_redis"] for mode in modes)
+    )
+
+
+def commitment_secret_should_be_shared(modes: List[str], commitment_token_mode: str) -> bool:
+    return (
+        commitment_token_mode != "off"
+        and any(MODE_META[mode]["n_gateways"] > 1 for mode in modes)
+    )
+
+
+def resolve_commitment_token_secret(
+    modes: List[str],
+    commitment_token_mode: str,
+    provided_secret: str,
+) -> str:
+    if commitment_token_mode == "off":
+        return ""
+    if provided_secret:
+        return provided_secret
+    if commitment_secret_required(modes, commitment_token_mode):
+        raise ValueError(
+            "--commitment-token-mode strict with Redis/shared modes requires "
+            "--commitment-token-secret"
+        )
+    if commitment_secret_should_be_shared(modes, commitment_token_mode):
+        return "mgw-" + secrets.token_urlsafe(32)
+    return ""
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="多网关共享状态实验 (PlanGate dual-node experiment)",
@@ -662,6 +708,12 @@ def main():
     parser.add_argument("--results-dir", type=str, default=RESULTS_DIR,
                         help=f"实验输出目录 (default: {RESULTS_DIR})")
 
+    parser.add_argument("--commitment-token-mode", choices=["off", "optional", "strict"],
+                        default=DEFAULT_COMMITMENT_TOKEN_MODE,
+                        help="Commitment token mode passed to every gateway")
+    parser.add_argument("--commitment-token-secret", type=str, default="",
+                        help="Shared commitment token secret for all gateways")
+
     args = parser.parse_args()
 
     # 允许命令行覆盖全局常量
@@ -677,12 +729,26 @@ def main():
     if not os.path.isabs(results_dir):
         results_dir = os.path.join(ROOT_DIR, results_dir)
 
+    try:
+        commitment_token_secret = resolve_commitment_token_secret(
+            args.modes,
+            args.commitment_token_mode,
+            args.commitment_token_secret,
+        )
+    except ValueError as e:
+        parser.error(str(e))
+
+    if commitment_token_secret and not args.commitment_token_secret:
+        print("  Commitment token secret: generated shared per-run secret")
+
     run_sweep(
         modes=args.modes,
         conc_levels=args.concurrency,
         repeats=args.repeats,
         redis_addr=args.redis_addr,
         results_dir=results_dir,
+        commitment_token_mode=args.commitment_token_mode,
+        commitment_token_secret=commitment_token_secret,
         dry_run=args.dry_run,
     )
 

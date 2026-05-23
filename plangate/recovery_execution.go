@@ -117,6 +117,12 @@ func (s *MCPDPServer) GetRecoveryStats() RecoveryStatsSnapshot {
 func (s *MCPDPServer) handleRecoveryResume(
 	ctx context.Context, r *http.Request, req *mcpgov.JSONRPCRequest,
 ) *mcpgov.JSONRPCResponse {
+	return s.handleRecoveryResumeWithWriter(ctx, nil, r, req)
+}
+
+func (s *MCPDPServer) handleRecoveryResumeWithWriter(
+	ctx context.Context, w http.ResponseWriter, r *http.Request, req *mcpgov.JSONRPCRequest,
+) *mcpgov.JSONRPCResponse {
 	// 0. Guard: recovery must be enabled.
 	if !s.recoveryConfig.Enabled || s.checkpointStore == nil {
 		return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeInvalidRequest,
@@ -184,10 +190,10 @@ func (s *MCPDPServer) handleRecoveryResume(
 		return mcpgov.NewSuccessResponse(req.ID, PSRecoveryResult{
 			SessionID:         sessionID,
 			Recovered:         true,
-			SkippedSteps:      len(cp.CompletedSteps),
+			SkippedSteps:      cp.CurrentStep,
 			ExecutedSteps:     0,
-			TotalSteps:        len(cp.CompletedSteps),
-			SavedComputeSteps: len(cp.CompletedSteps),
+			TotalSteps:        cp.CurrentStep,
+			SavedComputeSteps: cp.CurrentStep,
 			Mode:              "ps_already_complete",
 		})
 	}
@@ -202,10 +208,172 @@ func (s *MCPDPServer) handleRecoveryResume(
 		_ = s.checkpointStore.Delete(ctx, sessionID)
 		return mcpgov.NewSuccessResponse(req.ID, PSRecoveryResult{
 			SessionID: sessionID, Recovered: true,
-			SkippedSteps: len(cp.CompletedSteps), ExecutedSteps: 0,
-			TotalSteps: len(cp.CompletedSteps), SavedComputeSteps: len(cp.CompletedSteps),
+			SkippedSteps: cp.CurrentStep, ExecutedSteps: 0,
+			TotalSteps: cp.CurrentStep, SavedComputeSteps: cp.CurrentStep,
 			Mode: "ps_already_complete",
 		})
+	}
+
+	amendmentHeader := r.Header.Get(HeaderPlanAmendment)
+	if amendmentHeader == "" {
+		setAmendmentStatus(w, AmendmentStatusNotApplicable)
+	} else {
+		policy := s.amendmentPolicy()
+		var amendment HTTPPlanAmendment
+		if err := json.Unmarshal([]byte(amendmentHeader), &amendment); err != nil {
+			setAmendmentFailure(w, AmendmentStatusRejected, "", "malformed amendment json")
+			return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeInvalidParams,
+				"invalid plan amendment",
+				map[string]interface{}{"session_id": sessionID, "reason": "malformed amendment json"})
+		}
+		if w != nil && amendment.AmendmentID != "" {
+			w.Header().Set(HeaderAmendmentID, amendment.AmendmentID)
+		}
+		if policy.Mode == AmendmentModeOff {
+			setAmendmentFailure(w, AmendmentStatusDisabled, amendment.AmendmentID, "plan amendment disabled")
+			return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeInvalidParams,
+				"plan amendment disabled",
+				map[string]interface{}{"session_id": sessionID, "amendment_id": amendment.AmendmentID})
+		}
+
+		var parentClaims *CommitmentTokenClaims
+		parentToken := r.Header.Get(HeaderCommitmentToken)
+		parentCommitmentHash := ""
+		if parentToken == "" {
+			if policy.RequireCommitment {
+				setCommitmentFailure(w, CommitmentTokenStatusMissing, "missing commitment token")
+				setAmendmentFailure(w, AmendmentStatusRejected, amendment.AmendmentID, "missing commitment token")
+				return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeInvalidParams,
+					"missing commitment token",
+					map[string]interface{}{"session_id": sessionID, "amendment_id": amendment.AmendmentID})
+			}
+		} else {
+			if s.commitmentMode() == CommitmentTokenModeOff {
+				setCommitmentStatus(w, CommitmentTokenStatusDisabled)
+				setAmendmentFailure(w, AmendmentStatusDisabled, amendment.AmendmentID, "commitment tokens disabled")
+				return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeInvalidParams,
+					"commitment tokens disabled for amendment recovery",
+					map[string]interface{}{"session_id": sessionID, "amendment_id": amendment.AmendmentID})
+			}
+			rawParentClaims, _, _ := s.commitmentTokens.parseAndVerify(parentToken)
+
+			priceHash, err := checkpointPriceHash(cp)
+			if err != nil {
+				setAmendmentFailure(w, AmendmentStatusRejected, amendment.AmendmentID, err.Error())
+				return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeInvalidParams,
+					"checkpoint missing commitment context",
+					map[string]interface{}{"session_id": sessionID, "amendment_id": amendment.AmendmentID, "reason": err.Error()})
+			}
+			totalCost, err := checkpointTotalCost(cp, remainingSteps)
+			if err != nil {
+				if rawParentClaims != nil {
+					totalCost = rawParentClaims.TotalCost
+				}
+			}
+			currentCheckpointHash, err := hashCheckpointForCommitment(cp)
+			if err != nil {
+				setAmendmentFailure(w, AmendmentStatusRejected, amendment.AmendmentID, err.Error())
+				return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeInvalidParams,
+					"checkpoint missing commitment context",
+					map[string]interface{}{"session_id": sessionID, "amendment_id": amendment.AmendmentID, "reason": err.Error()})
+			}
+			parentCommitmentHash = commitmentTokenHash(parentToken)
+			parsedClaims, status, reason := s.commitmentTokens.ValidateParentCommitmentForAmendment(
+				parentToken,
+				AmendedCommitmentValidationContext{
+					CommitmentTokenValidationContext: CommitmentTokenValidationContext{
+						SessionID:  cp.SessionID,
+						PlanHash:   expectedCheckpointPlanHash(cp, rawParentClaims),
+						PriceHash:  priceHash,
+						TotalCost:  totalCost,
+						TotalSteps: checkpointTotalSteps(cp, remainingSteps),
+					},
+					AmendmentVersion:   cp.AmendmentVersion,
+					AmendmentChainHash: cp.AmendmentChainHash,
+					CheckpointHash:     currentCheckpointHash,
+				},
+			)
+			if status != CommitmentTokenStatusValidated {
+				setCommitmentFailure(w, status, reason)
+				setAmendmentFailure(w, AmendmentStatusRejected, amendment.AmendmentID, reason)
+				return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeInvalidParams,
+					"invalid commitment token",
+					map[string]interface{}{"session_id": sessionID, "amendment_id": amendment.AmendmentID, "reason": reason})
+			}
+
+			parentClaims = parsedClaims
+			setCommitmentStatus(w, CommitmentTokenStatusValidated)
+		}
+
+		applied, err := applyAmendmentToCheckpoint(
+			cp,
+			&amendment,
+			policy,
+			parentClaims,
+			parentCommitmentHash,
+			func(toolName string) int64 { return s.governor.GetToolEffectivePrice(toolName) },
+			s.handlers,
+		)
+		if err != nil {
+			setAmendmentFailure(w, AmendmentStatusRejected, amendment.AmendmentID, err.Error())
+			return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeInvalidParams,
+				"invalid plan amendment",
+				map[string]interface{}{"session_id": sessionID, "amendment_id": amendment.AmendmentID, "reason": err.Error()})
+		}
+
+		cp = applied.Checkpoint
+		if err := s.checkpointStore.Save(ctx, cp); err != nil {
+			setAmendmentFailure(w, AmendmentStatusRejected, amendment.AmendmentID, "failed to persist amended checkpoint")
+			return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeInternalError,
+				"failed to persist amended checkpoint",
+				map[string]interface{}{"session_id": sessionID, "amendment_id": amendment.AmendmentID})
+		}
+		if err := json.Unmarshal(cp.RemainingPlanJSON, &remainingSteps); err != nil {
+			setAmendmentFailure(w, AmendmentStatusRejected, amendment.AmendmentID, "failed to deserialize amended suffix")
+			return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeInternalError,
+				"failed to deserialize amended suffix",
+				map[string]interface{}{"session_id": sessionID, "amendment_id": amendment.AmendmentID})
+		}
+
+		if s.commitmentMode() != CommitmentTokenModeOff {
+			stateStore := "local"
+			if _, ok := s.sharedStateStore.(*RedisSessionStateStore); ok {
+				stateStore = "redis"
+			}
+			newToken, err := s.commitmentTokens.IssueAmendedCommitment(CommitmentTokenClaims{
+				SessionID:            cp.SessionID,
+				PlanHash:             cp.CurrentPlanHash,
+				PriceHash:            applied.PriceHash,
+				Budget:               cp.BudgetSnapshot,
+				TotalCost:            applied.TotalCost,
+				TotalSteps:           applied.TotalSteps,
+				NodeID:               s.nodeID,
+				StateStore:           stateStore,
+				RecoveryEnabled:      s.recoveryConfig.Enabled,
+				AmendmentVersion:     cp.AmendmentVersion,
+				AmendmentID:          amendment.AmendmentID,
+				ParentCommitmentHash: applied.ParentCommitmentHash,
+				DeltaHash:            applied.DeltaHash,
+				AmendmentChainHash:   applied.AmendmentChainHash,
+				CheckpointHash:       applied.CheckpointHash,
+				BaseStep:             amendment.BaseStep,
+			})
+			if err != nil {
+				setCommitmentFailure(w, CommitmentTokenStatusInvalid, "token issue failed")
+				setAmendmentFailure(w, AmendmentStatusRejected, amendment.AmendmentID, "failed to issue amended commitment")
+				return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeInternalError,
+					"failed to issue amended commitment",
+					map[string]interface{}{"session_id": sessionID, "amendment_id": amendment.AmendmentID})
+			}
+			if w != nil {
+				w.Header().Set(HeaderCommitmentToken, newToken)
+			}
+			setCommitmentStatus(w, CommitmentTokenStatusIssued)
+			log.Printf("[PlanGate Amendment] session=%s amendment=%s accepted parent=%s new_token=%s",
+				sessionID, amendment.AmendmentID, commitmentTokenDigest(parentToken), commitmentTokenDigest(newToken))
+		}
+
+		setAmendmentStatus(w, AmendmentStatusAccepted)
 	}
 
 	// 7. Recovery quota check (pure computation, no side effects).
@@ -262,7 +430,7 @@ func (s *MCPDPServer) handleRecoveryResume(
 			"failed to transition checkpoint to RECOVERING state", updErr.Error())
 	}
 
-	skippedSteps := len(cp.CompletedSteps)
+	skippedSteps := cp.CurrentStep
 	totalSteps := skippedSteps + len(remainingSteps)
 	executedSteps := 0
 
@@ -349,6 +517,12 @@ func (s *MCPDPServer) handleRecoveryResume(
 		_ = s.checkpointStore.Update(ctx, sessionID, func(c *SessionCheckpoint) (*SessionCheckpoint, error) {
 			c.CurrentStep = newCurrentStep
 			c.RemainingPlanJSON = newRemaining
+			c.CompletedSteps = append(c.CompletedSteps, StepRecord{
+				StepID:      step.StepID,
+				StepIndex:   newCurrentStep - 1,
+				ToolName:    step.ToolName,
+				CompletedAt: timeNow(),
+			})
 			c.UpdatedAt = timeNow()
 			return c, nil
 		})

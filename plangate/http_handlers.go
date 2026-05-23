@@ -28,6 +28,9 @@ func (s *MCPDPServer) buildReservationFromShared(rec *SharedPSRecord) *HTTPSessi
 		SessionID:    rec.SessionID,
 		TotalCost:    rec.TotalCost,
 		LockedPrices: rec.LockedPrices,
+		PlanHash:     rec.PlanHash,
+		PriceHash:    rec.PriceHash,
+		TotalSteps:   rec.TotalSteps,
 		CurrentStep:  rec.CurrentStep,
 		ExpiresAt:    time.Unix(0, rec.ExpiresUnix),
 	}
@@ -89,7 +92,7 @@ func (s *MCPDPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case mcpgov.MethodToolsList:
 		resp = s.handleToolsList(&req)
 	case mcpgov.MethodToolsCall:
-		resp = s.handleToolsCall(ctx, r, &req)
+		resp = s.handleToolsCall(ctx, w, r, &req)
 	case mcpgov.MethodPing:
 		resp = mcpgov.NewSuccessResponse(req.ID, map[string]interface{}{})
 	default:
@@ -137,7 +140,7 @@ func (s *MCPDPServer) handleToolsList(req *mcpgov.JSONRPCRequest) *mcpgov.JSONRP
 // │   4. ReAct 新会话     → Step-0 宽松准入 (Eq.3)                │
 // │   5. 无会话上下文    → MCPGovernor 标准准入                  │
 // └─────────────────────────────────────────────────────────────────┘
-func (s *MCPDPServer) handleToolsCall(ctx context.Context, r *http.Request, req *mcpgov.JSONRPCRequest) *mcpgov.JSONRPCResponse {
+func (s *MCPDPServer) handleToolsCall(ctx context.Context, w http.ResponseWriter, r *http.Request, req *mcpgov.JSONRPCRequest) *mcpgov.JSONRPCResponse {
 	dagHeader := r.Header.Get(HeaderPlanDAG)
 	sessionID := r.Header.Get(HeaderSessionID)
 
@@ -146,19 +149,22 @@ func (s *MCPDPServer) handleToolsCall(ctx context.Context, r *http.Request, req 
 	// This check runs BEFORE all normal admission paths so recovery sessions are never
 	// accidentally routed through standard step-0 pre-flight admission.
 	if isRecoveryResumeRequest(r) {
-		return s.handleRecoveryResume(ctx, r, req)
+		return s.handleRecoveryResumeWithWriter(ctx, w, r, req)
 	}
 
 	// ====== Plan-and-Solve 模式: 首步（带 X-Plan-DAG）======
 	// >>> Algorithm 1, P&S 分支: Eq.(1) C_total + Eq.(2) LockedPrices
 	if dagHeader != "" {
-		return s.handlePlanAndSolveFirstStep(ctx, r, req, dagHeader, sessionID)
+		return s.handlePlanAndSolveFirstStep(ctx, w, r, req, dagHeader, sessionID)
 	}
 
 	// ====== Plan-and-Solve 模式: 后续步骤（带 X-Session-ID + 预算锁）======
 	// >>> Algorithm 1, P&S 后续: 使用 Eq.(2) 锁定价格，绕过 LoadShedding
 	if sessionID != "" && !s.disableBudgetLock {
 		if res, ok := s.budgetMgr.Get(sessionID); ok {
+			if resp := s.validateCommitmentForReservedStep(w, r, req, res); resp != nil {
+				return resp
+			}
 			return s.handleReservedStep(ctx, req, res)
 		}
 		// Local reservation not found — try shared store (multi-node fallback).
@@ -167,6 +173,9 @@ func (s *MCPDPServer) handleToolsCall(ctx context.Context, r *http.Request, req 
 			if err == nil && rec != nil {
 				// Reconstruct a lightweight reservation from shared state.
 				res := s.buildReservationFromShared(rec)
+				if resp := s.validateCommitmentForReservedStep(w, r, req, res); resp != nil {
+					return resp
+				}
 				return s.handleReservedStep(ctx, req, res)
 			}
 		}

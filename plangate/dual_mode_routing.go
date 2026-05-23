@@ -25,7 +25,7 @@ import (
 // │   准入成功 → 对每个工具价格拍快照，后续步骤使用锁定价格       │
 // └─────────────────────────────────────────────────────────────────┘
 func (s *MCPDPServer) handlePlanAndSolveFirstStep(
-	ctx context.Context, r *http.Request, req *mcpgov.JSONRPCRequest,
+	ctx context.Context, w http.ResponseWriter, r *http.Request, req *mcpgov.JSONRPCRequest,
 	dagJSON string, sessionID string,
 ) *mcpgov.JSONRPCResponse {
 	// 1. 解析 DAG
@@ -122,12 +122,18 @@ func (s *MCPDPServer) handlePlanAndSolveFirstStep(
 	//
 	// 多节点共享状态路径：若安装了 sharedStateStore，使用全局 Redis cap + 去重，
 	// 跳过本地 sessionCap channel（避免双重计数）。
+	planHash, err := hashHTTPDAGPlan(&plan)
+	if err != nil {
+		return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeInternalError,
+			"failed to hash P&S plan", err.Error())
+	}
+
 	if s.sharedStateStore != nil {
 		maxSlots := 0
 		if s.sessionCap != nil {
 			maxSlots = cap(s.sessionCap)
 		}
-		result, err := s.sharedStateStore.TryAdmitSession(ctx, plan.SessionID, maxSlots, 60*time.Second)
+		result, err := s.sharedStateStore.TryAdmitSession(ctx, plan.SessionID, maxSlots, s.budgetMgr.maxDuration)
 		if err != nil {
 			log.Printf("[PlanGate Pre-flight] session=%s shared-store TryAdmit error: %v (degrading to local)", plan.SessionID, err)
 			// Gracefully degrade: fall through to local sessionCap below
@@ -189,8 +195,18 @@ sharedAdmitDone:
 	//   - 即使后续市场价格上涨，已准入会话也不会因「价格涨过预算」被中途拒绝
 	//
 	// 消融实验 Exp4 (w/o BL) 通过 disableBudgetLock=true 跳过此步，验证预算锁的独立贡献
+	var res *HTTPSessionReservation
+	var sharedRec *SharedPSRecord
 	if !s.disableBudgetLock {
-		res := s.budgetMgr.Reserve(s.governor, &plan, totalCost)
+		res = s.budgetMgr.Reserve(s.governor, &plan, totalCost)
+		res.PlanHash = planHash
+		priceHash, err := hashLockedPrices(res.LockedPrices)
+		if err != nil {
+			res.Release()
+			return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeInternalError,
+				"failed to hash locked prices", err.Error())
+		}
+		res.PriceHash = priceHash
 		// 注册槽位释放函数（幂等 sync.Once 封装），在以下情况触发归还：
 		//   a) 会话正常完成最后一步（executeStepDirect 检测 CurrentStep >= len(Steps)）
 		//   b) 会话中途被拒绝（handleReservedStep 中 tokens < lockedPrice）
@@ -200,15 +216,17 @@ sharedAdmitDone:
 			sid := plan.SessionID
 			res.releaseFn = func() { _ = store.ReleaseSession(context.Background(), sid) }
 			// 持久化到共享 store（若启用），使其他节点可以服务后续步骤
-			sharedRec := &SharedPSRecord{
+			sharedRec = &SharedPSRecord{
 				SessionID:    plan.SessionID,
 				TotalCost:    totalCost,
 				LockedPrices: res.LockedPrices,
+				PlanHash:     res.PlanHash,
+				PriceHash:    res.PriceHash,
 				CurrentStep:  0,
 				TotalSteps:   len(plan.Steps),
 				ExpiresUnix:  res.ExpiresAt.UnixNano(),
 			}
-			if err := s.sharedStateStore.SaveReservation(ctx, sharedRec, 60*time.Second); err != nil {
+			if err := s.sharedStateStore.SaveReservation(ctx, sharedRec, s.budgetMgr.maxDuration); err != nil {
 				log.Printf("[PlanGate Pre-flight] session=%s shared-store SaveReservation error: %v", plan.SessionID, err)
 				// Non-fatal: local node can still service this session
 			}
@@ -234,7 +252,11 @@ sharedAdmitDone:
 	}
 	// 正常模式：已通过预检 + 获取槽位 + 创建价格锁，直接执行（绕过 MCPGovernor LoadShedding）
 	// 原因：LoadShedding 会再次检查 ownPrice，但此刻会话已被「承诺」，二次检查是冗余且有害的
-	return s.executeStepDirect(ctx, req, plan.SessionID)
+	resp := s.executeStepDirect(ctx, req, plan.SessionID)
+	if resp.Error == nil {
+		s.maybeIssueCommitmentToken(ctx, w, res, sharedRec)
+	}
+	return resp
 }
 
 // handleReservedStep 处理带预算锁的后续步骤
@@ -294,18 +316,22 @@ func (s *MCPDPServer) handleReservedStep(
 
 	// token 余额 ≥ 锁定价格 → 直接执行，绕过实时 LoadShedding
 	// executeStepDirect 内部会推进 CurrentStep 计数，并在最后一步时自动释放槽位
+	if res.Plan != nil {
+		return s.executeStepDirectWithShared(ctx, req, res.SessionID, nil)
+	}
 	return s.executeStepDirectWithShared(ctx, req, res.SessionID, res)
 }
 
 // handleReActMode ReAct 模式兜底路径：完全委托给标准 MCPGovernor 进行负载削减判断
 //
 // 调用场景（三种）：
-//   1. P&S 消融模式（disableBudgetLock=true）的首步和后续步：测试「无预算锁」时的基线
-//   2. P&S 会话调用了 DAG 以外的工具：handleReservedStep 降级调用
-//   3. 无任何会话上下文的散装工具调用（handleToolsCall 最后的 fallback）
+//  1. P&S 消融模式（disableBudgetLock=true）的首步和后续步：测试「无预算锁」时的基线
+//  2. P&S 会话调用了 DAG 以外的工具：handleReservedStep 降级调用
+//  3. 无任何会话上下文的散装工具调用（handleToolsCall 最后的 fallback）
 //
 // MCPGovernor.HandleToolCall 内部执行标准动态定价检查：
-//   tokens < ownPrice × toolWeight → 触发 LoadShedding → 返回 429 等效错误
+//
+//	tokens < ownPrice × toolWeight → 触发 LoadShedding → 返回 429 等效错误
 func (s *MCPDPServer) handleReActMode(ctx context.Context, req *mcpgov.JSONRPCRequest) *mcpgov.JSONRPCResponse {
 	var params mcpgov.MCPToolCallParams
 	if err := json.Unmarshal(req.Params, &params); err != nil {
@@ -384,8 +410,8 @@ func (s *MCPDPServer) handleReActFirstStep(
 
 	// 2. Step-0 并发限流：使用原子计数器 reactStep0Inflight 防止 step-0 洪峰
 	// 动机：ReAct 新会话到达时，同一时刻可能有大量 step-0 请求并发，需要限流防止雪崩
-	ownPrice := s.governor.GetOwnPrice()      // 后台 Eq.(6) 实时更新的市场价格
-	intensity := s.getGovernanceIntensity()   // 后台 §3.5 实时更新的治理强度 I(t)
+	ownPrice := s.governor.GetOwnPrice()                 // 后台 Eq.(6) 实时更新的市场价格
+	intensity := s.getGovernanceIntensity()              // 后台 §3.5 实时更新的治理强度 I(t)
 	current := atomic.AddInt64(&s.reactStep0Inflight, 1) // 原子递增，记录当前并发 step-0 数
 
 	if current > s.reactStep0Limit {
@@ -422,7 +448,7 @@ func (s *MCPDPServer) handleReActFirstStep(
 	// step-0 价格才显著升高。单一维度压力不会过度惩罚新会话。
 	if s.intensityPriceBase > 0 && intensity > 0.01 {
 		// intensity ≤ 0.01 说明滞回门控未激活，系统处于零负载状态 → 跳过所有经济检查
-		activeCount := s.reactSessions.ActiveCount() // N_active：当前活跃的 ReAct 会话数
+		activeCount := s.reactSessions.ActiveCount()                     // N_active：当前活跃的 ReAct 会话数
 		gatewayLoad := float64(activeCount) / float64(s.reactStep0Limit) // L(t) = N/M
 		if gatewayLoad > 1.0 {
 			gatewayLoad = 1.0 // 饱和剪裁：负载比不超过 1.0
@@ -666,7 +692,7 @@ func (s *MCPDPServer) handleReActSunkCostStep(
 	}
 
 	// 5. 工具调用成功 → CurrentStep + 1，为下一步 Eq.(4) 计算的 K 值更新
-	s.reactSessions.Advance(rState.SessionID)	// PlanGate-R: 保存 ReAct step-K checkpoint（正常路径，默认 no-op）
+	s.reactSessions.Advance(rState.SessionID) // PlanGate-R: 保存 ReAct step-K checkpoint（正常路径，默认 no-op）
 	s.saveCheckpointAfterStep(ctx, &SessionCheckpoint{
 		SessionID:      rState.SessionID,
 		Mode:           AgentModeReAct,
@@ -686,9 +712,10 @@ func (s *MCPDPServer) handleReActSunkCostStep(
 // executeStepDirect P&S 模式专用执行路径：绕过 MCPGovernor LoadShedding 直接调用工具
 //
 // 「直接执行」的合理性：
-//   P&S 会话在 step-0 已通过 Eq.(1) 预检 + 获取并发槽位 + 创建价格锁（Eq.2）
-//   后续每步在 handleReservedStep 中已用 lockedPrice 做了 token 余额检查
-//   因此调用此函数时，「准入判定」已完成，无需再经过 MCPGovernor 的动态定价流程
+//
+//	P&S 会话在 step-0 已通过 Eq.(1) 预检 + 获取并发槽位 + 创建价格锁（Eq.2）
+//	后续每步在 handleReservedStep 中已用 lockedPrice 做了 token 余额检查
+//	因此调用此函数时，「准入判定」已完成，无需再经过 MCPGovernor 的动态定价流程
 func (s *MCPDPServer) executeStepDirect(ctx context.Context, req *mcpgov.JSONRPCRequest, sessionID string) *mcpgov.JSONRPCResponse {
 	return s.executeStepDirectWithShared(ctx, req, sessionID, nil)
 }
@@ -731,7 +758,10 @@ func (s *MCPDPServer) executeStepDirectWithShared(
 			hasRes = true
 			res.mu.Lock()
 			preAdvanceStep = res.CurrentStep
-			totalSteps = len(res.Plan.Steps)
+			totalSteps = res.TotalSteps
+			if totalSteps == 0 && res.Plan != nil {
+				totalSteps = len(res.Plan.Steps)
+			}
 			res.mu.Unlock()
 		}
 	}
@@ -822,11 +852,11 @@ func (s *MCPDPServer) executeStepDirectWithShared(
 			if sharedRes == nil && res != nil && res.Plan != nil {
 				completedIdx := preAdvanceStep // step just executed (= nextStep - 1)
 				var stepID string
-				if completedIdx >= 0 && completedIdx < totalSteps {
+				if completedIdx >= 0 && completedIdx < len(res.Plan.Steps) {
 					stepID = res.Plan.Steps[completedIdx].StepID
 				}
 				var remainingJSON []byte
-				if nextStep < totalSteps {
+				if nextStep < len(res.Plan.Steps) {
 					remainingJSON, _ = json.Marshal(res.Plan.Steps[nextStep:])
 				}
 				s.saveCheckpointAfterStep(ctx, &SessionCheckpoint{
@@ -835,8 +865,10 @@ func (s *MCPDPServer) executeStepDirectWithShared(
 					CurrentStep:         nextStep,
 					CompletedSteps:      []StepRecord{{StepID: stepID, StepIndex: completedIdx, ToolName: params.Name, CompletedAt: time.Now()}},
 					LockedPriceSnapshot: res.LockedPrices,
-					BudgetSnapshot:      res.TotalCost,
+					BudgetSnapshot:      res.Plan.Budget,
 					RemainingPlanJSON:   remainingJSON,
+					OriginalPlanHash:    res.PlanHash,
+					CurrentPlanHash:     res.PlanHash,
 				})
 			}
 		}
@@ -849,8 +881,9 @@ func (s *MCPDPServer) executeStepDirectWithShared(
 //
 // >>> Eq.(1): C_total = Σ_{i=1}^{n} P_eff(t_i)
 // GetToolEffectivePrice(t_i) 内部计算：P_eff(t_i) = P_own × toolWeight[t_i]
-//   P_own       = 当前动态定价引擎（Eq.6）计算的实时市场基价
-//   toolWeight  = 各工具的权重系数（重型工具定价更高，如 code_execute > web_search）
+//
+//	P_own       = 当前动态定价引擎（Eq.6）计算的实时市场基价
+//	toolWeight  = 各工具的权重系数（重型工具定价更高，如 code_execute > web_search）
 //
 // 注意：此函数使用「调用时刻的实时价格」，返回值后续会被 Eq.(2) 锁定为快照
 // 因此 calculateDAGTotalCost 的结果既是「准入门槛」也是「后续价格锁的基础」

@@ -3,12 +3,13 @@
 // 网关接收发压机请求 → 应用治理逻辑 → 代理到 Python MCP 后端
 //
 // 用法:
-//   go run ./cmd/gateway --mode dp          --port 9003 --backend http://127.0.0.1:8080
-//   go run ./cmd/gateway --mode dp-noregime --port 9004 --backend http://127.0.0.1:8080
-//   go run ./cmd/gateway --mode ng          --port 9001 --backend http://127.0.0.1:8080
-//   go run ./cmd/gateway --mode srl         --port 9002 --backend http://127.0.0.1:8080
-//   go run ./cmd/gateway --mode envoy-approx --port 9006 --backend http://127.0.0.1:8080
-//   go run ./cmd/gateway --mode kong-approx  --port 9007 --backend http://127.0.0.1:8080
+//
+//	go run ./cmd/gateway --mode dp          --port 9003 --backend http://127.0.0.1:8080
+//	go run ./cmd/gateway --mode dp-noregime --port 9004 --backend http://127.0.0.1:8080
+//	go run ./cmd/gateway --mode ng          --port 9001 --backend http://127.0.0.1:8080
+//	go run ./cmd/gateway --mode srl         --port 9002 --backend http://127.0.0.1:8080
+//	go run ./cmd/gateway --mode envoy-approx --port 9006 --backend http://127.0.0.1:8080
+//	go run ./cmd/gateway --mode kong-approx  --port 9007 --backend http://127.0.0.1:8080
 package main
 
 import (
@@ -35,12 +36,12 @@ import (
 // 检测器参数（priceStep/decayStep/maxConc）从 MCPGovernor 的当前档位动态读取，
 // 实现自适应过载检测：不同负载模式下使用不同的检测灵敏度。
 type proxyOverloadDetector struct {
-	gov            *mcpgov.MCPGovernor
-	activeCount    int64   // atomic: 当前活跃的并发请求数
-	interval       time.Duration
-	currentPrice   int64   // 当前价格 (detector 内部跟踪)
-	smoothActive   float64 // 指数平滑后的并发数（提供"记忆"，用于定价）
-	regimeSignal   float64 // 对称轻度平滑并发数（用于 regime 检测）
+	gov          *mcpgov.MCPGovernor
+	activeCount  int64 // atomic: 当前活跃的并发请求数
+	interval     time.Duration
+	currentPrice int64   // 当前价格 (detector 内部跟踪)
+	smoothActive float64 // 指数平滑后的并发数（提供"记忆"，用于定价）
+	regimeSignal float64 // 对称轻度平滑并发数（用于 regime 检测）
 }
 
 func (d *proxyOverloadDetector) onRequestStart() {
@@ -148,6 +149,20 @@ func main() {
 		"PlanGate: ReAct continuation pricing 调制系数 beta (1.0=默认, 等价旧公式 2-I(t)); 也可用 SUNK_BETA 环境变量")
 	plangateSessionCapWait := flag.Int("plangate-session-cap-wait", 0,
 		"PlanGate: Session Cap 排队等待超时 (秒), 0=立即拒绝")
+	commitmentTokenMode := flag.String("commitment-token-mode", "optional",
+		"PlanGate Commitment Token mode: off|optional|strict")
+	commitmentTokenSecret := flag.String("commitment-token-secret", "",
+		"PlanGate Commitment Token HMAC secret; defaults to PLANGATE_COMMITMENT_SECRET or an auto-generated local secret")
+	commitmentTokenTTL := flag.Duration("commitment-token-ttl", 0,
+		"PlanGate Commitment Token TTL; 0 follows the reservation TTL")
+	planAmendmentMode := flag.String("plan-amendment-mode", "recovery-only",
+		"PlanGate delta-plan amendment mode: off|recovery-only")
+	planAmendmentMaxCount := flag.Int("plan-amendment-max-count", 3,
+		"PlanGate delta-plan amendment max accepted amendments per session")
+	planAmendmentMaxBudgetDelta := flag.Int64("plan-amendment-max-budget-delta", 0,
+		"PlanGate delta-plan amendment max allowed budget delta")
+	planAmendmentRequireCommitment := flag.Bool("plan-amendment-require-commitment", true,
+		"PlanGate delta-plan amendment requires a valid commitment token")
 	plangateDiscountFunc := flag.String("plangate-discount-func", "quadratic",
 		"PlanGate: 沉没成本折扣函数 (quadratic|linear|exponential|logarithmic)")
 
@@ -167,6 +182,26 @@ func main() {
 		"PlanGate-Real: P95 延迟阈值 (ms), 达到此值时延迟压力=1.0")
 
 	flag.Parse()
+
+	effectiveCommitmentSecret := *commitmentTokenSecret
+	if effectiveCommitmentSecret == "" {
+		effectiveCommitmentSecret = os.Getenv("PLANGATE_COMMITMENT_SECRET")
+	}
+	if *commitmentTokenMode == string(plangate.CommitmentTokenModeStrict) &&
+		*stateStore == "redis" && effectiveCommitmentSecret == "" {
+		log.Fatalf("--commitment-token-mode=strict with --plangate-state-store=redis requires --commitment-token-secret or PLANGATE_COMMITMENT_SECRET")
+	}
+	commitmentCfg := plangate.CommitmentTokenConfig{
+		Mode:   plangate.CommitmentTokenMode(*commitmentTokenMode),
+		Secret: effectiveCommitmentSecret,
+		TTL:    *commitmentTokenTTL,
+	}
+	amendmentPolicy := plangate.AmendmentPolicy{
+		Mode:              plangate.AmendmentMode(*planAmendmentMode),
+		MaxCount:          *planAmendmentMaxCount,
+		MaxBudgetDelta:    *planAmendmentMaxBudgetDelta,
+		RequireCommitment: *planAmendmentRequireCommitment,
+	}
 
 	// PlanGate-R: validate recovery-store early so we fail fast before binding ports
 	if *enableRecovery && *recoveryStore != "inmemory" {
@@ -202,54 +237,64 @@ func main() {
 		handler = setupMCPDPVariant(tools, *backendURL, mcpdpVariant{
 			name: "plangate-full", priceStep: *plangatePriceStep,
 			maxConcurrentSessions: *plangateMaxSessions,
-			disableBudgetLock: false,
-			sunkCostAlpha: *plangateSunkCostAlpha,
-			sunkCostBeta:  *plangateSunkBeta,
-			discountFunc: *plangateDiscountFunc,
-			recoveryConfig: buildRecoveryConfig(*enableRecovery, *recoveryTTL, *recoveryMaxAttempts, *recoveryStore),
-			nodeID: resolveNodeID(*nodeID, *host, *port),
-			stateStoreType: *stateStore,
-			redisAddr: *redisAddr,
+			disableBudgetLock:     false,
+			sunkCostAlpha:         *plangateSunkCostAlpha,
+			sunkCostBeta:          *plangateSunkBeta,
+			discountFunc:          *plangateDiscountFunc,
+			recoveryConfig:        buildRecoveryConfig(*enableRecovery, *recoveryTTL, *recoveryMaxAttempts, *recoveryStore),
+			commitmentTokenConfig: commitmentCfg,
+			amendmentPolicy:       amendmentPolicy,
+			nodeID:                resolveNodeID(*nodeID, *host, *port),
+			stateStoreType:        *stateStore,
+			redisAddr:             *redisAddr,
 		})
 	case "mcpdp-no-budgetlock":
 		handler = setupMCPDPVariant(tools, *backendURL, mcpdpVariant{
 			name: "plangate-wo-budgetlock", priceStep: *plangatePriceStep,
 			maxConcurrentSessions: *plangateMaxSessions,
-			disableBudgetLock: true,
-			sunkCostAlpha: *plangateSunkCostAlpha,
-			sunkCostBeta:  *plangateSunkBeta,
-			discountFunc: *plangateDiscountFunc,
-			recoveryConfig: buildRecoveryConfig(*enableRecovery, *recoveryTTL, *recoveryMaxAttempts, *recoveryStore),
+			disableBudgetLock:     true,
+			sunkCostAlpha:         *plangateSunkCostAlpha,
+			sunkCostBeta:          *plangateSunkBeta,
+			discountFunc:          *plangateDiscountFunc,
+			recoveryConfig:        buildRecoveryConfig(*enableRecovery, *recoveryTTL, *recoveryMaxAttempts, *recoveryStore),
+			commitmentTokenConfig: commitmentCfg,
+			amendmentPolicy:       amendmentPolicy,
 		})
 	case "mcpdp-no-sessioncap":
 		handler = setupMCPDPVariant(tools, *backendURL, mcpdpVariant{
 			name: "plangate-wo-sessioncap", priceStep: *plangatePriceStep,
 			maxConcurrentSessions: 0,
-			disableBudgetLock: false,
-			sunkCostAlpha: *plangateSunkCostAlpha,
-			sunkCostBeta:  *plangateSunkBeta,
-			discountFunc: *plangateDiscountFunc,
-			recoveryConfig: buildRecoveryConfig(*enableRecovery, *recoveryTTL, *recoveryMaxAttempts, *recoveryStore),
+			disableBudgetLock:     false,
+			sunkCostAlpha:         *plangateSunkCostAlpha,
+			sunkCostBeta:          *plangateSunkBeta,
+			discountFunc:          *plangateDiscountFunc,
+			recoveryConfig:        buildRecoveryConfig(*enableRecovery, *recoveryTTL, *recoveryMaxAttempts, *recoveryStore),
+			commitmentTokenConfig: commitmentCfg,
+			amendmentPolicy:       amendmentPolicy,
 		})
 	case "mcpdp-real":
 		handler = setupMCPDPReal(tools, *backendURL, mcpdpVariant{
 			name: "plangate-real", priceStep: *plangatePriceStep,
 			maxConcurrentSessions: *plangateMaxSessions,
-			sunkCostAlpha: *plangateSunkCostAlpha,
-			sunkCostBeta:  *plangateSunkBeta,
-			sessionCapWait: time.Duration(*plangateSessionCapWait) * time.Second,
-			discountFunc: *plangateDiscountFunc,
-			recoveryConfig: buildRecoveryConfig(*enableRecovery, *recoveryTTL, *recoveryMaxAttempts, *recoveryStore),
+			sunkCostAlpha:         *plangateSunkCostAlpha,
+			sunkCostBeta:          *plangateSunkBeta,
+			sessionCapWait:        time.Duration(*plangateSessionCapWait) * time.Second,
+			discountFunc:          *plangateDiscountFunc,
+			recoveryConfig:        buildRecoveryConfig(*enableRecovery, *recoveryTTL, *recoveryMaxAttempts, *recoveryStore),
+			commitmentTokenConfig: commitmentCfg,
+			amendmentPolicy:       amendmentPolicy,
 		}, *realRateLimitMax, *realLatencyThreshold)
 	case "mcpdp-real-no-sessioncap":
 		handler = setupMCPDPReal(tools, *backendURL, mcpdpVariant{
 			name: "plangate-real-wo-sessioncap", priceStep: *plangatePriceStep,
 			maxConcurrentSessions: 0,
-			sunkCostAlpha: *plangateSunkCostAlpha,
-			sunkCostBeta:  *plangateSunkBeta,
-			sessionCapWait: time.Duration(*plangateSessionCapWait) * time.Second,
-			discountFunc: *plangateDiscountFunc,
-			recoveryConfig: buildRecoveryConfig(*enableRecovery, *recoveryTTL, *recoveryMaxAttempts, *recoveryStore),
+			sunkCostAlpha:         *plangateSunkCostAlpha,
+			sunkCostBeta:          *plangateSunkBeta,
+			sessionCapWait:        time.Duration(*plangateSessionCapWait) * time.Second,
+			discountFunc:          *plangateDiscountFunc,
+			recoveryConfig:        buildRecoveryConfig(*enableRecovery, *recoveryTTL, *recoveryMaxAttempts, *recoveryStore),
+			commitmentTokenConfig: commitmentCfg,
+			amendmentPolicy:       amendmentPolicy,
 		}, *realRateLimitMax, *realLatencyThreshold)
 	case "rajomon":
 		handler = setupRajomon(tools, *backendURL, *rajomonPriceStep)
@@ -465,23 +510,23 @@ func setupDP(tools []mcpgov.MCPTool, backendURL string) http.Handler {
 	}
 
 	opts := map[string]interface{}{
-		"initprice":          int64(0),
-		"rateLimiting":       false,
-		"loadShedding":       true,
-		"pinpointQueuing":    false, // 反向代理架构中 Go scheduler delay 无效
-		"latencyThreshold":   500 * time.Microsecond,
-		"priceStep":          int64(180),
-		"priceStrategy":      "expdecay",
-		"priceDecayStep":     int64(1),
-		"priceSensitivity":   int64(10000),
-		"maxToken":           int64(20),
-		"smoothingWindow":    5,
-		"integralThreshold":  0.5,
-		"priceUpdateRate":    5 * time.Millisecond,
-		"tokenUpdateRate":    100 * time.Millisecond,
-		"tokenUpdateStep":    int64(1),
-		"tokenRefillDist":    "fixed",
-		"priceAggregation":   "maximal",
+		"initprice":             int64(0),
+		"rateLimiting":          false,
+		"loadShedding":          true,
+		"pinpointQueuing":       false, // 反向代理架构中 Go scheduler delay 无效
+		"latencyThreshold":      500 * time.Microsecond,
+		"priceStep":             int64(180),
+		"priceStrategy":         "expdecay",
+		"priceDecayStep":        int64(1),
+		"priceSensitivity":      int64(10000),
+		"maxToken":              int64(20),
+		"smoothingWindow":       5,
+		"integralThreshold":     0.5,
+		"priceUpdateRate":       5 * time.Millisecond,
+		"tokenUpdateRate":       100 * time.Millisecond,
+		"tokenUpdateStep":       int64(1),
+		"tokenRefillDist":       "fixed",
+		"priceAggregation":      "maximal",
 		"enableAdaptiveProfile": true,
 		// Regime Detection 参数（标定为并发度信号，对称轻度平滑）
 		"regimeWindow":          100,
@@ -569,13 +614,15 @@ func setupDPNoRegime(tools []mcpgov.MCPTool, backendURL string) http.Handler {
 type mcpdpVariant struct {
 	name                  string
 	priceStep             int64
-	maxConcurrentSessions int           // 有效并发会话上限 (0=不限制)
-	disableBudgetLock     bool          // 是否禁用预算锁
-	sunkCostAlpha         float64       // ReAct 沉没成本系数 (0=禁用)
-	sunkCostBeta          float64       // ReAct continuation pricing 调制系数 (1.0=默认)
-	sessionCapWait        time.Duration // Session Cap 排队等待超时 (0=立即拒绝)
-	discountFunc          string        // 折扣函数名称 (quadratic|linear|exponential|logarithmic)
+	maxConcurrentSessions int                     // 有效并发会话上限 (0=不限制)
+	disableBudgetLock     bool                    // 是否禁用预算锁
+	sunkCostAlpha         float64                 // ReAct 沉没成本系数 (0=禁用)
+	sunkCostBeta          float64                 // ReAct continuation pricing 调制系数 (1.0=默认)
+	sessionCapWait        time.Duration           // Session Cap 排队等待超时 (0=立即拒绝)
+	discountFunc          string                  // 折扣函数名称 (quadratic|linear|exponential|logarithmic)
 	recoveryConfig        plangate.RecoveryConfig // PlanGate-R, default disabled
+	commitmentTokenConfig plangate.CommitmentTokenConfig
+	amendmentPolicy       plangate.AmendmentPolicy
 	// Multi-gateway experiment fields
 	nodeID         string // X-Gateway-Node header value; "" = use host:port
 	stateStoreType string // "inmemory" (default, unchanged) | "redis"
@@ -632,6 +679,12 @@ func setupMCPDPVariant(tools []mcpgov.MCPTool, backendURL string, v mcpdpVariant
 		server = plangate.NewMCPDPServerNoLock(v.name, gov, 60*time.Second, v.maxConcurrentSessions, v.sunkCostAlpha)
 	} else {
 		server = plangate.NewMCPDPServer(v.name, gov, 60*time.Second, v.maxConcurrentSessions, v.sunkCostAlpha)
+	}
+	if err := server.SetCommitmentTokenConfig(v.commitmentTokenConfig); err != nil {
+		log.Fatalf("[%s] commitment token config error: %v", v.name, err)
+	}
+	if err := server.SetAmendmentPolicy(v.amendmentPolicy); err != nil {
+		log.Fatalf("[%s] plan amendment policy error: %v", v.name, err)
 	}
 
 	detector := &proxyOverloadDetector{
@@ -794,6 +847,12 @@ func setupMCPDPReal(tools []mcpgov.MCPTool, backendURL string, v mcpdpVariant,
 		v.maxConcurrentSessions, v.sunkCostAlpha, signalTracker,
 		v.sessionCapWait, float64(v.priceStep),
 	)
+	if err := server.SetCommitmentTokenConfig(v.commitmentTokenConfig); err != nil {
+		log.Fatalf("[%s] commitment token config error: %v", v.name, err)
+	}
+	if err := server.SetAmendmentPolicy(v.amendmentPolicy); err != nil {
+		log.Fatalf("[%s] plan amendment policy error: %v", v.name, err)
+	}
 
 	// 代理级过载检测器（仍需要：驱动 ownPrice 用于沉没成本定价）
 	detector := &proxyOverloadDetector{
@@ -903,13 +962,13 @@ func makeProxyHandlerWithSignals(
 			Result *struct {
 				Content []mcpgov.ContentBlock `json:"content"`
 				Meta    *struct {
-					Tool                string  `json:"tool"`
-					Category            string  `json:"category"`
-					LatencyMs           float64 `json:"latency_ms"`
-					Is429               bool    `json:"is_429"`
-					HttpStatus          int     `json:"http_status"`
-					ApiLatencyMs        float64 `json:"api_latency_ms"`
-					RateLimitRemaining  float64 `json:"rate_limit_remaining"`
+					Tool               string  `json:"tool"`
+					Category           string  `json:"category"`
+					LatencyMs          float64 `json:"latency_ms"`
+					Is429              bool    `json:"is_429"`
+					HttpStatus         int     `json:"http_status"`
+					ApiLatencyMs       float64 `json:"api_latency_ms"`
+					RateLimitRemaining float64 `json:"rate_limit_remaining"`
 				} `json:"_meta"`
 			} `json:"result"`
 			Error *mcpgov.RPCError `json:"error"`

@@ -236,6 +236,7 @@ class SessionPlan:
     total_weight:  float = 0.0   # 全链路总权重
     start_time:    float = 0.0
     end_time:      float = 0.0
+    commitment_token: str = ""
 
 
 @dataclass
@@ -344,6 +345,8 @@ async def send_tool_call(
 
     # P&S 模式: 首步额外带完整 DAG
     if plan.mode == AgentMode.PLAN_AND_SOLVE:
+        if step_idx > 0 and plan.commitment_token:
+            headers["X-Commitment-Token"] = plan.commitment_token
         if step_idx == 0:
             dag_json = {
                 "session_id": plan.session_id,
@@ -377,6 +380,10 @@ async def send_tool_call(
                     gw_lat_us = float(gw_lat_header)
                 except (ValueError, TypeError):
                     pass
+            if plan.mode == AgentMode.PLAN_AND_SOLVE and step_idx == 0:
+                token_header = resp.headers.get("X-Commitment-Token", "")
+                if token_header:
+                    plan.commitment_token = token_header
 
             locked_price = ""
             regime = ""

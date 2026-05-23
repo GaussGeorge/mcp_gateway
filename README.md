@@ -52,6 +52,89 @@ Additionally, **PlanGate-R** is a checkpoint-aware recovery extension evaluated
 in a controlled mock runtime (P&S only; no real LLM; no ReAct semantic
 recovery). It is not a primary contribution.
 
+## Commitment Token Protocol
+
+PlanGate can sign successful Plan-and-Solve step-0 admissions as an externally
+verifiable session contract. The token covers the admitted session id, final
+plan hash, locked-price hash, total cost, step count, expiry, gateway node,
+state-store type, and a reserved `recovery_enabled` claim. It does not provide
+stateless continuation: later P&S steps still require the local or shared
+reservation to exist. It also does not claim replay prevention.
+
+Headers:
+
+- `X-Commitment-Token`: returned after a successful multi-step P&S step-0
+  admission, then sent by token-aware clients on later P&S steps.
+- `X-Commitment-Status`: `issued`, `validated`, `legacy`, `missing`,
+  `invalid`, `expired`, `mismatch`, or `disabled`.
+- `X-Commitment-Error`: short reason when validation fails.
+
+Modes:
+
+- `--commitment-token-mode=off`: no token issuance or validation.
+- `--commitment-token-mode=optional` (default): step-0 issues a token; later
+  steps with a token must validate; old clients without a token continue over
+  the `X-Session-ID` reservation path and are marked `legacy`.
+- `--commitment-token-mode=strict`: P&S continuation steps must carry a valid
+  token or the gateway returns `CodeInvalidParams`.
+
+Security boundary: the token is HMAC-SHA256 over
+`base64url(header).base64url(payload)` using `--commitment-token-secret` or
+`PLANGATE_COMMITMENT_SECRET`. In Redis multi-gateway strict mode, all nodes
+must share the same explicit secret. In any multi-gateway deployment where
+clients replay `X-Commitment-Token`, every gateway must use the same
+commitment secret; for legacy artifact runs, use
+`--commitment-token-mode=off`, and for optional multi-gateway experiments pass
+an explicit shared secret.
+
+Example:
+
+```bash
+go test ./plangate/... -run "Commitment|Token|PlanAndSolve|MultiGateway" -count=1
+
+./gateway --mode mcpdp --backend http://127.0.0.1:8080 --port 9200 \
+  --commitment-token-mode=optional \
+  --commitment-token-secret=dev-shared-secret
+
+./gateway --mode mcpdp --backend http://127.0.0.1:8080 --port 9201 \
+  --plangate-state-store=redis --plangate-redis-addr=127.0.0.1:6379 \
+  --commitment-token-mode=strict \
+  --commitment-token-secret=dev-shared-secret
+
+python scripts/run_multigateway_shared_state.py --modes shared_random \
+  --commitment-token-mode optional \
+  --commitment-token-secret test-shared-secret
+```
+
+## Commitment Token v2-minimal
+
+PlanGate uses two commitment token shapes:
+
+- v1 `ps_commitment`: the initial Plan-and-Solve session commitment issued
+  after a successful multi-step step-0 admission.
+- v2 `ps_amended_commitment`: the recovery-only amended commitment issued
+  after a validated delta-plan amendment is applied to a checkpointed session.
+
+The v2-minimal token extends the recovery path with commitment-chain binding.
+An accepted amendment is tied to:
+
+- the full SHA256 base64url hash of the parent commitment token
+- the amendment delta hash
+- the stable checkpoint hash
+- the amendment chain hash
+
+This lets the gateway reject stale amended parents and makes each accepted
+recovery amendment externally verifiable as part of a chained commitment
+history. It is still a minimal protocol surface: it does not claim replay
+prevention, revocation, nonce management, key rotation, or a complete audit
+signature pipeline.
+
+Example verification:
+
+```bash
+go test ./plangate/... -run "Commitment|Amendment|Recovery|PlanAndSolve" -count=1
+```
+
 ## Gateway Processing Overhead
 
 The gateway-overhead benchmark is split into two layers:

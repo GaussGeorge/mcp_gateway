@@ -21,12 +21,15 @@ const (
 // across gateway nodes so continuations can be served by any node.
 // It is JSON-serialised for Redis storage.
 type SharedPSRecord struct {
-	SessionID    string           `json:"session_id"`
-	TotalCost    int64            `json:"total_cost"`
-	LockedPrices map[string]int64 `json:"locked_prices"`
-	CurrentStep  int              `json:"current_step"`
-	TotalSteps   int              `json:"total_steps"`    // P&S DAG overall length
-	ExpiresUnix  int64            `json:"expires_unix"`   // unix-nano
+	SessionID             string           `json:"session_id"`
+	TotalCost             int64            `json:"total_cost"`
+	LockedPrices          map[string]int64 `json:"locked_prices"`
+	PlanHash              string           `json:"plan_hash,omitempty"`
+	PriceHash             string           `json:"price_hash,omitempty"`
+	CommitmentTokenIssued bool             `json:"commitment_token_issued,omitempty"`
+	CurrentStep           int              `json:"current_step"`
+	TotalSteps            int              `json:"total_steps"`  // P&S DAG overall length
+	ExpiresUnix           int64            `json:"expires_unix"` // unix-nano
 }
 
 // SessionStateStore abstracts P&S reservation storage and global session-slot

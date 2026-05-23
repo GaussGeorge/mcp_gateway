@@ -55,7 +55,7 @@ import (
 // runtimeSessionMetrics holds metrics for one runtime session.
 type runtimeSessionMetrics struct {
 	Succeeded     bool
-	ExecutedSteps int   // handler invocations during THIS session run
+	ExecutedSteps int // handler invocations during THIS session run
 	Duration      time.Duration
 }
 
@@ -117,7 +117,7 @@ func percentileMs(d []time.Duration, p int) float64 {
 	sorted := make([]time.Duration, len(d))
 	copy(sorted, d)
 	sort.Slice(sorted, func(i, j int) bool { return sorted[i] < sorted[j] })
-	idx := (len(sorted)-1)*p/100
+	idx := (len(sorted) - 1) * p / 100
 	return float64(sorted[idx].Microseconds()) / 1000.0
 }
 
@@ -367,16 +367,16 @@ func TestRuntimePlanGateRRecoversWithoutReplay(t *testing.T) {
 // and verifies that PlanGate-R executes strictly fewer total handler calls.
 func TestRuntimePlanGateRVsNaiveRetryComputeSaving(t *testing.T) {
 	const (
-		S = 20   // sessions
-		N = 5    // steps per session
-		K = 2    // interrupt after step K
+		S = 20 // sessions
+		N = 5  // steps per session
+		K = 2  // interrupt after step K
 	)
 
 	runPolicy := func(policy RecoveryPolicy) RuntimeExperimentResult {
 		s, counters, tools := makeRuntimeServer(t, N, 0)
 		res := RuntimeExperimentResult{
-			Policy:        string(policy),
-			TotalSessions: S,
+			Policy:         string(policy),
+			TotalSessions:  S,
 			ToolCallCounts: make([]int64, N),
 		}
 		// Reset shared counters before this policy run.
@@ -434,9 +434,9 @@ func TestRuntimePlanGateRVsNaiveRetryComputeSaving(t *testing.T) {
 		return res
 	}
 
-	base  := runPolicy(PolicyPlanGateBase)
+	base := runPolicy(PolicyPlanGateBase)
 	naive := runPolicy(PolicyNaiveRetry)
-	pg    := runPolicy(PolicyPlanGateR)
+	pg := runPolicy(PolicyPlanGateR)
 
 	printRuntimeTable(t, []RuntimeExperimentResult{base, naive, pg})
 
@@ -457,7 +457,7 @@ func TestRuntimePlanGateRVsNaiveRetryComputeSaving(t *testing.T) {
 	// ── Naive retry tools[0..K-1] called 2×S, PlanGate-R tools[0..K-1] called 1×S ──
 	for i := 0; i < K; i++ {
 		naiveCalls := naive.ToolCallCounts[i]
-		pgCalls    := pg.ToolCallCounts[i]
+		pgCalls := pg.ToolCallCounts[i]
 		if naiveCalls != int64(2*S) {
 			t.Errorf("naive tool[%d] call count: want %d (2×S), got %d", i, 2*S, naiveCalls)
 		}
@@ -627,7 +627,7 @@ func TestRuntimeRecoveryLatencyOverhead(t *testing.T) {
 
 	// Soft assertion: PlanGate-base P95 must be lower than naive retry P95
 	// because it executes fewer total steps.
-	baseP95  := percentileMs(runs[0].latencies, 95)
+	baseP95 := percentileMs(runs[0].latencies, 95)
 	naiveP95 := percentileMs(runs[1].latencies, 95)
 	if baseP95 > naiveP95 {
 		t.Logf("INFO: base P95 (%.2fms) > naive P95 (%.2fms) — possible timer resolution artefact",
@@ -823,7 +823,9 @@ type natFailRow struct {
 // automatically promoted to CHECKPOINTED by classifyTransportError →
 // markCheckpointRecoverable, WITHOUT any direct call to markCheckpointRecoverable.
 func TestRuntimeNaturalFailurePromotesCheckpoint(t *testing.T) {
-	const (N, K, failStep = 5, 2, 2)
+	const (
+		N, K, failStep = 5, 2, 2
+	)
 	sessionID := "nf-promote-sess"
 	s, _, tools := makeNatFailServer(t, N, failStep, errNatOverloaded)
 	ctx := context.Background()
@@ -898,7 +900,9 @@ func TestRuntimeNaturalFailurePromotesCheckpoint(t *testing.T) {
 // They are simulated by saveActiveCP.  The COUNTING of tool2..4 through
 // the server reflects the real production path.
 func TestRuntimeNaturalFailureRecoveryResume(t *testing.T) {
-	const (N, K, failStep = 5, 2, 2)
+	const (
+		N, K, failStep = 5, 2, 2
+	)
 	sessionID := "nf-resume-sess"
 	s, counters, tools := makeNatFailServer(t, N, failStep, errNatOverloaded)
 	ctx := context.Background()
@@ -1008,10 +1012,10 @@ func TestRuntimeNaturalFailureRecoveryResume(t *testing.T) {
 // tool_K resets to 0.
 func TestRuntimeNaturalFailureVsNaiveRetry(t *testing.T) {
 	const (
-		S         = 10  // sessions
-		N         = 5   // steps per session
-		K         = 2   // checkpoint after step K; fail at step K
-		failStep  = K
+		S        = 10 // sessions
+		N        = 5  // steps per session
+		K        = 2  // checkpoint after step K; fail at step K
+		failStep = K
 	)
 
 	type runResult struct {
@@ -1072,7 +1076,7 @@ func TestRuntimeNaturalFailureVsNaiveRetry(t *testing.T) {
 		return res
 	}
 
-	pgr   := runPolicy("plangate_r")
+	pgr := runPolicy("plangate_r")
 	naive := runPolicy("naive_retry")
 
 	printNaturalFailureTable(t, []natFailRow{
@@ -1124,7 +1128,9 @@ func TestRuntimeNaturalFailureVsNaiveRetry(t *testing.T) {
 // and therefore does NOT change the checkpoint status from ACTIVE_CHECKPOINT.
 // A subsequent recovery resume request is correctly rejected.
 func TestRuntimeTerminalFailureDoesNotPromote(t *testing.T) {
-	const (N, K, failStep = 5, 2, 2)
+	const (
+		N, K, failStep = 5, 2, 2
+	)
 	sessionID := "nf-terminal-sess"
 	// errNatUnauthorized → classifyTransportError returns Decision=Terminal
 	s, _, tools := makeNatFailServer(t, N, failStep, errNatUnauthorized)
@@ -1213,13 +1219,11 @@ func TestRuntimeTerminalFailureDoesNotPromote(t *testing.T) {
 //     → handleRecoveryResume → execute [tool2, tool3, tool4]
 //     → all succeed → delete checkpoint
 //
-// Note on SkippedSteps=1 (not 2):
-//   executeStepDirect writes CompletedSteps as a SINGLE-ENTRY slice (only the
-//   last completed step per call).  After step 1, CompletedSteps=[{tool1}].
-//   handleRecoveryResume counts skippedSteps = len(CompletedSteps) = 1.
-//   Tool0 and tool1 are still NOT replayed because RemainingPlanJSON starts
-//   from [tool2, tool3, tool4].  The per-tool counters (tool0=1, tool1=1)
-//   prove the no-replay invariant even though SkippedSteps=1.
+// Note on SkippedSteps=2:
+//   saveCheckpointAfterStep now merges progress into a full completed-prefix
+//   ledger. After step 1, CompletedSteps=[{tool0}, {tool1}] and recovery
+//   reports skippedSteps = CurrentStep = 2. The no-replay invariant is still
+//   proven by the per-tool counters (tool0=1, tool1=1).
 // ══════════════════════════════════════════════════════════════════════════════
 
 // ─── Phase 7C helpers ────────────────────────────────────────────────────────
@@ -1303,7 +1307,7 @@ func parseRPCResp(body []byte) *mcpgov.JSONRPCResponse {
 //
 // Assertions:
 //   - Checkpoint status progresses ACTIVE → ACTIVE → CHECKPOINTED → deleted
-//   - PSRecoveryResult: SkippedSteps=1, ExecutedSteps=3, TotalSteps=4
+//   - PSRecoveryResult: SkippedSteps=2, ExecutedSteps=3, TotalSteps=5
 //   - Per-tool counters: tool0=1, tool1=1, tool2=2, tool3=1, tool4=1 (no replay)
 func TestRuntimeFullNaturalCheckpointToRecovery(t *testing.T) {
 	const (
@@ -1388,20 +1392,18 @@ func TestRuntimeFullNaturalCheckpointToRecovery(t *testing.T) {
 		result.SkippedSteps, result.ExecutedSteps, result.TotalSteps, result.Mode)
 
 	// ── Recovery result assertions ─────────────────────────────────────────────
-	// SkippedSteps=1: executeStepDirect stores only the last completed step in
-	// CompletedSteps (single-entry slice). After step 1, CompletedSteps=[{step1}].
-	// handleRecoveryResume: skippedSteps = len(CompletedSteps) = 1.
-	// Tool0 and tool1 are still not replayed (RemainingPlanJSON starts from [tool2,3,4]).
-	if result.SkippedSteps != 1 {
-		t.Errorf("SkippedSteps want 1 (single-entry CompletedSteps), got %d", result.SkippedSteps)
+	// SkippedSteps=2: saveCheckpointAfterStep now accumulates the completed prefix,
+	// so recovery reports the full number of saved P&S steps.
+	if result.SkippedSteps != failStep {
+		t.Errorf("SkippedSteps want %d (completed prefix), got %d", failStep, result.SkippedSteps)
 	}
 	// ExecutedSteps=3: recovery executes [tool2, tool3, tool4].
 	if result.ExecutedSteps != N-failStep {
 		t.Errorf("ExecutedSteps want %d (N-failStep), got %d", N-failStep, result.ExecutedSteps)
 	}
-	// TotalSteps = skipped(1) + remaining(3) = 4.
-	if result.TotalSteps != 1+(N-failStep) {
-		t.Errorf("TotalSteps want %d (skipped+remaining), got %d", 1+(N-failStep), result.TotalSteps)
+	// TotalSteps = completed prefix + recovered suffix = full session length.
+	if result.TotalSteps != N {
+		t.Errorf("TotalSteps want %d (full session length), got %d", N, result.TotalSteps)
 	}
 
 	// ── Per-tool call count assertions ─────────────────────────────────────────
@@ -1473,10 +1475,10 @@ func TestRuntimeFullNaturalCheckpointToRecovery(t *testing.T) {
 //	base.SuccessCount == S - failCount (only 35 non-failing sessions succeed)
 func TestRuntimeControlledWorkloadPlanGateRVsNaiveRetry(t *testing.T) {
 	const (
-		S          = 50 // total sessions
-		N          = 5  // steps per session
-		failStep   = 2  // nat_tool_2 fails on its first invocation
-		failCount  = 15 // first failCount sessions fail (30% of S)
+		S         = 50 // total sessions
+		N         = 5  // steps per session
+		failStep  = 2  // nat_tool_2 fails on its first invocation
+		failCount = 15 // first failCount sessions fail (30% of S)
 	)
 
 	type workloadMetrics struct {
@@ -1588,9 +1590,9 @@ func TestRuntimeControlledWorkloadPlanGateRVsNaiveRetry(t *testing.T) {
 		return m
 	}
 
-	base  := runPolicy("plangate_base")
+	base := runPolicy("plangate_base")
 	naive := runPolicy("naive_retry")
-	pg    := runPolicy("plangate_r")
+	pg := runPolicy("plangate_r")
 
 	// ── Print summary table ────────────────────────────────────────────────────
 	sep := "──────────────────────────────────────────────────────────────────────────────────────────────"
@@ -1668,11 +1670,11 @@ func TestRuntimeControlledWorkloadPlanGateRVsNaiveRetry(t *testing.T) {
 
 // seedRunResult holds raw metrics for one (failureRate, seed, policy) trial.
 type seedRunResult struct {
-	FailureRate    float64
-	Seed           int
-	Policy         string
-	Sessions       int // S
-	N              int // steps per session
+	FailureRate     float64
+	Seed            int
+	Policy          string
+	Sessions        int // S
+	N               int // steps per session
 	ActualFailCount int // # sessions that actually failed (Bernoulli draw)
 
 	ToolCalls      int

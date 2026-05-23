@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"log"
+	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -77,10 +79,185 @@ func (s *MCPDPServer) saveCheckpointAfterStep(ctx context.Context, cp *SessionCh
 		cp.Status = StatusActiveCheckpoint
 	}
 
-	if err := s.checkpointStore.Save(ctx, cp); err != nil {
+	if err := s.checkpointStore.Update(ctx, cp.SessionID, func(existing *SessionCheckpoint) (*SessionCheckpoint, error) {
+		return mergeCheckpointProgress(existing, cp), nil
+	}); err != nil {
+		if errors.Is(err, ErrCheckpointNotFound) {
+			if saveErr := s.checkpointStore.Save(ctx, cp); saveErr != nil {
+				log.Printf("[PlanGate-R] checkpoint save failed session=%s: %v", cp.SessionID, saveErr)
+			}
+			return
+		}
 		// Non-fatal: log and continue. The tool call already returned success.
 		log.Printf("[PlanGate-R] checkpoint save failed session=%s: %v", cp.SessionID, err)
 	}
+}
+
+func mergeCheckpointProgress(existing, incoming *SessionCheckpoint) *SessionCheckpoint {
+	if existing == nil {
+		return incoming.Clone()
+	}
+	if incoming == nil {
+		return existing.Clone()
+	}
+
+	merged := existing.Clone()
+
+	if incoming.AgentID != "" {
+		merged.AgentID = incoming.AgentID
+	}
+	if incoming.Mode != "" {
+		merged.Mode = incoming.Mode
+	}
+	if incoming.Status != "" {
+		merged.Status = incoming.Status
+	}
+	if incoming.CurrentStep >= merged.CurrentStep {
+		merged.CurrentStep = incoming.CurrentStep
+	}
+	if incoming.RecoveryAttempts > merged.RecoveryAttempts {
+		merged.RecoveryAttempts = incoming.RecoveryAttempts
+	}
+	merged.NonRecoverable = merged.NonRecoverable || incoming.NonRecoverable
+	if len(incoming.CompletedSteps) > 0 {
+		merged.CompletedSteps = mergeCompletedStepRecords(merged.CompletedSteps, incoming.CompletedSteps)
+	}
+	if incoming.RemainingPlanJSON != nil {
+		merged.RemainingPlanJSON = append([]byte(nil), incoming.RemainingPlanJSON...)
+	}
+	if incoming.LockedPriceSnapshot != nil {
+		merged.LockedPriceSnapshot = cloneInt64Map(incoming.LockedPriceSnapshot)
+	}
+	if incoming.ToolWeightSnapshot != nil {
+		merged.ToolWeightSnapshot = cloneFloat64Map(incoming.ToolWeightSnapshot)
+	}
+	if incoming.BudgetSnapshot != 0 {
+		merged.BudgetSnapshot = incoming.BudgetSnapshot
+	}
+	if incoming.OriginalPlanHash != "" {
+		merged.OriginalPlanHash = incoming.OriginalPlanHash
+	}
+	if incoming.CurrentPlanHash != "" {
+		merged.CurrentPlanHash = incoming.CurrentPlanHash
+	}
+	if incoming.AmendmentVersion >= merged.AmendmentVersion {
+		merged.AmendmentVersion = incoming.AmendmentVersion
+	}
+	if incoming.AmendmentChainHash != "" {
+		merged.AmendmentChainHash = incoming.AmendmentChainHash
+	}
+	if incoming.LastAmendmentID != "" {
+		merged.LastAmendmentID = incoming.LastAmendmentID
+	}
+	if incoming.LastAmendmentReason != "" {
+		merged.LastAmendmentReason = incoming.LastAmendmentReason
+	}
+	if incoming.ParentCommitmentHash != "" {
+		merged.ParentCommitmentHash = incoming.ParentCommitmentHash
+	}
+	if incoming.DeltaHash != "" {
+		merged.DeltaHash = incoming.DeltaHash
+	}
+	if len(incoming.ConversationTrace) > 0 {
+		merged.ConversationTrace = append([]string(nil), incoming.ConversationTrace...)
+	}
+	if len(incoming.ObservationHistory) > 0 {
+		merged.ObservationHistory = append([]string(nil), incoming.ObservationHistory...)
+	}
+	if incoming.GovernanceIntensityAtCheckpoint != 0 {
+		merged.GovernanceIntensityAtCheckpoint = incoming.GovernanceIntensityAtCheckpoint
+	}
+	if incoming.TokenUsageSoFar != 0 {
+		merged.TokenUsageSoFar = incoming.TokenUsageSoFar
+	}
+	if incoming.ComputeStepsSoFar != 0 {
+		merged.ComputeStepsSoFar = incoming.ComputeStepsSoFar
+	}
+	if !incoming.CreatedAt.IsZero() && merged.CreatedAt.IsZero() {
+		merged.CreatedAt = incoming.CreatedAt
+	}
+	if !incoming.ExpiresAt.IsZero() {
+		merged.ExpiresAt = incoming.ExpiresAt
+	}
+	if incoming.LastFailureCategory != "" {
+		merged.LastFailureCategory = incoming.LastFailureCategory
+	}
+	if incoming.LastFailureReason != "" {
+		merged.LastFailureReason = incoming.LastFailureReason
+	}
+	if incoming.IdempotencyKeys != nil {
+		merged.IdempotencyKeys = cloneStringMap(incoming.IdempotencyKeys)
+	}
+
+	return merged
+}
+
+func mergeCompletedStepRecords(existing, incoming []StepRecord) []StepRecord {
+	merged := make([]StepRecord, 0, len(existing)+len(incoming))
+	seen := make(map[string]struct{}, len(existing)+len(incoming))
+	for _, step := range existing {
+		key := completedStepRecordKey(step)
+		seen[key] = struct{}{}
+		merged = append(merged, step)
+	}
+	for _, step := range incoming {
+		key := completedStepRecordKey(step)
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		merged = append(merged, step)
+	}
+	sort.SliceStable(merged, func(i, j int) bool {
+		if merged[i].StepIndex != merged[j].StepIndex {
+			return merged[i].StepIndex < merged[j].StepIndex
+		}
+		if merged[i].StepID != merged[j].StepID {
+			return merged[i].StepID < merged[j].StepID
+		}
+		return merged[i].ToolName < merged[j].ToolName
+	})
+	return merged
+}
+
+func completedStepRecordKey(step StepRecord) string {
+	if step.StepID != "" {
+		return step.StepID
+	}
+	return "idx:" + strconv.Itoa(step.StepIndex)
+}
+
+func cloneInt64Map(src map[string]int64) map[string]int64 {
+	if src == nil {
+		return nil
+	}
+	out := make(map[string]int64, len(src))
+	for k, v := range src {
+		out[k] = v
+	}
+	return out
+}
+
+func cloneFloat64Map(src map[string]float64) map[string]float64 {
+	if src == nil {
+		return nil
+	}
+	out := make(map[string]float64, len(src))
+	for k, v := range src {
+		out[k] = v
+	}
+	return out
+}
+
+func cloneStringMap(src map[string]string) map[string]string {
+	if src == nil {
+		return nil
+	}
+	out := make(map[string]string, len(src))
+	for k, v := range src {
+		out[k] = v
+	}
+	return out
 }
 
 // deleteCheckpointOnSuccess removes the checkpoint for a successfully completed

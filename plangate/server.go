@@ -10,9 +10,16 @@ import (
 
 // HTTP Header 名称常量
 const (
-	HeaderPlanDAG      = "X-Plan-DAG"
-	HeaderSessionID    = "X-Session-ID"
-	HeaderTotalBudget  = "X-Total-Budget"
+	HeaderPlanDAG          = "X-Plan-DAG"
+	HeaderSessionID        = "X-Session-ID"
+	HeaderTotalBudget      = "X-Total-Budget"
+	HeaderCommitmentToken  = "X-Commitment-Token"
+	HeaderCommitmentStatus = "X-Commitment-Status"
+	HeaderCommitmentError  = "X-Commitment-Error"
+	HeaderPlanAmendment    = "X-Plan-Amendment"
+	HeaderAmendmentStatus  = "X-Amendment-Status"
+	HeaderAmendmentError   = "X-Amendment-Error"
+	HeaderAmendmentID      = "X-Amendment-ID"
 	// HeaderRecoveryMode 标志这是一个 PlanGate-R 恢复请求。
 	// 必须同时传 X-Session-ID 指定原始会话。
 	// 值必须为 "resume"，其他值走常规路径。
@@ -21,6 +28,27 @@ const (
 	// 由多网关实验发压机设置，用于服务端检测 cross-node state miss：
 	// 若 X-Session-Step > 0 且本节点/共享 store 均找不到 session → state miss。
 	HeaderSessionStep = "X-Session-Step"
+)
+
+type CommitmentTokenMode string
+
+const (
+	CommitmentTokenModeOff      CommitmentTokenMode = "off"
+	CommitmentTokenModeOptional CommitmentTokenMode = "optional"
+	CommitmentTokenModeStrict   CommitmentTokenMode = "strict"
+)
+
+type CommitmentTokenStatus string
+
+const (
+	CommitmentTokenStatusIssued    CommitmentTokenStatus = "issued"
+	CommitmentTokenStatusValidated CommitmentTokenStatus = "validated"
+	CommitmentTokenStatusLegacy    CommitmentTokenStatus = "legacy"
+	CommitmentTokenStatusMissing   CommitmentTokenStatus = "missing"
+	CommitmentTokenStatusInvalid   CommitmentTokenStatus = "invalid"
+	CommitmentTokenStatusExpired   CommitmentTokenStatus = "expired"
+	CommitmentTokenStatusMismatch  CommitmentTokenStatus = "mismatch"
+	CommitmentTokenStatusDisabled  CommitmentTokenStatus = "disabled"
 )
 
 // IntensityProvider 治理强度提供者接口
@@ -54,25 +82,25 @@ type IntensityProvider interface {
 // │   §3.8 理论保证: discountFunc [Table 3, Claim 1]             │
 // └─────────────────────────────────────────────────────────────────┘
 type MCPDPServer struct {
-	governor          *mcpgov.MCPGovernor
-	tools             map[string]mcpgov.MCPTool
-	handlers          map[string]mcpgov.ToolCallHandler
-	serverInfo        mcpgov.Implementation
-	budgetMgr         *HTTPBudgetReservationManager
-	reactSessions     *ReactSessionManager  // ReAct 会话沉没成本跟踪
-	disableBudgetLock bool                  // 消融实验：禁用预算锁（保留预检准入）
-	sessionCap        chan struct{}         // 并发会话上限信道（nil 表示不限制）
-	sessionCapWait    time.Duration        // Step-0 排队等待超时（0=立即拒绝）
-	sunkCostAlpha       float64              // ReAct 沉没成本系数 (0=禁用)
-	sunkCostBeta        float64              // ReAct continuation pricing 调制系数 (默认1.0, beta=1等价旧公式 2-I(t))
-	discountFunc        DiscountFunc         // 沉没成本折扣函数（默认 Quadratic K²）
-	discountFuncName    DiscountFuncName     // 折扣函数名称（日志/消融用）
-	intensityPriceBase  float64              // intensity 驱动定价的参考基价（ownPrice=0 时的 fallback）
-	intensityTracker    IntensityProvider    // 滞回门控治理强度跟踪器（nil=禁用，退化为原始行为）
-	reputationMgr       *ReputationManager // 信誉管理器（nil=禁用，等效信任所有 Agent）
-	reactStep0Inflight int64              // atomic: 当前在处理中的 ReAct step-0 请求数
-	reactStep0Limit    int64              // step-0 并发上限，超过后走标准准入
-	protectCommittedSessions bool          // 准入即承诺：step 1+ 永不拒绝，消除级联浪费
+	governor                 *mcpgov.MCPGovernor
+	tools                    map[string]mcpgov.MCPTool
+	handlers                 map[string]mcpgov.ToolCallHandler
+	serverInfo               mcpgov.Implementation
+	budgetMgr                *HTTPBudgetReservationManager
+	reactSessions            *ReactSessionManager // ReAct 会话沉没成本跟踪
+	disableBudgetLock        bool                 // 消融实验：禁用预算锁（保留预检准入）
+	sessionCap               chan struct{}        // 并发会话上限信道（nil 表示不限制）
+	sessionCapWait           time.Duration        // Step-0 排队等待超时（0=立即拒绝）
+	sunkCostAlpha            float64              // ReAct 沉没成本系数 (0=禁用)
+	sunkCostBeta             float64              // ReAct continuation pricing 调制系数 (默认1.0, beta=1等价旧公式 2-I(t))
+	discountFunc             DiscountFunc         // 沉没成本折扣函数（默认 Quadratic K²）
+	discountFuncName         DiscountFuncName     // 折扣函数名称（日志/消融用）
+	intensityPriceBase       float64              // intensity 驱动定价的参考基价（ownPrice=0 时的 fallback）
+	intensityTracker         IntensityProvider    // 滞回门控治理强度跟踪器（nil=禁用，退化为原始行为）
+	reputationMgr            *ReputationManager   // 信誉管理器（nil=禁用，等效信任所有 Agent）
+	reactStep0Inflight       int64                // atomic: 当前在处理中的 ReAct step-0 请求数
+	reactStep0Limit          int64                // step-0 并发上限，超过后走标准准入
+	protectCommittedSessions bool                 // 准入即承诺：step 1+ 永不拒绝，消除级联浪费
 
 	// PlanGate-R fields, default disabled
 	// recoveryConfig.Enabled is false by default; all behaviour is identical
@@ -88,12 +116,18 @@ type MCPDPServer struct {
 	skippedStepsTotal     int64
 	recoveryAttempts      int64
 
+	commitmentTokens           *CommitmentTokenManager
+	amendmentMode              AmendmentMode
+	amendmentMaxCount          int
+	amendmentMaxBudgetDelta    int64
+	amendmentRequireCommitment bool
+
 	// Multi-gateway shared state (Phase: multi-node experiment).
 	// nodeID identifies this gateway instance (host:port by default).
 	// sharedStateStore is nil when --plangate-state-store=inmemory (default);
 	// in that case the local budgetMgr / sessionCap paths are used unchanged.
-	nodeID             string
-	sharedStateStore   SessionStateStore
+	nodeID           string
+	sharedStateStore SessionStateStore
 	// Atomic counters exposed via X-PlanGate-State-Miss / X-PlanGate-Duplicate-Admission
 	// response headers and queryable via /debug/multigateway endpoint.
 	stateMissCount          int64
@@ -121,22 +155,27 @@ func NewMCPDPServer(name string, gov *mcpgov.MCPGovernor, reservationTTL time.Du
 		step0Limit = 30
 	}
 	return &MCPDPServer{
-		governor:          gov,
-		tools:             make(map[string]mcpgov.MCPTool),
-		handlers:          make(map[string]mcpgov.ToolCallHandler),
-		serverInfo:        mcpgov.Implementation{Name: name, Version: "2.0.0"},
-		budgetMgr:         NewHTTPBudgetReservationManager(reservationTTL),
-		reactSessions:     NewReactSessionManager(reservationTTL),
-		sessionCap:        cap,
-		sessionCapWait:    0, // mock 模式默认立即拒绝
-		sunkCostAlpha:     sunkCostAlpha,
-		sunkCostBeta:      1.0,
-		discountFunc:      QuadraticDiscount,
-		discountFuncName:  DiscountQuadratic,
-		intensityTracker:  NewGovernanceIntensityTracker(gov, 200),
-		reactStep0Limit:   step0Limit,
-		reputationMgr:     NewReputationManager(DefaultReputationConfig()),
-		recoveryConfig:    DefaultRecoveryConfig(),
+		governor:                   gov,
+		tools:                      make(map[string]mcpgov.MCPTool),
+		handlers:                   make(map[string]mcpgov.ToolCallHandler),
+		serverInfo:                 mcpgov.Implementation{Name: name, Version: "2.0.0"},
+		budgetMgr:                  NewHTTPBudgetReservationManager(reservationTTL),
+		reactSessions:              NewReactSessionManager(reservationTTL),
+		sessionCap:                 cap,
+		sessionCapWait:             0, // mock 模式默认立即拒绝
+		sunkCostAlpha:              sunkCostAlpha,
+		sunkCostBeta:               1.0,
+		discountFunc:               QuadraticDiscount,
+		discountFuncName:           DiscountQuadratic,
+		intensityTracker:           NewGovernanceIntensityTracker(gov, 200),
+		reactStep0Limit:            step0Limit,
+		reputationMgr:              NewReputationManager(DefaultReputationConfig()),
+		recoveryConfig:             DefaultRecoveryConfig(),
+		commitmentTokens:           mustNewDefaultCommitmentTokenManager(reservationTTL),
+		amendmentMode:              AmendmentModeRecoveryOnly,
+		amendmentMaxCount:          3,
+		amendmentMaxBudgetDelta:    0,
+		amendmentRequireCommitment: true,
 	}
 }
 
@@ -151,23 +190,28 @@ func NewMCPDPServerNoLock(name string, gov *mcpgov.MCPGovernor, reservationTTL t
 		step0Limit = 30
 	}
 	return &MCPDPServer{
-		governor:          gov,
-		tools:             make(map[string]mcpgov.MCPTool),
-		handlers:          make(map[string]mcpgov.ToolCallHandler),
-		serverInfo:        mcpgov.Implementation{Name: name, Version: "2.0.0"},
-		budgetMgr:         NewHTTPBudgetReservationManager(reservationTTL),
-		reactSessions:     NewReactSessionManager(reservationTTL),
-		disableBudgetLock: true,
-		sessionCap:        cap,
-		sessionCapWait:    0,
-		sunkCostAlpha:     sunkCostAlpha,
-		sunkCostBeta:      1.0,
-		discountFunc:      QuadraticDiscount,
-		discountFuncName:  DiscountQuadratic,
-		intensityTracker:  NewGovernanceIntensityTracker(gov, 200),
-		reactStep0Limit:   step0Limit,
-		reputationMgr:     NewReputationManager(DefaultReputationConfig()),
-		recoveryConfig:    DefaultRecoveryConfig(),
+		governor:                   gov,
+		tools:                      make(map[string]mcpgov.MCPTool),
+		handlers:                   make(map[string]mcpgov.ToolCallHandler),
+		serverInfo:                 mcpgov.Implementation{Name: name, Version: "2.0.0"},
+		budgetMgr:                  NewHTTPBudgetReservationManager(reservationTTL),
+		reactSessions:              NewReactSessionManager(reservationTTL),
+		disableBudgetLock:          true,
+		sessionCap:                 cap,
+		sessionCapWait:             0,
+		sunkCostAlpha:              sunkCostAlpha,
+		sunkCostBeta:               1.0,
+		discountFunc:               QuadraticDiscount,
+		discountFuncName:           DiscountQuadratic,
+		intensityTracker:           NewGovernanceIntensityTracker(gov, 200),
+		reactStep0Limit:            step0Limit,
+		reputationMgr:              NewReputationManager(DefaultReputationConfig()),
+		recoveryConfig:             DefaultRecoveryConfig(),
+		commitmentTokens:           mustNewDefaultCommitmentTokenManager(reservationTTL),
+		amendmentMode:              AmendmentModeRecoveryOnly,
+		amendmentMaxCount:          3,
+		amendmentMaxBudgetDelta:    0,
+		amendmentRequireCommitment: true,
 	}
 }
 
@@ -218,25 +262,68 @@ func NewMCPDPServerWithExternalSignals(
 		step0Limit = 30
 	}
 	return &MCPDPServer{
-		governor:          gov,
-		tools:             make(map[string]mcpgov.MCPTool),
-		handlers:          make(map[string]mcpgov.ToolCallHandler),
-		serverInfo:        mcpgov.Implementation{Name: name, Version: "2.0.0"},
-		budgetMgr:         NewHTTPBudgetReservationManager(reservationTTL),
-		reactSessions:     NewReactSessionManager(reservationTTL),
-		sessionCap:        cap,
-		sessionCapWait:    sessionCapWait,
-		sunkCostAlpha:       sunkCostAlpha,
-		sunkCostBeta:        1.0,
-		discountFunc:        QuadraticDiscount,
-		discountFuncName:    DiscountQuadratic,
-		intensityPriceBase:  intensityPriceBase, // intensity 驱动定价参考基价（真实 LLM 模式）
-		intensityTracker:    signalTracker,
-		reactStep0Limit:     step0Limit,
-		reputationMgr:       NewReputationManager(DefaultReputationConfig()),
-		protectCommittedSessions: true, // 真实 LLM 模式默认启用准入承诺保障
-		recoveryConfig:      DefaultRecoveryConfig(),
+		governor:                   gov,
+		tools:                      make(map[string]mcpgov.MCPTool),
+		handlers:                   make(map[string]mcpgov.ToolCallHandler),
+		serverInfo:                 mcpgov.Implementation{Name: name, Version: "2.0.0"},
+		budgetMgr:                  NewHTTPBudgetReservationManager(reservationTTL),
+		reactSessions:              NewReactSessionManager(reservationTTL),
+		sessionCap:                 cap,
+		sessionCapWait:             sessionCapWait,
+		sunkCostAlpha:              sunkCostAlpha,
+		sunkCostBeta:               1.0,
+		discountFunc:               QuadraticDiscount,
+		discountFuncName:           DiscountQuadratic,
+		intensityPriceBase:         intensityPriceBase, // intensity 驱动定价参考基价（真实 LLM 模式）
+		intensityTracker:           signalTracker,
+		reactStep0Limit:            step0Limit,
+		reputationMgr:              NewReputationManager(DefaultReputationConfig()),
+		protectCommittedSessions:   true, // 真实 LLM 模式默认启用准入承诺保障
+		recoveryConfig:             DefaultRecoveryConfig(),
+		commitmentTokens:           mustNewDefaultCommitmentTokenManager(reservationTTL),
+		amendmentMode:              AmendmentModeRecoveryOnly,
+		amendmentMaxCount:          3,
+		amendmentMaxBudgetDelta:    0,
+		amendmentRequireCommitment: true,
 	}
+}
+
+func mustNewDefaultCommitmentTokenManager(ttl time.Duration) *CommitmentTokenManager {
+	mgr, err := NewCommitmentTokenManager(CommitmentTokenConfig{
+		Mode: CommitmentTokenModeOptional,
+		TTL:  ttl,
+	})
+	if err != nil {
+		panic(err)
+	}
+	return mgr
+}
+
+func (s *MCPDPServer) SetCommitmentTokenConfig(cfg CommitmentTokenConfig) error {
+	if cfg.TTL <= 0 && s.budgetMgr != nil {
+		cfg.TTL = s.budgetMgr.maxDuration
+	}
+	mgr, err := NewCommitmentTokenManager(cfg)
+	if err != nil {
+		return err
+	}
+	s.commitmentTokens = mgr
+	return nil
+}
+
+func (s *MCPDPServer) SetAmendmentPolicy(policy AmendmentPolicy) error {
+	mode, err := normalizeAmendmentMode(policy.Mode)
+	if err != nil {
+		return err
+	}
+	if policy.MaxCount <= 0 {
+		policy.MaxCount = defaultAmendmentPolicy().MaxCount
+	}
+	s.amendmentMode = mode
+	s.amendmentMaxCount = policy.MaxCount
+	s.amendmentMaxBudgetDelta = policy.MaxBudgetDelta
+	s.amendmentRequireCommitment = policy.RequireCommitment
+	return nil
 }
 
 // EnableRecoveryForConfig applies a RecoveryConfig to the server, optionally

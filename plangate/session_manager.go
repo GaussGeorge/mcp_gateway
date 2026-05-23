@@ -20,16 +20,20 @@ import (
 // │   Table 3: Budget reserv. d(k)=0 (k≥1), E[W]=O(1)           │
 // └─────────────────────────────────────────────────────────────────┘
 type HTTPSessionReservation struct {
-	SessionID    string
-	Plan         *HTTPDAGPlan
-	TotalCost    int64
-	LockedPrices map[string]int64 // 每个工具在准入时锁定的价格
-	CreatedAt    time.Time
-	ExpiresAt    time.Time
-	CurrentStep  int
-	mu           sync.Mutex
-	releaseOnce  sync.Once
-	releaseFn    func() // 释放并发槽位（若有）
+	SessionID       string
+	Plan            *HTTPDAGPlan
+	TotalCost       int64
+	LockedPrices    map[string]int64 // 每个工具在准入时锁定的价格
+	PlanHash        string
+	PriceHash       string
+	CommitmentToken string
+	TotalSteps      int
+	CreatedAt       time.Time
+	ExpiresAt       time.Time
+	CurrentStep     int
+	mu              sync.Mutex
+	releaseOnce     sync.Once
+	releaseFn       func() // 释放并发槽位（若有）
 }
 
 // Release 一次性释放该会话的并发槽位（幂等）
@@ -67,6 +71,7 @@ func (m *HTTPBudgetReservationManager) Reserve(gov *mcpgov.MCPGovernor, plan *HT
 		Plan:         plan,
 		TotalCost:    totalCost,
 		LockedPrices: locked,
+		TotalSteps:   len(plan.Steps),
 		CreatedAt:    time.Now(),
 		ExpiresAt:    time.Now().Add(m.maxDuration),
 	}
