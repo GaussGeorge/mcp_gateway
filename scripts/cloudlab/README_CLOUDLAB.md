@@ -112,6 +112,26 @@ python scripts/cloudlab/run_cloudlab_experiment.py \
   --commitment-secret cloudlab-shared-secret
 ```
 
+Validated sticky-routing command:
+
+```bash
+python3 scripts/cloudlab/run_cloudlab_experiment.py \
+  --inventory scripts/cloudlab/inventory.json \
+  --profile small \
+  --workload p3 \
+  --policies naive_retry plangate_r plangate_ar \
+  --sessions 100 \
+  --concurrency 10 \
+  --repeats 1 \
+  --failure-rate 0.1 0.2 0.3 \
+  --amendment-rate 1.0 \
+  --validation-mode stress \
+  --routing sticky \
+  --results-dir results/cloudlab_p3_small_sticky_v2 \
+  --commitment-secret cloudlab-shared-secret \
+  --skip-setup
+```
+
 In CloudLab P3 mode, the harness starts Redis/backends/gateways itself and the
 P3 runner only sends workload with:
 
@@ -143,6 +163,50 @@ This confirms that the P0-P2 correctness smoke validates distributed shared
 state plus commitment-token replay across multiple gateways. The `C=40` run is
 intended as a stress smoke, so it should use `--validation-mode stress` rather
 than the default 95% correctness threshold.
+
+## Validated Results
+
+Validated artifact evidence is mirrored in:
+
+- [artifact_results/cloudlab_p3_small_sticky_v2](../../artifact_results/cloudlab_p3_small_sticky_v2)
+- [artifact_results/cloudlab_smoke_c2](../../artifact_results/cloudlab_smoke_c2)
+
+Experiment: P3 CloudLab small sticky stress  
+Date: 2026-05-23  
+Profile: small, 6 nodes  
+Topology: 1 loader, 1 Redis, 2 gateways, 2 backends  
+Routing: sticky  
+Sessions: 100  
+Concurrency: 10  
+Failure rates: 0.1, 0.2, 0.3  
+Amendment rate: 1.0  
+Policies: naive_retry, plangate_r, plangate_ar  
+Validation mode: stress  
+Result directory: `cloudlab_p3_small_sticky_v2`
+
+Core result snapshot:
+
+- `AR success_rate = 1.0 / 1.0 / 1.0`
+- `AR recovery_success_rate = 1.0 / 1.0 / 1.0`
+- `AR amendment_accept_rate = 1.0 / 1.0 / 1.0`
+- `v2_commitment_issued = 10 / 20 / 30`
+- `AR avg_total_tool_calls = 5.1 / 5.2 / 5.3`
+- `naive_retry avg_total_tool_calls = 5.3 / 5.6 / 5.9`
+- `invalid amendment reject_rate = 1.0` for all 6 adversarial cases
+- `commitment_invalid = 0`
+- `commitment_mismatch = 0`
+- `commitment_expired = 0`
+- `state_miss = 0`
+- `duplicate_admission = 0`
+- `validation errors = []`
+
+Limitation:
+
+This result uses **sticky per-session routing** because the current recovery
+checkpoint store is gateway-local/in-memory. It validates CloudLab multi-node
+execution with gateway-local recovery affinity, not **random cross-gateway**
+recovery. Random cross-gateway recovery requires Redis/shared checkpoint store
+or checkpoint-owner routing.
 
 ## What gets validated
 

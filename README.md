@@ -135,6 +135,35 @@ Example verification:
 go test ./plangate/... -run "Commitment|Amendment|Recovery|PlanAndSolve" -count=1
 ```
 
+## CloudLab Validated Artifact Results
+
+Lightweight validated CloudLab evidence is checked into:
+
+- [artifact_results/cloudlab_p3_small_sticky_v2](artifact_results/cloudlab_p3_small_sticky_v2)
+- [artifact_results/cloudlab_smoke_c2](artifact_results/cloudlab_smoke_c2)
+
+The `cloudlab_p3_small_sticky_v2` bundle records the validated P3 CloudLab
+small sticky-stress run from 2026-05-23:
+
+- topology: 1 loader, 1 Redis, 2 gateways, 2 backends
+- routing: **sticky per-session**
+- sessions: 100
+- concurrency: 10
+- failure rates: 0.1 / 0.2 / 0.3
+- amendment rate: 1.0
+- policies: `naive_retry`, `plangate_r`, `plangate_ar`
+- `v2_commitment_issued = 10 / 20 / 30`
+- `commitment_mismatch = 0`
+- `state_miss = 0`
+- `duplicate_admission = 0`
+- `validation errors = []`
+
+Important limitation: this evidence does **not** claim **random cross-gateway**
+recovery. The current recovery checkpoint store is gateway-local/in-memory, so
+the validated multi-node P3 run uses sticky routing. Random cross-gateway
+recovery would require Redis/shared checkpoint state or checkpoint-owner
+routing.
+
 ## Gateway Processing Overhead
 
 The gateway-overhead benchmark is split into two layers:

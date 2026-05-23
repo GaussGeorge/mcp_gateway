@@ -65,6 +65,27 @@ are diagnostic utilities, not reproducibility scripts.
 
 ---
 
+## 2A. Validated Lightweight CloudLab Evidence
+
+The repository also includes lightweight evidence bundles under
+`artifact_results/` for validated CloudLab runs. These directories are meant
+for README/artifact-evaluation citation and quick inspection only. They include
+compact CSV/JSON summaries and a short README, but intentionally omit full raw
+logs and large per-step traces.
+
+| Directory | Included Files | Purpose |
+|-----------|----------------|---------|
+| `artifact_results/cloudlab_smoke_c2/` | `summary.csv`, `aggregate.csv`, `validation.json`, `README_RESULT.md` | P0-P2 CloudLab correctness smoke evidence |
+| `artifact_results/cloudlab_p3_small_sticky_v2/` | `p3_summary.csv`, `p3_adversarial_summary.csv`, `summary.csv`, `validation.json`, `README_RESULT.md` | P3 CloudLab sticky-routing recovery/amendment evidence |
+
+Important boundary: `artifact_results/cloudlab_p3_small_sticky_v2/` validates
+multi-node P3 execution with **sticky per-session routing**. It does **not**
+validate random cross-gateway recovery, because the current recovery checkpoint
+store is gateway-local/in-memory. Random cross-gateway recovery would require a
+Redis/shared checkpoint store or checkpoint-owner routing.
+
+---
+
 ## 3. Default Reproducibility Mode
 
 The minimal reproduction path (no API key required):
