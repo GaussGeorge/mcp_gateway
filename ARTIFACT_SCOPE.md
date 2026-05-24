@@ -77,12 +77,22 @@ logs and large per-step traces.
 |-----------|----------------|---------|
 | `artifact_results/cloudlab_smoke_c2/` | `summary.csv`, `aggregate.csv`, `validation.json`, `README_RESULT.md` | P0-P2 CloudLab correctness smoke evidence |
 | `artifact_results/cloudlab_p3_small_sticky_v2/` | `p3_summary.csv`, `p3_adversarial_summary.csv`, `summary.csv`, `validation.json`, `README_RESULT.md` | P3 CloudLab sticky-routing recovery/amendment evidence |
+| `artifact_results/cloudlab_p3_small_random_redis_cp_v2/` | `p3_summary.csv`, `p3_adversarial_summary.csv`, `summary.csv`, `validation.json`, `README_RESULT.md` | P4 CloudLab random-routing recovery/amendment evidence with Redis CheckpointStore |
 
-Important boundary: `artifact_results/cloudlab_p3_small_sticky_v2/` validates
-multi-node P3 execution with **sticky per-session routing**. It does **not**
-validate random cross-gateway recovery, because the current recovery checkpoint
-store is gateway-local/in-memory. Random cross-gateway recovery would require a
-Redis/shared checkpoint store or checkpoint-owner routing.
+Important boundary:
+
+- `artifact_results/cloudlab_p3_small_sticky_v2/` validates multi-node P3
+  execution with **sticky per-session routing** and remains a simpler baseline.
+- `artifact_results/cloudlab_p3_small_random_redis_cp_v2/` validates
+  **random cross-gateway recovery** for the small CloudLab profile with Redis
+  session state and Redis CheckpointStore.
+
+Random cross-gateway recovery is validated for the small CloudLab profile with
+Redis session state and Redis checkpoint store.
+
+These artifact bundles do **not** claim medium/large-profile validation,
+multi-region deployment, production-grade Redis HA, or Byzantine/malicious
+gateway security.
 
 ---
 

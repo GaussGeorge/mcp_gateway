@@ -139,11 +139,35 @@ go test ./plangate/... -run "Commitment|Amendment|Recovery|PlanAndSolve" -count=
 
 Lightweight validated CloudLab evidence is checked into:
 
+- [artifact_results/cloudlab_p3_small_random_redis_cp_v2](artifact_results/cloudlab_p3_small_random_redis_cp_v2)
 - [artifact_results/cloudlab_p3_small_sticky_v2](artifact_results/cloudlab_p3_small_sticky_v2)
 - [artifact_results/cloudlab_smoke_c2](artifact_results/cloudlab_smoke_c2)
 
-The `cloudlab_p3_small_sticky_v2` bundle records the validated P3 CloudLab
-small sticky-stress run from 2026-05-23:
+The `cloudlab_p3_small_random_redis_cp_v2` bundle records the validated P4
+CloudLab small random-routing run with Redis session state and Redis
+CheckpointStore:
+
+- topology: 1 loader, 1 Redis, 2 gateways, 2 backends
+- routing: **random cross-gateway**
+- recovery store: `redis`
+- sessions: 100 per failure rate
+- concurrency: 10
+- failure rates: 0.1 / 0.2 / 0.3
+- amendment rate: 1.0
+- policies: `naive_retry`, `plangate_r`, `plangate_ar`
+- `cross_node_sessions = 843`
+- `v2_commitment_issued = 10 / 20 / 30`
+- `state_miss = 0`
+- `duplicate_admission = 0`
+- `commitment_mismatch = 0`
+- `validation errors = []`
+
+This is the stronger distributed recovery evidence: it validates random
+cross-gateway recovery with Redis CheckpointStore for the small CloudLab
+profile.
+
+The `cloudlab_p3_small_sticky_v2` bundle remains useful as a simpler baseline
+and records the validated P3 CloudLab small sticky-stress run from 2026-05-23:
 
 - topology: 1 loader, 1 Redis, 2 gateways, 2 backends
 - routing: **sticky per-session**
@@ -158,11 +182,10 @@ small sticky-stress run from 2026-05-23:
 - `duplicate_admission = 0`
 - `validation errors = []`
 
-Important limitation: this evidence does **not** claim **random cross-gateway**
-recovery. The current recovery checkpoint store is gateway-local/in-memory, so
-the validated multi-node P3 run uses sticky routing. Random cross-gateway
-recovery would require Redis/shared checkpoint state or checkpoint-owner
-routing.
+The sticky evidence does **not** by itself claim **random cross-gateway**
+recovery. That specific claim is covered by
+`cloudlab_p3_small_random_redis_cp_v2`, while the sticky run remains a simpler
+gateway-local recovery-affinity baseline.
 
 ## Gateway Processing Overhead
 

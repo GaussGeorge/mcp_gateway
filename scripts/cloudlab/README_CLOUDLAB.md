@@ -128,8 +128,10 @@ python3 scripts/cloudlab/run_cloudlab_experiment.py \
   --validation-mode stress \
   --routing random \
   --recovery-store redis \
-  --results-dir results/cloudlab_p3_small_random_redis_cp \
-  --commitment-secret cloudlab-shared-secret
+  --results-dir results/cloudlab_p3_small_random_redis_cp_v2 \
+  --commitment-secret cloudlab-shared-secret \
+  --skip-setup \
+  --skip-build
 ```
 
 Validated sticky-routing command:
@@ -194,8 +196,74 @@ than the default 95% correctness threshold.
 
 Validated artifact evidence is mirrored in:
 
+- [artifact_results/cloudlab_p3_small_random_redis_cp_v2](../../artifact_results/cloudlab_p3_small_random_redis_cp_v2)
 - [artifact_results/cloudlab_p3_small_sticky_v2](../../artifact_results/cloudlab_p3_small_sticky_v2)
 - [artifact_results/cloudlab_smoke_c2](../../artifact_results/cloudlab_smoke_c2)
+
+## Validated P4 Random Redis Checkpoint Result
+
+Experiment: P4 CloudLab small random Redis checkpoint stress  
+Date: 2026-05-24  
+Profile: small, 6 nodes  
+Topology: 1 loader, 1 Redis, 2 gateways, 2 backends  
+Routing: random  
+Recovery store: redis  
+State store: redis  
+Sessions: 100 per failure rate  
+Concurrency: 10  
+Failure rates: 0.1, 0.2, 0.3  
+Amendment rate: 1.0  
+Policies: naive_retry, plangate_r, plangate_ar  
+Validation mode: stress  
+Result directory: `cloudlab_p3_small_random_redis_cp_v2`
+
+Validated command:
+
+```bash
+python3 scripts/cloudlab/run_cloudlab_experiment.py \
+  --inventory scripts/cloudlab/inventory.json \
+  --profile small \
+  --workload p3 \
+  --policies naive_retry plangate_r plangate_ar \
+  --sessions 100 \
+  --concurrency 10 \
+  --repeats 1 \
+  --failure-rate 0.1 0.2 0.3 \
+  --amendment-rate 1.0 \
+  --validation-mode stress \
+  --routing random \
+  --recovery-store redis \
+  --results-dir results/cloudlab_p3_small_random_redis_cp_v2 \
+  --commitment-secret cloudlab-shared-secret \
+  --skip-setup \
+  --skip-build
+```
+
+Sync note: when copying code to CloudLab nodes, use a root-anchored exclude such
+as `--exclude '/gateway'`. Do not use bare `--exclude 'gateway'`, because that
+pattern can also exclude the `cmd/gateway/` source directory.
+
+Core result snapshot:
+
+- `validation errors = []`
+- `cross_node_sessions = 843`
+- `state_miss = 0`
+- `duplicate_admission = 0`
+- `commitment_invalid = 0`
+- `commitment_mismatch = 0`
+- `commitment_expired = 0`
+- `plangate_ar success_rate = 1.0 / 1.0 / 1.0`
+- `plangate_ar amendment_accept_rate = 1.0 / 1.0 / 1.0`
+- `v2_commitment_issued = 10 / 20 / 30`
+- `plangate_ar avg_total_tool_calls = 5.1 / 5.2 / 5.3`
+- `naive_retry avg_total_tool_calls = 5.3 / 5.6 / 5.9`
+- all adversarial amendment `reject_rate = 1.0`
+- `false_accept = 0`
+- `executed_after_rejected_amendment = 0`
+
+This is the stronger distributed evidence for **random cross-gateway**
+recovery/amendment with Redis session state and Redis CheckpointStore in the
+small CloudLab profile.
 
 Experiment: P3 CloudLab small sticky stress  
 Date: 2026-05-23  
@@ -231,8 +299,9 @@ Limitation:
 This result uses **sticky per-session routing** because the current recovery
 checkpoint store is gateway-local/in-memory. It validates CloudLab multi-node
 execution with gateway-local recovery affinity, not **random cross-gateway**
-recovery. Random cross-gateway recovery requires Redis/shared checkpoint store
-or checkpoint-owner routing.
+recovery. That stronger claim is covered instead by
+`artifact_results/cloudlab_p3_small_random_redis_cp_v2`, which uses
+`--routing random` together with `--recovery-store redis`.
 
 ## What gets validated
 
