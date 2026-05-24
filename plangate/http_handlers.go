@@ -25,14 +25,22 @@ func writeJSON(w http.ResponseWriter, v interface{}) {
 // the shared store slot, ensuring idempotent cleanup.
 func (s *MCPDPServer) buildReservationFromShared(rec *SharedPSRecord) *HTTPSessionReservation {
 	res := &HTTPSessionReservation{
-		SessionID:    rec.SessionID,
-		TotalCost:    rec.TotalCost,
-		LockedPrices: rec.LockedPrices,
-		PlanHash:     rec.PlanHash,
-		PriceHash:    rec.PriceHash,
-		TotalSteps:   rec.TotalSteps,
-		CurrentStep:  rec.CurrentStep,
-		ExpiresAt:    time.Unix(0, rec.ExpiresUnix),
+		SessionID:     rec.SessionID,
+		TotalCost:     rec.TotalCost,
+		LockedPrices:  cloneInt64Map(rec.LockedPrices),
+		PlanHash:      rec.PlanHash,
+		PriceHash:     rec.PriceHash,
+		TotalSteps:    rec.TotalSteps,
+		CurrentStep:   rec.CurrentStep,
+		ExpiresAt:     time.Unix(0, rec.ExpiresUnix),
+		sharedBacking: true,
+	}
+	if len(rec.PlanSteps) > 0 {
+		res.Plan = &HTTPDAGPlan{
+			SessionID: rec.SessionID,
+			Budget:    rec.Budget,
+			Steps:     cloneHTTPDAGSteps(rec.PlanSteps),
+		}
 	}
 	// releaseFn: release the shared store slot (deduct global count).
 	if s.sharedStateStore != nil {
@@ -161,6 +169,16 @@ func (s *MCPDPServer) handleToolsCall(ctx context.Context, w http.ResponseWriter
 	// ====== Plan-and-Solve 模式: 后续步骤（带 X-Session-ID + 预算锁）======
 	// >>> Algorithm 1, P&S 后续: 使用 Eq.(2) 锁定价格，绕过 LoadShedding
 	if sessionID != "" && !s.disableBudgetLock {
+		if s.sharedStateStore != nil {
+			rec, err := s.sharedStateStore.GetReservation(ctx, sessionID)
+			if err == nil && rec != nil {
+				res := s.buildReservationFromShared(rec)
+				if resp := s.validateCommitmentForReservedStep(w, r, req, res); resp != nil {
+					return resp
+				}
+				return s.handleReservedStep(ctx, req, res)
+			}
+		}
 		if res, ok := s.budgetMgr.Get(sessionID); ok {
 			if resp := s.validateCommitmentForReservedStep(w, r, req, res); resp != nil {
 				return resp

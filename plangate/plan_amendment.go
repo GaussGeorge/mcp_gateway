@@ -360,7 +360,7 @@ func applyAmendmentToCheckpoint(
 		return nil, fmt.Errorf("amendment reason is required")
 	}
 	if amendment.BaseStep != cp.CurrentStep {
-		return nil, fmt.Errorf("amendment base_step mismatch")
+		return nil, fmt.Errorf("amendment base_step mismatch: amendment=%d checkpoint=%d", amendment.BaseStep, cp.CurrentStep)
 	}
 
 	expectedPlanHash := cp.CurrentPlanHash

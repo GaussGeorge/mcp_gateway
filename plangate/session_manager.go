@@ -31,6 +31,7 @@ type HTTPSessionReservation struct {
 	CreatedAt       time.Time
 	ExpiresAt       time.Time
 	CurrentStep     int
+	sharedBacking   bool
 	mu              sync.Mutex
 	releaseOnce     sync.Once
 	releaseFn       func() // 释放并发槽位（若有）

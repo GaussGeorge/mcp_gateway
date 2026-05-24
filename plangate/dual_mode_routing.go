@@ -219,7 +219,9 @@ sharedAdmitDone:
 			sharedRec = &SharedPSRecord{
 				SessionID:    plan.SessionID,
 				TotalCost:    totalCost,
-				LockedPrices: res.LockedPrices,
+				LockedPrices: cloneInt64Map(res.LockedPrices),
+				Budget:       plan.Budget,
+				PlanSteps:    cloneHTTPDAGSteps(plan.Steps),
 				PlanHash:     res.PlanHash,
 				PriceHash:    res.PriceHash,
 				CurrentStep:  0,
@@ -316,10 +318,10 @@ func (s *MCPDPServer) handleReservedStep(
 
 	// token 余额 ≥ 锁定价格 → 直接执行，绕过实时 LoadShedding
 	// executeStepDirect 内部会推进 CurrentStep 计数，并在最后一步时自动释放槽位
-	if res.Plan != nil {
-		return s.executeStepDirectWithShared(ctx, req, res.SessionID, nil)
+	if res.sharedBacking {
+		return s.executeStepDirectWithShared(ctx, req, res.SessionID, res)
 	}
-	return s.executeStepDirectWithShared(ctx, req, res.SessionID, res)
+	return s.executeStepDirectWithShared(ctx, req, res.SessionID, nil)
 }
 
 // handleReActMode ReAct 模式兜底路径：完全委托给标准 MCPGovernor 进行负载削减判断
@@ -848,8 +850,7 @@ func (s *MCPDPServer) executeStepDirectWithShared(
 			// P&S 中间步骤成功 → 保存活跃进度 checkpoint（PlanGate-R Phase 3，默认 no-op）
 			// Status 不显式设置 → saveCheckpointAfterStep 默认 StatusActiveCheckpoint，
 			// 确保 ListRecoverable 不会把正常进行中的会话当作待恢复 session。
-			// NOTE: For shared-state mode, checkpoint is local-node informational only
-			if sharedRes == nil && res != nil && res.Plan != nil {
+			if res != nil && res.Plan != nil {
 				completedIdx := preAdvanceStep // step just executed (= nextStep - 1)
 				var stepID string
 				if completedIdx >= 0 && completedIdx < len(res.Plan.Steps) {

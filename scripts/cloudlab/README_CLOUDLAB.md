@@ -161,6 +161,9 @@ P3 runner only sends workload with:
 
 When `--routing random` is used for recovery-bearing P3 workloads, pass
 `--recovery-store redis` so checkpoints are shared across gateway nodes.
+The shared reservation record also carries the admission-time plan snapshot and
+budget, so a non-admission gateway can keep `CurrentStep` and
+`RemainingPlanJSON` moving forward before a later recovery/amendment resume.
 
 ## CloudLab Small Validation
 
@@ -298,6 +301,9 @@ P3 validation checks:
 - Random-routing P3 recovery across multiple gateways requires
   `--recovery-store redis`; the sticky validated artifact intentionally uses the
   default `--recovery-store inmemory`.
+- Random-routing checkpoint progress also relies on the shared reservation
+  snapshot (`plan_steps` + `budget`) so any gateway can save the next recovery
+  checkpoint after a successful continuation step.
 - `start_backend.sh` binds backends to `0.0.0.0` so CloudLab peers can reach them.
 - `setup_node.sh` installs Go 1.23.12 from the official tarball path when the
   node does not already provide Go 1.23+.
