@@ -330,8 +330,9 @@ func (s *MCPDPServer) SetAmendmentPolicy(policy AmendmentPolicy) error {
 // providing a pre-built CheckpointStore.
 //
 // If cfg.Enabled is false, recovery is disabled and any existing store is cleared.
-// If cfg.Enabled is true and cfg.Store is not "inmemory", an error is returned
-// (other backends are not implemented in Phase 3).
+// If cfg.Enabled is true and cfg.Store is neither "inmemory" nor "redis", an
+// error is returned. Redis-backed recovery requires the caller to provide a
+// pre-built store so connectivity can be validated before the server starts.
 // If cfg.Enabled is true and store is nil, a new InMemoryCheckpointStore is created.
 //
 // No background goroutines are started. Recovery queue and admission are deferred
@@ -342,8 +343,14 @@ func (s *MCPDPServer) EnableRecoveryForConfig(cfg RecoveryConfig, store Checkpoi
 		s.checkpointStore = nil
 		return nil
 	}
-	if cfg.Store != "inmemory" {
-		return fmt.Errorf("plangate-r: unsupported recovery store %q (only \"inmemory\" is supported in Phase 3)", cfg.Store)
+	switch cfg.Store {
+	case "inmemory":
+	case "redis":
+		if store == nil {
+			return fmt.Errorf("plangate-r: redis recovery store requires an explicit checkpoint store")
+		}
+	default:
+		return fmt.Errorf("plangate-r: unsupported recovery store %q", cfg.Store)
 	}
 	if store != nil {
 		s.checkpointStore = store

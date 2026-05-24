@@ -112,6 +112,26 @@ python scripts/cloudlab/run_cloudlab_experiment.py \
   --commitment-secret cloudlab-shared-secret
 ```
 
+6. P4 random-routing P3 with Redis checkpoint store:
+
+```bash
+python3 scripts/cloudlab/run_cloudlab_experiment.py \
+  --inventory scripts/cloudlab/inventory.json \
+  --profile small \
+  --workload p3 \
+  --policies naive_retry plangate_r plangate_ar \
+  --sessions 100 \
+  --concurrency 10 \
+  --repeats 1 \
+  --failure-rate 0.1 0.2 0.3 \
+  --amendment-rate 1.0 \
+  --validation-mode stress \
+  --routing random \
+  --recovery-store redis \
+  --results-dir results/cloudlab_p3_small_random_redis_cp \
+  --commitment-secret cloudlab-shared-secret
+```
+
 Validated sticky-routing command:
 
 ```bash
@@ -138,6 +158,9 @@ P3 runner only sends workload with:
 - `--gateway-urls http://gw1:9601 http://gw2:9602 ...`
 - `--routing random`
 - `--no-start-services`
+
+When `--routing random` is used for recovery-bearing P3 workloads, pass
+`--recovery-store redis` so checkpoints are shared across gateway nodes.
 
 ## CloudLab Small Validation
 
@@ -272,6 +295,9 @@ P3 validation checks:
 ## Notes
 
 - Every gateway must share the same `--commitment-secret`.
+- Random-routing P3 recovery across multiple gateways requires
+  `--recovery-store redis`; the sticky validated artifact intentionally uses the
+  default `--recovery-store inmemory`.
 - `start_backend.sh` binds backends to `0.0.0.0` so CloudLab peers can reach them.
 - `setup_node.sh` installs Go 1.23.12 from the official tarball path when the
   node does not already provide Go 1.23+.

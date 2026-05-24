@@ -12,10 +12,11 @@ BACKEND_URL="$2"
 REDIS_ADDR="$3"
 NODE_ID="$4"
 SECRET="$5"
+RECOVERY_STORE="${6:-inmemory}"
 LOG_PATH="results/log/cloudlab/gateway_${NODE_ID}_${PORT}.log"
 
-printf 'cloudlab-gateway node-id=%s port=%s backend=%s redis-addr=%s commitment-token-mode=optional plan-amendment-mode=recovery-only\n' \
-  "${NODE_ID}" "${PORT}" "${BACKEND_URL}" "${REDIS_ADDR}" > "${LOG_PATH}"
+printf 'cloudlab-gateway node-id=%s port=%s backend=%s redis-addr=%s commitment-token-mode=optional plan-amendment-mode=recovery-only recovery-store=%s\n' \
+  "${NODE_ID}" "${PORT}" "${BACKEND_URL}" "${REDIS_ADDR}" "${RECOVERY_STORE}" > "${LOG_PATH}"
 nohup ./gateway_linux \
   --mode mcpdp \
   --host 0.0.0.0 \
@@ -27,6 +28,7 @@ nohup ./gateway_linux \
   --commitment-token-mode optional \
   --commitment-token-secret "${SECRET}" \
   --enable-recovery=true \
+  --recovery-store "${RECOVERY_STORE}" \
   --plan-amendment-mode recovery-only \
   --plan-amendment-require-commitment=true \
   --plan-amendment-max-count 3 \

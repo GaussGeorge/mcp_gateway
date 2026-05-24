@@ -87,6 +87,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--arrival-rate", type=float, default=DEFAULT_ARRIVAL_RATE)
     parser.add_argument("--backend-workers", type=int, default=DEFAULT_BACKEND_WORKERS)
     parser.add_argument("--routing", default="random", choices=["single", "random", "sticky", "round_robin"])
+    parser.add_argument("--recovery-store", default="inmemory", choices=["inmemory", "redis"])
     parser.add_argument("--min-success-rate", type=float, default=0.95)
     parser.add_argument("--validation-mode", choices=["correctness", "stress"], default="correctness")
     parser.add_argument("--skip-setup", action="store_true")
@@ -242,15 +243,38 @@ def start_backends(topology: Topology, backend_workers: int, *, dry_run: bool = 
     run_parallel("start-backends", jobs, topology.user, dry_run=dry_run)
 
 
-def start_gateways(topology: Topology, secret: str, *, dry_run: bool = False) -> None:
+def start_gateways(topology: Topology, secret: str, recovery_store: str, *, dry_run: bool = False) -> None:
     redis_addr = f"{topology.redis_host}:{topology.redis_port}"
     jobs: List[Tuple[str, str]] = []
     for idx, svc in enumerate(topology.gateways):
         backend = topology.backends[idx % len(topology.backends)]
+        expanded_gateway_cmd = (
+            "./gateway_linux "
+            "--mode mcpdp "
+            "--host 0.0.0.0 "
+            f"--port {svc.port} "
+            f"--backend {backend.url} "
+            f"--node-id {svc.host}:{svc.port} "
+            "--plangate-state-store redis "
+            f"--plangate-redis-addr {redis_addr} "
+            "--commitment-token-mode optional "
+            f"--commitment-token-secret {secret if secret else '<shared-secret>'} "
+            "--enable-recovery=true "
+            f"--recovery-store {recovery_store} "
+            "--plan-amendment-mode recovery-only "
+            "--plan-amendment-require-commitment=true "
+            "--plan-amendment-max-count 3 "
+            "--plan-amendment-max-budget-delta 0 "
+            "--plangate-max-sessions 300 "
+            "--plangate-price-step 40"
+        )
+        if dry_run:
+            print(f"[dry-run] gateway-cmd {svc.host}:{svc.port}: {expanded_gateway_cmd}")
         cmd = (
             f"cd {shlex.quote(topology.repo_dir)} && "
             f"bash scripts/cloudlab/start_gateway.sh {svc.port} {shlex.quote(backend.url)} "
-            f"{shlex.quote(redis_addr)} {shlex.quote(f'{svc.host}:{svc.port}')} {shlex.quote(secret)}"
+            f"{shlex.quote(redis_addr)} {shlex.quote(f'{svc.host}:{svc.port}')} "
+            f"{shlex.quote(secret)} {shlex.quote(recovery_store)}"
         )
         jobs.append((svc.host, cmd))
     run_parallel("start-gateways", jobs, topology.user, dry_run=dry_run)
@@ -504,6 +528,7 @@ def print_dry_run(topology: Topology, args: argparse.Namespace) -> None:
             "amendment_rate": args.amendment_rate,
             "repeats": args.repeats,
             "routing": args.routing,
+            "recovery_store": args.recovery_store,
             "min_success_rate": args.min_success_rate,
             "validation_mode": args.validation_mode,
         },
@@ -553,7 +578,7 @@ def main() -> int:
         stop_cluster(topology, dry_run=True)
         start_redis(topology, dry_run=True)
         start_backends(topology, args.backend_workers, dry_run=True)
-        start_gateways(topology, args.commitment_secret or "<shared-secret>", dry_run=True)
+        start_gateways(topology, args.commitment_secret or "<shared-secret>", args.recovery_store, dry_run=True)
         verify_gateways(topology, dry_run=True)
         if args.workload == "standard":
             run_loaders(
@@ -626,7 +651,7 @@ def main() -> int:
             stop_cluster(topology, dry_run=False)
             start_redis(topology, dry_run=False)
             start_backends(topology, args.backend_workers, dry_run=False)
-            start_gateways(topology, args.commitment_secret, dry_run=False)
+            start_gateways(topology, args.commitment_secret, args.recovery_store, dry_run=False)
             verify_gateways(topology, dry_run=False)
 
             if args.workload == "standard":
@@ -667,6 +692,7 @@ def main() -> int:
                         gateway_log_dir=os.path.join(local_run_dir, "logs", "gateways"),
                         expected_commitment_mode="optional",
                         expected_redis_addr=f"{topology.redis_host}:{topology.redis_port}",
+                        expected_recovery_store=args.recovery_store,
                     )
                     validate_results.write_summary(
                         os.path.join(local_run_dir, "validation.json"),
@@ -687,6 +713,7 @@ def main() -> int:
                         "failure_rate": failure_rate,
                         "amendment_rate": amendment_rate,
                         "repeat": repeat,
+                        "recovery_store": args.recovery_store,
                         "total_sessions": summary.total_sessions,
                         "success_sessions": summary.success_sessions,
                         "success_rate": round(summary.success_rate, 6),
@@ -747,6 +774,7 @@ def main() -> int:
                     gateway_log_dir=os.path.join(local_run_dir, "logs", "gateways"),
                     expected_commitment_mode="optional",
                     expected_redis_addr=f"{topology.redis_host}:{topology.redis_port}",
+                    expected_recovery_store=args.recovery_store,
                 )
                 with open(os.path.join(local_run_dir, "validation.json"), "w", encoding="utf-8") as handle:
                     json.dump(
@@ -772,6 +800,7 @@ def main() -> int:
                     "failure_rates": ",".join(format_rate(rate) for rate in args.failure_rate),
                     "amendment_rate": amendment_rate,
                     "repeat": repeat,
+                    "recovery_store": args.recovery_store,
                     "policies": ",".join(args.policies),
                     "cross_node_sessions": p3_summary.cross_node_sessions,
                     "state_miss": p3_summary.state_miss,

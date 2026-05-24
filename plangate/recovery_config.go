@@ -7,8 +7,8 @@ import "time"
 // Enabled defaults to false. All PlanGate behaviour is identical to the
 // pre-Phase-3 baseline when Enabled=false.
 //
-// Phase 3 supports only Store="inmemory". Redis/BoltDB backends are deferred
-// to Phase 4+.
+// Store defaults to "inmemory". Redis-backed checkpoint persistence is
+// available in Phase 4+ for multi-gateway recovery continuity.
 type RecoveryConfig struct {
 	Enabled     bool
 	TTL         time.Duration

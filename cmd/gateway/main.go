@@ -203,9 +203,16 @@ func main() {
 		RequireCommitment: *planAmendmentRequireCommitment,
 	}
 
-	// PlanGate-R: validate recovery-store early so we fail fast before binding ports
-	if *enableRecovery && *recoveryStore != "inmemory" {
-		log.Fatalf("--recovery-store=%q is not supported in Phase 3 (only \"inmemory\" is available)", *recoveryStore)
+	// PlanGate-R: validate recovery-store early so we fail fast before binding ports.
+	if *enableRecovery {
+		switch *recoveryStore {
+		case "inmemory", "redis":
+		default:
+			log.Fatalf("--recovery-store=%q is not supported (expected \"inmemory\" or \"redis\")", *recoveryStore)
+		}
+		if *recoveryStore == "redis" && *redisAddr == "" {
+			log.Fatalf("--recovery-store=redis requires --plangate-redis-addr")
+		}
 	}
 	tools, err := fetchBackendTools(*backendURL)
 	if err != nil {
@@ -259,6 +266,9 @@ func main() {
 			recoveryConfig:        buildRecoveryConfig(*enableRecovery, *recoveryTTL, *recoveryMaxAttempts, *recoveryStore),
 			commitmentTokenConfig: commitmentCfg,
 			amendmentPolicy:       amendmentPolicy,
+			nodeID:                resolveNodeID(*nodeID, *host, *port),
+			stateStoreType:        *stateStore,
+			redisAddr:             *redisAddr,
 		})
 	case "mcpdp-no-sessioncap":
 		handler = setupMCPDPVariant(tools, *backendURL, mcpdpVariant{
@@ -271,6 +281,9 @@ func main() {
 			recoveryConfig:        buildRecoveryConfig(*enableRecovery, *recoveryTTL, *recoveryMaxAttempts, *recoveryStore),
 			commitmentTokenConfig: commitmentCfg,
 			amendmentPolicy:       amendmentPolicy,
+			nodeID:                resolveNodeID(*nodeID, *host, *port),
+			stateStoreType:        *stateStore,
+			redisAddr:             *redisAddr,
 		})
 	case "mcpdp-real":
 		handler = setupMCPDPReal(tools, *backendURL, mcpdpVariant{
@@ -283,6 +296,9 @@ func main() {
 			recoveryConfig:        buildRecoveryConfig(*enableRecovery, *recoveryTTL, *recoveryMaxAttempts, *recoveryStore),
 			commitmentTokenConfig: commitmentCfg,
 			amendmentPolicy:       amendmentPolicy,
+			nodeID:                resolveNodeID(*nodeID, *host, *port),
+			stateStoreType:        *stateStore,
+			redisAddr:             *redisAddr,
 		}, *realRateLimitMax, *realLatencyThreshold)
 	case "mcpdp-real-no-sessioncap":
 		handler = setupMCPDPReal(tools, *backendURL, mcpdpVariant{
@@ -295,6 +311,9 @@ func main() {
 			recoveryConfig:        buildRecoveryConfig(*enableRecovery, *recoveryTTL, *recoveryMaxAttempts, *recoveryStore),
 			commitmentTokenConfig: commitmentCfg,
 			amendmentPolicy:       amendmentPolicy,
+			nodeID:                resolveNodeID(*nodeID, *host, *port),
+			stateStoreType:        *stateStore,
+			redisAddr:             *redisAddr,
 		}, *realRateLimitMax, *realLatencyThreshold)
 	case "rajomon":
 		handler = setupRajomon(tools, *backendURL, *rajomonPriceStep)
@@ -720,7 +739,11 @@ func setupMCPDPVariant(tools []mcpgov.MCPTool, backendURL string, v mcpdpVariant
 
 	// PlanGate-R: apply recovery config (no-op when Enabled=false)
 	if v.recoveryConfig.Enabled {
-		if err := server.EnableRecoveryForConfig(v.recoveryConfig, nil); err != nil {
+		checkpointStore, err := buildRecoveryCheckpointStore(v.recoveryConfig, v.redisAddr)
+		if err != nil {
+			log.Fatalf("[%s] recovery store init error: %v", v.name, err)
+		}
+		if err := server.EnableRecoveryForConfig(v.recoveryConfig, checkpointStore); err != nil {
 			log.Fatalf("[%s] recovery config error: %v", v.name, err)
 		}
 		log.Printf("  [%s] PlanGate-R recovery enabled (TTL=%v, maxAttempts=%d, store=%s)",
@@ -877,7 +900,11 @@ func setupMCPDPReal(tools []mcpgov.MCPTool, backendURL string, v mcpdpVariant,
 
 	// PlanGate-R: apply recovery config (no-op when Enabled=false)
 	if v.recoveryConfig.Enabled {
-		if err := server.EnableRecoveryForConfig(v.recoveryConfig, nil); err != nil {
+		checkpointStore, err := buildRecoveryCheckpointStore(v.recoveryConfig, v.redisAddr)
+		if err != nil {
+			log.Fatalf("[%s] recovery store init error: %v", v.name, err)
+		}
+		if err := server.EnableRecoveryForConfig(v.recoveryConfig, checkpointStore); err != nil {
 			log.Fatalf("[%s] recovery config error: %v", v.name, err)
 		}
 		log.Printf("  [%s] PlanGate-R recovery enabled (TTL=%v, maxAttempts=%d, store=%s)",
@@ -904,6 +931,29 @@ func buildRecoveryConfig(enabled bool, ttl time.Duration, maxAttempts int, store
 		TTL:         ttl,
 		MaxAttempts: maxAttempts,
 		Store:       store,
+	}
+}
+
+func buildRecoveryCheckpointStore(cfg plangate.RecoveryConfig, redisAddr string) (plangate.CheckpointStore, error) {
+	if !cfg.Enabled {
+		return nil, nil
+	}
+	switch cfg.Store {
+	case "inmemory":
+		return nil, nil
+	case "redis":
+		if redisAddr == "" {
+			return nil, fmt.Errorf("redis checkpoint store requires a redis address")
+		}
+		store := plangate.NewRedisCheckpointStore(redisAddr)
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		if err := store.Ping(ctx); err != nil {
+			return nil, fmt.Errorf("redis checkpoint store unavailable at %s: %w", redisAddr, err)
+		}
+		return store, nil
+	default:
+		return nil, fmt.Errorf("unsupported recovery store %q", cfg.Store)
 	}
 }
 

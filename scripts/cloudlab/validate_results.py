@@ -17,6 +17,7 @@ from typing import Dict, Iterable, List, Optional, Sequence
 
 COMMITMENT_MODE_RE = re.compile(r"commitment-token-mode=(\S+)")
 REDIS_ADDR_RE = re.compile(r"redis-addr=(\S+)")
+RECOVERY_STORE_RE = re.compile(r"recovery-store=(\S+)")
 VALIDATION_MODES = {"correctness", "stress"}
 
 
@@ -174,6 +175,7 @@ def summarize_steps_csv(steps_path: str) -> ValidationSummary:
 def inspect_gateway_logs(log_dir: str) -> Dict[str, object]:
     modes: List[str] = []
     redis_addrs: List[str] = []
+    recovery_stores: List[str] = []
     files_seen = 0
     for root, _dirs, files in os.walk(log_dir):
         for name in files:
@@ -185,9 +187,11 @@ def inspect_gateway_logs(log_dir: str) -> Dict[str, object]:
                 text = handle.read()
             modes.extend(COMMITMENT_MODE_RE.findall(text))
             redis_addrs.extend(REDIS_ADDR_RE.findall(text))
+            recovery_stores.extend(RECOVERY_STORE_RE.findall(text))
     return {
         "modes": modes,
         "redis_addrs": redis_addrs,
+        "recovery_stores": recovery_stores,
         "files_seen": files_seen,
     }
 
@@ -282,6 +286,7 @@ def validate_p3_results(
     gateway_log_dir: Optional[str],
     expected_commitment_mode: Optional[str],
     expected_redis_addr: Optional[str],
+    expected_recovery_store: Optional[str],
 ) -> List[str]:
     if validation_mode not in VALIDATION_MODES:
         raise ValueError(f"unknown validation_mode={validation_mode!r}")
@@ -392,6 +397,12 @@ def validate_p3_results(
             redis_addrs = set(inspected["redis_addrs"])
             if redis_addrs != {expected_redis_addr}:
                 errors.append(f"gateway redis_addrs={sorted(redis_addrs)} expected={[expected_redis_addr]}")
+        if expected_recovery_store:
+            recovery_stores = set(inspected["recovery_stores"])
+            if recovery_stores != {expected_recovery_store}:
+                errors.append(
+                    f"gateway recovery_stores={sorted(recovery_stores)} expected={[expected_recovery_store]}"
+                )
     return errors
 
 
@@ -407,6 +418,7 @@ def validate_summary(
     gateway_log_dir: Optional[str],
     expected_commitment_mode: Optional[str],
     expected_redis_addr: Optional[str],
+    expected_recovery_store: Optional[str],
 ) -> List[str]:
     if validation_mode not in VALIDATION_MODES:
         raise ValueError(f"unknown validation_mode={validation_mode!r}")
@@ -442,6 +454,12 @@ def validate_summary(
             redis_addrs = set(inspected["redis_addrs"])
             if redis_addrs != {expected_redis_addr}:
                 errors.append(f"gateway redis_addrs={sorted(redis_addrs)} expected={[expected_redis_addr]}")
+        if expected_recovery_store:
+            recovery_stores = set(inspected["recovery_stores"])
+            if recovery_stores != {expected_recovery_store}:
+                errors.append(
+                    f"gateway recovery_stores={sorted(recovery_stores)} expected={[expected_recovery_store]}"
+                )
     return errors
 
 
@@ -462,6 +480,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--gateway-log-dir", default="")
     parser.add_argument("--expected-commitment-mode", default="")
     parser.add_argument("--expected-redis-addr", default="")
+    parser.add_argument("--expected-recovery-store", default="")
     parser.add_argument("--min-success-rate", type=float, default=0.95)
     parser.add_argument("--validation-mode", default="correctness", choices=sorted(VALIDATION_MODES))
     parser.add_argument("--summary-out", default="")
@@ -482,6 +501,7 @@ def main() -> int:
         gateway_log_dir=args.gateway_log_dir or None,
         expected_commitment_mode=args.expected_commitment_mode or None,
         expected_redis_addr=args.expected_redis_addr or None,
+        expected_recovery_store=args.expected_recovery_store or None,
     )
 
     print(json.dumps(asdict(summary), indent=2, sort_keys=True))
