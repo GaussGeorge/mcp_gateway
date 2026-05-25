@@ -78,6 +78,8 @@ logs and large per-step traces.
 | `artifact_results/cloudlab_smoke_c2/` | `summary.csv`, `aggregate.csv`, `validation.json`, `README_RESULT.md` | P0-P2 CloudLab correctness smoke evidence |
 | `artifact_results/cloudlab_p3_small_sticky_v2/` | `p3_summary.csv`, `p3_adversarial_summary.csv`, `summary.csv`, `validation.json`, `README_RESULT.md` | P3 CloudLab sticky-routing recovery/amendment evidence |
 | `artifact_results/cloudlab_p3_small_random_redis_cp_v2/` | `p3_summary.csv`, `p3_adversarial_summary.csv`, `summary.csv`, `validation.json`, `README_RESULT.md` | P4 CloudLab random-routing recovery/amendment evidence with Redis CheckpointStore |
+| `artifact_results/mock_regression_p4_refresh_v1/` | `exp1_core_summary.csv`, `exp4_ablation_summary.csv`, `exp8_discountablation_summary.csv`, `exp10_adversarial_summary.csv`, `mock_regression_means.csv`, `validation.json`, `README_RESULT.md` | Local mock regression refresh evidence after P4/P4.1 |
+| `artifact_results/glm_real_llm_c10_refresh_v1/` | `week5_summary.csv`, `week5_agg.csv`, `12 x steps_summary_*.csv`, `validation.json`, `README_RESULT.md` | Local live-GLM real-LLM refresh evidence after runner observability fixes |
 
 Important boundary:
 
@@ -93,6 +95,20 @@ Redis session state and Redis checkpoint store.
 These artifact bundles do **not** claim medium/large-profile validation,
 multi-region deployment, production-grade Redis HA, or Byzantine/malicious
 gateway security.
+
+`artifact_results/mock_regression_p4_refresh_v1/` is intentionally separate
+from the CloudLab evidence. It is a local mock regression refresh that checks
+whether `Exp1`, `Exp4`, `Exp8`, and `Exp10` still preserve their expected
+qualitative behavior after the P4/P4.1 mechanism work. Its `Exp8` result should
+be treated as **diagnostic evidence** rather than a strong paper claim.
+
+`artifact_results/glm_real_llm_c10_refresh_v1/` is a different layer of
+evidence again: it is a **live GLM** local rerun, not a mock regression and not
+a CloudLab recovery experiment. It documents that the post-P4 codebase still
+supports real GLM ReAct workloads at `200 agents`, `concurrency 10`, and
+`3 repeats`, while intentionally omitting API keys, `.env`, full logs, and full
+per-step traces. It should **not be over-claimed** as PlanGate winning every
+real-LLM metric in that refresh.
 
 ---
 

@@ -1,57 +1,50 @@
 #!/usr/bin/env python3
-"""
-run_real_llm_week5.py — Week 5 Real-LLM 大样本实验
-====================================================
-4 网关 × 5 repeats × 200 sessions (GLM-4-Flash, all ReAct)
-  NG, Rajomon (best-case ps=5), PP, PlanGate-Real
+"""Week 5 real-LLM runner with GLM preflight and better observability."""
 
-指标:
-  - ABD (admitted-but-doomed): cascade_wasted_agents / (success + cascade)
-  - Success rate, Goodput, E2E latency, Token usage
-
-用法:
-  python scripts/run_real_llm_week5.py --dry-run         # 检查配置
-  python scripts/run_real_llm_week5.py --repeats 1        # 快速测试
-  python scripts/run_real_llm_week5.py --repeats 5        # 正式实验
-"""
+from __future__ import annotations
 
 import argparse
 import csv
 import os
+import re
 import subprocess
 import sys
+import threading
 import time
 from dataclasses import dataclass, field
-from typing import List, Optional
+from pathlib import Path
+from typing import Iterable, List, Optional
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-ROOT_DIR = os.path.join(SCRIPT_DIR, "..")
-REACT_CLIENT = os.path.join(SCRIPT_DIR, "react_agent_client.py")
-SERVER_PY = os.path.join(ROOT_DIR, "mcp_server", "server.py")
-RESULTS_DIR = os.path.join(ROOT_DIR, "results", "exp_week5_real_llm")
-LOG_DIR = os.path.join(ROOT_DIR, "results", "log", "real_llm")
+from real_llm_utils import (
+    classify_llm_error,
+    format_exception_message,
+    load_project_dotenv,
+    mask_secret,
+    resolve_llm_config,
+    run_llm_preflight,
+)
 
 
-def get_results_dir():
-    """Return concurrency-specific results dir."""
-    return os.path.join(ROOT_DIR, "results", f"exp_week5_C{CONCURRENCY}")
+SCRIPT_DIR = Path(__file__).resolve().parent
+ROOT_DIR = SCRIPT_DIR.parent
+REACT_CLIENT = SCRIPT_DIR / "react_agent_client.py"
+SERVER_PY = ROOT_DIR / "mcp_server" / "server.py"
+LOG_DIR = ROOT_DIR / "results" / "log" / "real_llm"
 
 BACKEND_URL = "http://127.0.0.1:8080"
-GATEWAY_BINARY = None
 BASE_PORT = 9300
+BUDGET = 1000
+DEFAULT_AGENTS = 200
+DEFAULT_CONCURRENCY = 10
+DEFAULT_MAX_STEPS = 10
+DEFAULT_ARRIVAL_INTERVAL = 0.3
+DEFAULT_CLIENT_TIMEOUT = 3600
+DEFAULT_LLM_TIMEOUT = 60
 
-# ── 实验参数 ──
-AGENTS = 200          # 每轮 session 数
-CONCURRENCY = 10      # 最大并发 agent 数
-MAX_STEPS = 10        # 每 agent 最大步数
-BUDGET = 1000         # 每 agent token 预算
-ARRIVAL_INTERVAL = 0.3  # agent 启动间隔 (秒)
-
-# ── 调优参数 (与 Week 4 mock 一致) ──
 TUNED_PARAMS = {
-    "rajomon":  {"price_step": 5},    # best-case from sensitivity scan
-    "pp":       {"max_sessions": 150},
-    "plangate": {"price_step": 40, "max_sessions": 30, "sunk_cost_alpha": 0.5},
+    "rajomon": {"price_step": 5},
+    "pp": {"max_sessions": 150},
+    "plangate": {"price_step": 40, "max_sessions": 50, "sunk_cost_alpha": 0.5},
 }
 
 
@@ -59,11 +52,10 @@ TUNED_PARAMS = {
 class GatewayConfig:
     name: str
     mode: str
-    extra_args: list = field(default_factory=list)
+    extra_args: list[str] = field(default_factory=list)
 
 
-# 4 gateways for Week 5 real-LLM
-GATEWAYS = [
+GATEWAYS: list[GatewayConfig] = [
     GatewayConfig("ng", "ng"),
     GatewayConfig("rajomon", "rajomon", [
         "--rajomon-price-step", str(TUNED_PARAMS["rajomon"]["price_step"]),
@@ -73,108 +65,67 @@ GATEWAYS = [
     ]),
     GatewayConfig("plangate_real", "mcpdp-real", [
         "--plangate-price-step", str(TUNED_PARAMS["plangate"]["price_step"]),
-        "--plangate-max-sessions", "50",  # real-LLM: higher cap (sessions last ~30s + 60s TTL)
+        "--plangate-max-sessions", str(TUNED_PARAMS["plangate"]["max_sessions"]),
         "--plangate-sunk-cost-alpha", str(TUNED_PARAMS["plangate"]["sunk_cost_alpha"]),
-        "--plangate-session-cap-wait", "5",  # wait up to 5s for a slot
+        "--plangate-session-cap-wait", "5",
         "--real-ratelimit-max", "200",
         "--real-latency-threshold", "5000",
     ]),
 ]
 
-BACKEND_PROC = None
+BACKEND_PROC: Optional[subprocess.Popen] = None
+GATEWAY_BINARY: Optional[Path] = None
 
 
-def build_gateway():
-    global GATEWAY_BINARY
+def get_results_dir(concurrency: int) -> Path:
+    return ROOT_DIR / "results" / f"exp_week5_C{concurrency}"
+
+
+def configure_gateways(concurrency: int) -> list[GatewayConfig]:
+    gateways: list[GatewayConfig] = []
+    pg_max_sessions = max(50, concurrency * 3)
+    for gateway in GATEWAYS:
+        if gateway.name == "plangate_real":
+            gateways.append(GatewayConfig(
+                name=gateway.name,
+                mode=gateway.mode,
+                extra_args=[
+                    "--plangate-price-step", str(TUNED_PARAMS["plangate"]["price_step"]),
+                    "--plangate-max-sessions", str(pg_max_sessions),
+                    "--plangate-sunk-cost-alpha", str(TUNED_PARAMS["plangate"]["sunk_cost_alpha"]),
+                    "--plangate-session-cap-wait", "5",
+                    "--real-ratelimit-max", "200",
+                    "--real-latency-threshold", "5000",
+                ],
+            ))
+        else:
+            gateways.append(GatewayConfig(gateway.name, gateway.mode, list(gateway.extra_args)))
+    return gateways
+
+
+def build_gateway() -> Path:
     bin_name = "gateway.exe" if sys.platform == "win32" else "gateway"
-    bin_path = os.path.join(ROOT_DIR, bin_name)
-    print(f"  编译网关: go build -o {bin_name} ./cmd/gateway")
+    bin_path = ROOT_DIR / bin_name
+    print(f"  Building gateway binary: go build -o {bin_name} ./cmd/gateway")
     result = subprocess.run(
-        ["go", "build", "-o", bin_path, "./cmd/gateway"],
-        cwd=ROOT_DIR, capture_output=True, text=True, timeout=120,
+        ["go", "build", "-o", str(bin_path), "./cmd/gateway"],
+        cwd=ROOT_DIR,
+        capture_output=True,
+        text=True,
+        timeout=180,
     )
     if result.returncode != 0:
-        raise RuntimeError(f"编译失败: {result.stderr}")
-    GATEWAY_BINARY = bin_path
-    print(f"  编译完成: {bin_path}")
+        raise RuntimeError(f"gateway build failed: {result.stderr.strip()[:500]}")
+    print(f"  Gateway binary ready: {bin_path}")
+    return bin_path
 
 
-def start_backend():
-    global BACKEND_PROC
-    stop_backend()
-    os.makedirs(LOG_DIR, exist_ok=True)
-    log_path = os.path.join(LOG_DIR, "_backend_week5.log")
-    env = os.environ.copy()
-    env["PYTHONIOENCODING"] = "utf-8"
-    cmd = [
-        sys.executable, SERVER_PY,
-        "--port", "8080",
-        "--mode", "real_llm",
-        "--max-workers", "10",
-        "--queue-timeout", "8.0",
-        "--congestion-factor", "0.5",
-    ]
-    with open(log_path, "w", encoding="utf-8") as lf:
-        BACKEND_PROC = subprocess.Popen(
-            cmd, cwd=os.path.dirname(SERVER_PY),
-            stdout=lf, stderr=subprocess.STDOUT, env=env,
-            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0,
-        )
-    time.sleep(4)
-    if BACKEND_PROC.poll() is not None:
-        raise RuntimeError(f"后端启动失败, 查看: {log_path}")
-    print(f"  后端已启动 (pid={BACKEND_PROC.pid}, mode=real_llm)")
-
-
-def stop_backend():
-    global BACKEND_PROC
-    if BACKEND_PROC is None:
-        return
-    try:
-        if sys.platform == "win32":
-            subprocess.run(["taskkill", "/F", "/T", "/PID", str(BACKEND_PROC.pid)],
-                           capture_output=True, timeout=10)
-        else:
-            BACKEND_PROC.terminate()
-            BACKEND_PROC.wait(timeout=5)
-    except Exception:
-        try:
-            BACKEND_PROC.kill()
-        except Exception:
-            pass
-    BACKEND_PROC = None
-
-
-def start_gateway(gw: GatewayConfig, port: int):
-    cmd = [
-        GATEWAY_BINARY,
-        "--mode", gw.mode,
-        "--port", str(port),
-        "--backend", BACKEND_URL,
-        "--host", "127.0.0.1",
-    ] + gw.extra_args
-
-    log_path = os.path.join(LOG_DIR, f"_gw_{gw.name}_week5.log")
-    with open(log_path, "w", encoding="utf-8") as lf:
-        proc = subprocess.Popen(
-            cmd, cwd=ROOT_DIR,
-            stdout=lf, stderr=subprocess.STDOUT,
-            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0,
-        )
-    time.sleep(3)
-    if proc.poll() is not None:
-        raise RuntimeError(f"网关 {gw.name} 启动失败, 查看: {log_path}")
-    print(f"  网关 [{gw.name}] 已启动 (pid={proc.pid}, port={port}, mode={gw.mode})")
-    return proc
-
-
-def stop_process(proc):
+def stop_process(proc: Optional[subprocess.Popen]) -> None:
     if proc is None or proc.poll() is not None:
         return
     try:
         if sys.platform == "win32":
-            subprocess.run(["taskkill", "/F", "/T", "/PID", str(proc.pid)],
-                           capture_output=True, timeout=10)
+            subprocess.run(["taskkill", "/F", "/T", "/PID", str(proc.pid)], capture_output=True, timeout=10)
         else:
             proc.terminate()
             proc.wait(timeout=5)
@@ -185,371 +136,466 @@ def stop_process(proc):
             pass
 
 
-def run_react_client(gateway_url: str, output_csv: str, gateway_mode: str) -> str:
-    """运行 ReAct Agent client，返回 stdout"""
+def start_backend() -> None:
+    global BACKEND_PROC
+    stop_backend()
+    LOG_DIR.mkdir(parents=True, exist_ok=True)
+    log_path = LOG_DIR / "_backend_week5.log"
+    env = os.environ.copy()
+    env["PYTHONIOENCODING"] = "utf-8"
     cmd = [
-        sys.executable, REACT_CLIENT,
+        sys.executable,
+        str(SERVER_PY),
+        "--port", "8080",
+        "--mode", "real_llm",
+        "--max-workers", "10",
+        "--queue-timeout", "8.0",
+        "--congestion-factor", "0.5",
+    ]
+    with log_path.open("w", encoding="utf-8") as handle:
+        BACKEND_PROC = subprocess.Popen(
+            cmd,
+            cwd=SERVER_PY.parent,
+            stdout=handle,
+            stderr=subprocess.STDOUT,
+            env=env,
+            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0,
+        )
+    time.sleep(4)
+    if BACKEND_PROC.poll() is not None:
+        raise RuntimeError(f"backend failed to start; inspect {log_path}")
+    print(f"  Backend started: pid={BACKEND_PROC.pid} mode=real_llm log={log_path}")
+
+
+def stop_backend() -> None:
+    global BACKEND_PROC
+    stop_process(BACKEND_PROC)
+    BACKEND_PROC = None
+
+
+def start_gateway(gateway: GatewayConfig, port: int) -> subprocess.Popen:
+    assert GATEWAY_BINARY is not None
+    cmd = [
+        str(GATEWAY_BINARY),
+        "--mode", gateway.mode,
+        "--port", str(port),
+        "--backend", BACKEND_URL,
+        "--host", "127.0.0.1",
+    ] + list(gateway.extra_args)
+    log_path = LOG_DIR / f"_gw_{gateway.name}_week5.log"
+    with log_path.open("w", encoding="utf-8") as handle:
+        proc = subprocess.Popen(
+            cmd,
+            cwd=ROOT_DIR,
+            stdout=handle,
+            stderr=subprocess.STDOUT,
+            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0,
+        )
+    time.sleep(3)
+    if proc.poll() is not None:
+        raise RuntimeError(f"gateway {gateway.name} failed to start; inspect {log_path}")
+    print(f"  Gateway [{gateway.name}] started: pid={proc.pid} port={port} mode={gateway.mode}")
+    return proc
+
+
+def run_glm_preflight_checked() -> None:
+    cfg = resolve_llm_config()
+    print("  LLM preflight:")
+    print(f"    base:  {cfg.base}")
+    print(f"    model: {cfg.model}")
+    print(f"    key:   {mask_secret(cfg.key)}")
+    try:
+        result = run_llm_preflight(timeout_seconds=30.0, max_tokens=8)
+    except Exception as exc:
+        raise RuntimeError(f"GLM preflight failed ({classify_llm_error(exc)}): {format_exception_message(exc)}") from exc
+
+    print(f"    reply:   {result['response_text'] or '(empty)'}")
+    print(
+        "    usage:  "
+        f"prompt={result['usage']['prompt_tokens']} "
+        f"completion={result['usage']['completion_tokens']} "
+        f"total={result['usage']['total_tokens']}"
+    )
+    print(f"    elapsed: {result['elapsed_seconds']:.2f}s")
+
+
+def parse_react_stats(stdout_text: str, agents: int) -> dict:
+    stats: dict[str, float | int | str] = {}
+    for line in stdout_text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+
+        matchers = {
+            "success": r"\bSUCCESS:\s+(\d+)",
+            "partial": r"\bPARTIAL:\s+(\d+)",
+            "all_rejected": r"\bALL_REJECTED:\s+(\d+)",
+            "error": r"\bERROR:\s+(\d+)",
+            "cascade_agents": r"(?:cascade.*Agent|级联浪费 Agent):\s*(\d+)",
+            "cascade_steps": r"(?:cascade.*steps?|级联浪费步骤):\s*(\d+)",
+        }
+        for key, pattern in matchers.items():
+            match = re.search(pattern, line, flags=re.IGNORECASE)
+            if match:
+                stats[key] = int(match.group(1))
+
+        if "Effective GP/s:" in line:
+            match = re.search(r"Effective GP/s:\s*([0-9.]+)", line)
+            if match:
+                stats["eff_gps"] = float(match.group(1))
+        elif "Effective GP:" in line:
+            match = re.search(r"Effective GP:\s*([0-9.]+)", line)
+            if match:
+                stats["eff_gp"] = float(match.group(1))
+
+        if "Agent Brain:" in line:
+            match = re.search(r"Agent Brain:\s*([0-9,]+)", line)
+            if match:
+                stats["agent_tokens"] = int(match.group(1).replace(",", ""))
+        if "Backend LLM:" in line:
+            match = re.search(r"Backend LLM:\s*([0-9,]+)", line)
+            if match:
+                stats["backend_tokens"] = int(match.group(1).replace(",", ""))
+
+        if "P50:" in line and "P95:" in line:
+            p50 = re.search(r"P50:\s*([0-9.]+)ms", line)
+            p95 = re.search(r"P95:\s*([0-9.]+)ms", line)
+            mean = re.search(r"Mean:\s*([0-9.]+)ms", line)
+            if p50:
+                stats["p50_ms"] = float(p50.group(1))
+            if p95:
+                stats["p95_ms"] = float(p95.group(1))
+            if mean:
+                stats["mean_ms"] = float(mean.group(1))
+
+        if "elapsed" in line.lower() or "total time" in line.lower() or "总耗时" in line:
+            match = re.search(r"([0-9.]+)s", line)
+            if match:
+                stats["elapsed_s"] = float(match.group(1))
+
+    success = int(stats.get("success", 0))
+    partial = int(stats.get("partial", 0))
+    admitted = success + partial
+    stats["abd_total"] = round(100 * partial / admitted, 1) if admitted > 0 else 0.0
+    stats["success_rate"] = round(100 * success / agents, 1) if agents > 0 else 0.0
+    return stats
+
+
+def _reader_thread(stream, buffer: list[str], handle, live: bool) -> None:
+    for line in iter(stream.readline, ""):
+        buffer.append(line)
+        handle.write(line)
+        handle.flush()
+        if live:
+            print(line, end="")
+
+
+def run_react_client(
+    gateway_url: str,
+    output_csv: Path,
+    gateway_name: str,
+    agents: int,
+    concurrency: int,
+    max_steps: int,
+    arrival_interval: float,
+    client_timeout: int,
+    client_log_live: bool,
+    llm_timeout: int = DEFAULT_LLM_TIMEOUT,
+) -> dict:
+    cmd = [
+        sys.executable,
+        str(REACT_CLIENT),
         "--gateway", gateway_url,
-        "--agents", str(AGENTS),
-        "--concurrency", str(CONCURRENCY),
-        "--max-steps", str(MAX_STEPS),
+        "--agents", str(agents),
+        "--concurrency", str(concurrency),
+        "--max-steps", str(max_steps),
         "--budget", str(BUDGET),
-        "--arrival-interval", str(ARRIVAL_INTERVAL),
-        "--gateway-mode", gateway_mode,
-        "--output", output_csv,
+        "--arrival-interval", str(arrival_interval),
+        "--gateway-mode", gateway_name,
+        "--output", str(output_csv),
+        "--llm-timeout", str(llm_timeout),
     ]
     env = os.environ.copy()
     env["PYTHONIOENCODING"] = "utf-8"
 
-    # Real-LLM experiments can be long (200 agents × ~30s each / 10 concurrency ≈ 1600s)
-    result = subprocess.run(
-        cmd, cwd=ROOT_DIR, capture_output=True,
-        timeout=3600, env=env, encoding="utf-8", errors="replace",
-    )
-    if result.returncode != 0:
-        print(f"  客户端错误: {result.stderr[:500] if result.stderr else 'N/A'}")
-    return result.stdout or ""
+    log_path = LOG_DIR / f"_client_{gateway_name}_week5.log"
+    LOG_DIR.mkdir(parents=True, exist_ok=True)
+    capture: list[str] = []
 
+    with log_path.open("a", encoding="utf-8") as log_handle:
+        log_handle.write(f"\n=== run start gateway={gateway_name} url={gateway_url} ts={time.strftime('%Y-%m-%d %H:%M:%S')} ===\n")
+        log_handle.write("CMD: " + " ".join(cmd) + "\n")
+        log_handle.flush()
 
-def parse_react_stats(stdout_text: str) -> dict:
-    """从 react_agent_client.py 的 stdout 解析关键指标"""
-    stats = {}
-    for line in stdout_text.split("\n"):
-        line = line.strip()
+        proc = subprocess.Popen(
+            cmd,
+            cwd=ROOT_DIR,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            env=env,
+            encoding="utf-8",
+            errors="replace",
+            bufsize=1,
+        )
+        assert proc.stdout is not None
+        reader = threading.Thread(target=_reader_thread, args=(proc.stdout, capture, log_handle, client_log_live), daemon=True)
+        reader.start()
 
-        if "SUCCESS:" in line and "├" in line:
+        timed_out = False
+        try:
+            proc.wait(timeout=client_timeout)
+        except subprocess.TimeoutExpired:
+            timed_out = True
+            log_handle.write(f"\n[runner] client timeout after {client_timeout}s; terminating process\n")
+            log_handle.flush()
+            stop_process(proc)
+        finally:
             try:
-                val = line.split("SUCCESS:")[1].strip().split()[0]
-                stats["success"] = int(val)
-            except (ValueError, IndexError):
+                proc.stdout.close()
+            except Exception:
                 pass
-        if "PARTIAL:" in line:
-            try:
-                val = line.split("PARTIAL:")[1].strip().split()[0]
-                stats["partial"] = int(val)
-            except (ValueError, IndexError):
-                pass
-        if "ALL_REJECTED:" in line:
-            try:
-                val = line.split("ALL_REJECTED:")[1].strip().split()[0]
-                stats["all_rejected"] = int(val)
-            except (ValueError, IndexError):
-                pass
-        if "ERROR:" in line and "└" in line:
-            try:
-                val = line.split("ERROR:")[1].strip().split()[0]
-                stats["error"] = int(val)
-            except (ValueError, IndexError):
-                pass
+            reader.join(timeout=5)
+            log_handle.write(f"=== run end rc={proc.poll()} timed_out={timed_out} ===\n")
+            log_handle.flush()
 
-        if "级联浪费 Agent:" in line:
-            try:
-                stats["cascade_agents"] = int(line.split(":")[-1].strip())
-            except (ValueError, IndexError):
-                pass
-        if "级联浪费步骤:" in line:
-            try:
-                stats["cascade_steps"] = int(line.split(":")[-1].strip())
-            except (ValueError, IndexError):
-                pass
+    stdout_text = "".join(capture)
+    if proc.returncode not in (0, None):
+        print(f"  Client exited with rc={proc.returncode}; see {log_path}")
+    if timed_out:
+        print(f"  Client timed out after {client_timeout}s; see {log_path}")
 
-        if "Effective GP/s:" in line:
-            try:
-                stats["eff_gps"] = float(line.split(":")[-1].strip())
-            except (ValueError, IndexError):
-                pass
-        if "Effective GP:" in line and "GP/s" not in line:
-            try:
-                stats["eff_gp"] = float(line.split(":")[-1].strip())
-            except (ValueError, IndexError):
-                pass
-
-        if "Agent Brain:" in line:
-            try:
-                val = line.split(":")[1].strip().replace(",", "").split()[0]
-                stats["agent_tokens"] = int(val)
-            except (ValueError, IndexError):
-                pass
-        if "Backend LLM:" in line:
-            try:
-                val = line.split(":")[1].strip().replace(",", "").split()[0]
-                stats["backend_tokens"] = int(val)
-            except (ValueError, IndexError):
-                pass
-
-        if "P50:" in line:
-            try:
-                parts = line.split()
-                for i, p in enumerate(parts):
-                    if p == "P50:":
-                        stats["p50_ms"] = float(parts[i+1].replace("ms", ""))
-                    if p == "P95:":
-                        stats["p95_ms"] = float(parts[i+1].replace("ms", ""))
-                    if p == "Mean:":
-                        stats["mean_ms"] = float(parts[i+1].replace("ms", ""))
-            except (ValueError, IndexError):
-                pass
-
-        if "总耗时:" in line:
-            try:
-                stats["elapsed_s"] = float(line.split(":")[-1].strip().replace("s", ""))
-            except (ValueError, IndexError):
-                pass
-
-    # Compute ABD: PARTIAL / (SUCCESS + PARTIAL)
-    # ALL_REJECTED = step-0 rejections (zero cost), not cascade waste
-    s = stats.get("success", 0)
-    partial = stats.get("partial", 0)
-    admitted = s + partial
-    stats["abd_total"] = round(100 * partial / admitted, 1) if admitted > 0 else 0.0
-    stats["success_rate"] = round(100 * s / AGENTS, 1) if AGENTS > 0 else 0.0
-
-    return stats
+    return {
+        "stdout": stdout_text,
+        "returncode": proc.returncode if proc.returncode is not None else -1,
+        "timed_out": timed_out,
+        "log_path": str(log_path),
+    }
 
 
-def run_experiment(repeats: int, dry_run: bool = False, gateways=None):
-    if gateways is None:
-        gateways = GATEWAYS
-    results_dir = get_results_dir()
-    os.makedirs(results_dir, exist_ok=True)
-    summary_path = os.path.join(results_dir, "week5_summary.csv")
-    summary_rows = []
-
-    for gw in gateways:
-        for run_idx in range(1, repeats + 1):
-            port = BASE_PORT + GATEWAYS.index(gw)
-            gateway_url = f"http://127.0.0.1:{port}"
-            run_dir = os.path.join(results_dir, gw.name, f"run{run_idx}")
-            os.makedirs(run_dir, exist_ok=True)
-            output_csv = os.path.join(run_dir, "steps.csv")
-
-            print(f"\n{'='*65}")
-            print(f"  [{gw.name}] Run {run_idx}/{repeats}  ({AGENTS} agents, C={CONCURRENCY})")
-            print(f"{'='*65}")
-
-            if dry_run:
-                print(f"  [DRY-RUN] gateway: {gw.mode}, port: {port}")
-                print(f"  [DRY-RUN] react_agent_client --agents {AGENTS} --concurrency {CONCURRENCY}")
-                print(f"  [DRY-RUN] --budget {BUDGET} --max-steps {MAX_STEPS}")
-                print(f"  [DRY-RUN] 输出: {output_csv}")
-                continue
-
-            gw_proc = start_gateway(gw, port)
-            # Give gateway a bit more time to stabilize for real-LLM
-            time.sleep(2)
-
-            try:
-                stdout = run_react_client(gateway_url, output_csv, gw.name)
-                stats = parse_react_stats(stdout)
-
-                row = {
-                    "gateway": gw.name,
-                    "run": run_idx,
-                    "agents": AGENTS,
-                    "success": stats.get("success", 0),
-                    "partial": stats.get("partial", 0),
-                    "all_rejected": stats.get("all_rejected", 0),
-                    "error": stats.get("error", 0),
-                    "cascade_agents": stats.get("cascade_agents", 0),
-                    "cascade_steps": stats.get("cascade_steps", 0),
-                    "success_rate": stats.get("success_rate", 0),
-                    "abd_total": stats.get("abd_total", 0),
-                    "eff_gps": stats.get("eff_gps", 0),
-                    "agent_tokens": stats.get("agent_tokens", 0),
-                    "backend_tokens": stats.get("backend_tokens", 0),
-                    "p50_ms": stats.get("p50_ms", 0),
-                    "p95_ms": stats.get("p95_ms", 0),
-                    "elapsed_s": stats.get("elapsed_s", 0),
-                }
-                summary_rows.append(row)
-
-                print(f"\n  ── 结果 ──")
-                print(f"  success={row['success']}, partial={row['partial']}, "
-                      f"rejected={row['all_rejected']}, error={row['error']}")
-                print(f"  success_rate={row['success_rate']}%  ABD={row['abd_total']:.1f}%")
-                print(f"  eff_GP/s={row['eff_gps']:.2f}")
-                print(f"  P50={row['p50_ms']:.0f}ms  P95={row['p95_ms']:.0f}ms")
-                print(f"  tokens: agent={row['agent_tokens']:,}  backend={row['backend_tokens']:,}")
-                print(f"  elapsed: {row['elapsed_s']:.1f}s")
-
-            finally:
-                stop_process(gw_proc)
-                # Longer cooldown between runs to let API rate limits reset
-                cooldown = 30 if run_idx < repeats else 10
-                print(f"  冷却 {cooldown}s (rate limit recovery)...")
-                time.sleep(cooldown)
-
-    # 写汇总 CSV
-    if summary_rows:
-        with open(summary_path, "w", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(f, fieldnames=summary_rows[0].keys())
-            writer.writeheader()
-            writer.writerows(summary_rows)
-        print(f"\n  汇总CSV: {summary_path}")
-        print_summary_table(summary_rows, repeats)
-
-
-def print_summary_table(rows, repeats):
-    """打印汇总表"""
+def print_summary_table(rows: list[dict], gateways: Iterable[GatewayConfig]) -> None:
     import statistics
 
-    print(f"\n{'='*90}")
-    print("  Week 5 Real-LLM — GLM-4-Flash 200 sessions × N repeats")
-    print(f"{'='*90}")
+    print("\n" + "=" * 96)
+    print("  Week 5 real-LLM summary")
+    print("=" * 96)
     print(f"{'Gateway':<18} {'SuccRate%':>10} {'ABD%':>10} {'GP/s':>10} {'P50ms':>10} {'P95ms':>10} {'Tokens':>12}")
     print(f"{'-'*18} {'-'*10} {'-'*10} {'-'*10} {'-'*10} {'-'*10} {'-'*12}")
 
-    gw_stats = {}
+    grouped: dict[str, dict[str, list[float]]] = {}
     for row in rows:
-        gw = row["gateway"]
-        if gw not in gw_stats:
-            gw_stats[gw] = {"sr": [], "abd": [], "gps": [], "p50": [], "p95": [], "tok": []}
-        gw_stats[gw]["sr"].append(row["success_rate"])
-        gw_stats[gw]["abd"].append(row["abd_total"])
-        gw_stats[gw]["gps"].append(row["eff_gps"])
-        gw_stats[gw]["p50"].append(row["p50_ms"])
-        gw_stats[gw]["p95"].append(row["p95_ms"])
-        gw_stats[gw]["tok"].append(row["agent_tokens"] + row["backend_tokens"])
+        bucket = grouped.setdefault(row["gateway"], {"sr": [], "abd": [], "gps": [], "p50": [], "p95": [], "tok": []})
+        bucket["sr"].append(float(row["success_rate"]))
+        bucket["abd"].append(float(row["abd_total"]))
+        bucket["gps"].append(float(row["eff_gps"]))
+        bucket["p50"].append(float(row["p50_ms"]))
+        bucket["p95"].append(float(row["p95_ms"]))
+        bucket["tok"].append(float(row["agent_tokens"]) + float(row["backend_tokens"]))
 
-    gw_order = [g.name for g in GATEWAYS]
-    for gw in gw_order:
-        if gw not in gw_stats:
+    for gateway in gateways:
+        if gateway.name not in grouped:
             continue
-        s = gw_stats[gw]
-        sr_mean = statistics.mean(s["sr"])
-        abd_mean = statistics.mean(s["abd"])
-        gps_mean = statistics.mean(s["gps"])
-        p50_mean = statistics.mean(s["p50"])
-        p95_mean = statistics.mean(s["p95"])
-        tok_mean = statistics.mean(s["tok"])
-
-        sr_std = statistics.stdev(s["sr"]) if len(s["sr"]) > 1 else 0
-        abd_std = statistics.stdev(s["abd"]) if len(s["abd"]) > 1 else 0
-        gps_std = statistics.stdev(s["gps"]) if len(s["gps"]) > 1 else 0
-
-        print(f"{gw:<18} {sr_mean:>7.1f}±{sr_std:<4.1f} {abd_mean:>7.1f}±{abd_std:<4.1f} "
-              f"{gps_mean:>7.2f}±{gps_std:<5.2f} {p50_mean:>9.0f} {p95_mean:>9.0f} "
-              f"{tok_mean:>11,.0f}")
-
-    # PlanGate 对比
-    if "plangate_real" in gw_stats and "ng" in gw_stats:
-        pg = gw_stats["plangate_real"]
-        ng = gw_stats["ng"]
-        pg_abd = statistics.mean(pg["abd"])
-        ng_abd = statistics.mean(ng["abd"])
-        pg_sr = statistics.mean(pg["sr"])
-        ng_sr = statistics.mean(ng["sr"])
-
-        print(f"\n  === Commitment Quality 对比 ===")
-        print(f"  PlanGate ABD:     {pg_abd:.1f}%")
-        print(f"  NG ABD:           {ng_abd:.1f}%")
-        print(f"  ABD 降低:         {ng_abd - pg_abd:.1f} pp")
-        print(f"  Success Rate:     PlanGate {pg_sr:.1f}% vs NG {ng_sr:.1f}% (Δ={pg_sr-ng_sr:+.1f}pp)")
-
-    print(f"\n  数据目录: {get_results_dir()}")
+        bucket = grouped[gateway.name]
+        sr_mean = statistics.mean(bucket["sr"])
+        abd_mean = statistics.mean(bucket["abd"])
+        gps_mean = statistics.mean(bucket["gps"])
+        p50_mean = statistics.mean(bucket["p50"])
+        p95_mean = statistics.mean(bucket["p95"])
+        tok_mean = statistics.mean(bucket["tok"])
+        sr_std = statistics.stdev(bucket["sr"]) if len(bucket["sr"]) > 1 else 0.0
+        abd_std = statistics.stdev(bucket["abd"]) if len(bucket["abd"]) > 1 else 0.0
+        gps_std = statistics.stdev(bucket["gps"]) if len(bucket["gps"]) > 1 else 0.0
+        print(
+            f"{gateway.name:<18} "
+            f"{sr_mean:>7.1f}±{sr_std:<4.1f} "
+            f"{abd_mean:>7.1f}±{abd_std:<4.1f} "
+            f"{gps_mean:>7.2f}±{gps_std:<5.2f} "
+            f"{p50_mean:>9.0f} {p95_mean:>9.0f} {tok_mean:>11,.0f}"
+        )
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Week 5 Real-LLM 实验 (GLM-4-Flash)")
-    parser.add_argument("--repeats", type=int, default=5, help="重复次数 (默认 5)")
-    parser.add_argument("--concurrency", type=int, default=None,
-                        help="覆盖默认并发度 (默认使用 CONCURRENCY 常量)")
-    parser.add_argument("--dry-run", action="store_true", help="仅打印配置，不执行")
-    parser.add_argument("--skip-build", action="store_true", help="跳过网关编译")
-    parser.add_argument("--gateways", nargs="*", help="只运行指定的网关 (如: pp plangate_real)")
+def run_experiment(args: argparse.Namespace, gateways: list[GatewayConfig]) -> None:
+    results_dir = get_results_dir(args.concurrency)
+    results_dir.mkdir(parents=True, exist_ok=True)
+    summary_path = results_dir / "week5_summary.csv"
+    summary_rows: list[dict] = []
+
+    for gateway in gateways:
+        for run_idx in range(1, args.repeats + 1):
+            port = BASE_PORT + gateways.index(gateway)
+            gateway_url = f"http://127.0.0.1:{port}"
+            run_dir = results_dir / gateway.name / f"run{run_idx}"
+            run_dir.mkdir(parents=True, exist_ok=True)
+            output_csv = run_dir / "steps.csv"
+
+            print("\n" + "=" * 72)
+            print(f"  [{gateway.name}] Run {run_idx}/{args.repeats}")
+            print(f"  Sessions/Agents = {args.agents}  Concurrency = {args.concurrency}  Max Steps = {args.max_steps}")
+            print("=" * 72)
+
+            if args.dry_run:
+                print(f"  [DRY-RUN] gateway mode: {gateway.mode}")
+                print(f"  [DRY-RUN] output path: {output_csv}")
+                print(
+                    "  [DRY-RUN] client cmd: "
+                    f"react_agent_client --agents {args.agents} --concurrency {args.concurrency} "
+                    f"--max-steps {args.max_steps} --arrival-interval {args.arrival_interval}"
+                )
+                continue
+
+            gateway_proc = start_gateway(gateway, port)
+            time.sleep(2)
+
+            try:
+                client_result = run_react_client(
+                    gateway_url=gateway_url,
+                    output_csv=output_csv,
+                    gateway_name=gateway.name,
+                    agents=args.agents,
+                    concurrency=args.concurrency,
+                    max_steps=args.max_steps,
+                    arrival_interval=args.arrival_interval,
+                    client_timeout=args.client_timeout,
+                    client_log_live=args.client_log_live,
+                )
+                stats = parse_react_stats(client_result["stdout"], args.agents)
+                row = {
+                    "gateway": gateway.name,
+                    "run": run_idx,
+                    "agents": args.agents,
+                    "success": int(stats.get("success", 0)),
+                    "partial": int(stats.get("partial", 0)),
+                    "all_rejected": int(stats.get("all_rejected", 0)),
+                    "error": int(stats.get("error", 0)),
+                    "cascade_agents": int(stats.get("cascade_agents", 0)),
+                    "cascade_steps": int(stats.get("cascade_steps", 0)),
+                    "success_rate": stats.get("success_rate", 0),
+                    "abd_total": stats.get("abd_total", 0),
+                    "eff_gps": stats.get("eff_gps", 0),
+                    "agent_tokens": int(stats.get("agent_tokens", 0)),
+                    "backend_tokens": int(stats.get("backend_tokens", 0)),
+                    "p50_ms": stats.get("p50_ms", 0),
+                    "p95_ms": stats.get("p95_ms", 0),
+                    "elapsed_s": stats.get("elapsed_s", 0),
+                    "client_rc": client_result["returncode"],
+                    "client_timed_out": int(client_result["timed_out"]),
+                    "client_log": client_result["log_path"],
+                }
+                summary_rows.append(row)
+
+                print("\n  Result snapshot")
+                print(
+                    f"  success={row['success']} partial={row['partial']} "
+                    f"rejected={row['all_rejected']} error={row['error']}"
+                )
+                print(f"  success_rate={row['success_rate']}%  ABD={row['abd_total']:.1f}%")
+                print(f"  eff_GP/s={float(row['eff_gps']):.2f}")
+                print(f"  P50={float(row['p50_ms']):.0f}ms  P95={float(row['p95_ms']):.0f}ms")
+                print(f"  tokens: agent={row['agent_tokens']:,} backend={row['backend_tokens']:,}")
+                print(f"  elapsed: {float(row['elapsed_s']):.1f}s")
+                print(f"  client log: {row['client_log']}")
+            finally:
+                stop_process(gateway_proc)
+                cooldown = 30 if run_idx < args.repeats else 10
+                print(f"  Cooldown {cooldown}s before next run...")
+                time.sleep(cooldown)
+
+    if summary_rows:
+        with summary_path.open("w", newline="", encoding="utf-8") as handle:
+            writer = csv.DictWriter(handle, fieldnames=list(summary_rows[0].keys()))
+            writer.writeheader()
+            writer.writerows(summary_rows)
+        print(f"\n  Wrote summary CSV: {summary_path}")
+        print_summary_table(summary_rows, gateways)
+
+
+def resolve_requested_gateways(names: Optional[list[str]], configured_gateways: list[GatewayConfig]) -> list[GatewayConfig]:
+    if not names:
+        return configured_gateways
+    selected = [gateway for gateway in configured_gateways if gateway.name in names]
+    if not selected:
+        raise ValueError(f"no matching gateways for {names}; available: {[gateway.name for gateway in configured_gateways]}")
+    return selected
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Week 5 real-LLM runner with GLM smoke preflight")
+    parser.add_argument("--repeats", type=int, default=5, help="number of repeats")
+    parser.add_argument("--agents", type=int, default=DEFAULT_AGENTS, help="number of agents/sessions")
+    parser.add_argument("--concurrency", type=int, default=DEFAULT_CONCURRENCY, help="max concurrent agents")
+    parser.add_argument("--max-steps", type=int, default=DEFAULT_MAX_STEPS, help="max tool steps per agent")
+    parser.add_argument("--arrival-interval", type=float, default=DEFAULT_ARRIVAL_INTERVAL, help="agent arrival interval in seconds")
+    parser.add_argument("--dry-run", action="store_true", help="print configuration only")
+    parser.add_argument("--skip-build", action="store_true", help="reuse existing gateway binary")
+    parser.add_argument("--gateways", nargs="*", help="subset of gateways to run, e.g. pp plangate_real")
+    parser.add_argument("--client-timeout", type=int, default=DEFAULT_CLIENT_TIMEOUT, help="timeout for one react_agent_client process")
+    parser.add_argument("--client-log-live", action="store_true", help="tee client stdout/stderr to the terminal")
+    parser.add_argument("--llm-preflight", dest="llm_preflight", action="store_true", help="run GLM preflight before backend/gateway startup")
+    parser.add_argument("--skip-llm-preflight", dest="llm_preflight", action="store_false", help="skip the GLM preflight")
+    parser.set_defaults(llm_preflight=True)
     args = parser.parse_args()
 
-    # Override concurrency if specified
-    if args.concurrency is not None:
-        global CONCURRENCY
-        CONCURRENCY = args.concurrency
-        # Scale PlanGate max_sessions with concurrency
-        pg_max = max(50, args.concurrency * 3)
-        for gw in GATEWAYS:
-            if gw.name == "plangate_real":
-                gw.extra_args = [
-                    "--plangate-price-step", str(TUNED_PARAMS["plangate"]["price_step"]),
-                    "--plangate-max-sessions", str(pg_max),
-                    "--plangate-sunk-cost-alpha", str(TUNED_PARAMS["plangate"]["sunk_cost_alpha"]),
-                    "--plangate-session-cap-wait", "5",
-                    "--real-ratelimit-max", "200",
-                    "--real-latency-threshold", "5000",
-                ]
+    load_project_dotenv(ROOT_DIR)
+    configured_gateways = configure_gateways(args.concurrency)
+    try:
+        run_gateways = resolve_requested_gateways(args.gateways, configured_gateways)
+    except ValueError as exc:
+        print(f"[runner] {exc}")
+        return 2
 
-    # 过滤 gateway 列表
-    run_gateways = GATEWAYS
-    if args.gateways:
-        run_gateways = [g for g in GATEWAYS if g.name in args.gateways]
-        if not run_gateways:
-            print(f"  ⚠ 未找到匹配的网关: {args.gateways}")
-            print(f"  可用: {[g.name for g in GATEWAYS]}")
-            return
+    print("\n" + "=" * 72)
+    print("  Week 5 real-LLM smoke")
+    print("=" * 72)
+    print(f"  Sessions/Agents = {args.agents}")
+    print(f"  Concurrency     = {args.concurrency}")
+    print(f"  Max Steps       = {args.max_steps}")
+    print(f"  Budget          = {BUDGET}")
+    print(f"  Arrival Interval= {args.arrival_interval}")
+    print(f"  Repeats         = {args.repeats}")
+    print(f"  Gateways        = {', '.join(gateway.name for gateway in run_gateways)}")
+    print(f"  Client Timeout  = {args.client_timeout}s")
+    print(f"  Results Dir     = {get_results_dir(args.concurrency)}")
 
-    print(f"\n{'='*65}")
-    print("  Week 5 Real-LLM 实验 — GLM-4-Flash")
-    print(f"{'='*65}")
-    print(f"  Sessions:     {AGENTS}")
-    print(f"  Concurrency:  {CONCURRENCY}")
-    print(f"  Max Steps:    {MAX_STEPS}")
-    print(f"  Budget:       {BUDGET}")
-    print(f"  Repeats:      {args.repeats}")
-    print(f"  Gateways:     {', '.join(g.name for g in run_gateways)}")
-    print(f"  结果目录:     {get_results_dir()}")
+    if args.dry_run:
+        run_experiment(args, run_gateways)
+        return 0
 
-    if not args.dry_run:
-        # 检查 API 配置
-        _check_env()
-        # 编译网关
-        if not args.skip_build:
-            build_gateway()
-        else:
-            global GATEWAY_BINARY
-            bin_name = "gateway.exe" if sys.platform == "win32" else "gateway"
-            GATEWAY_BINARY = os.path.join(ROOT_DIR, bin_name)
-            print(f"  跳过编译, 使用: {GATEWAY_BINARY}")
-        # 启动后端
-        start_backend()
+    if args.llm_preflight:
+        try:
+            run_glm_preflight_checked()
+        except RuntimeError as exc:
+            print(f"  {exc}")
+            return 2
+
+    global GATEWAY_BINARY
+    if args.skip_build:
+        bin_name = "gateway.exe" if sys.platform == "win32" else "gateway"
+        GATEWAY_BINARY = ROOT_DIR / bin_name
+        if not GATEWAY_BINARY.exists():
+            print(f"  gateway binary not found: {GATEWAY_BINARY}")
+            return 2
+        print(f"  Reusing gateway binary: {GATEWAY_BINARY}")
+    else:
+        try:
+            GATEWAY_BINARY = build_gateway()
+        except RuntimeError as exc:
+            print(f"  {exc}")
+            return 2
 
     try:
-        run_experiment(args.repeats, dry_run=args.dry_run, gateways=run_gateways)
+        start_backend()
+    except RuntimeError as exc:
+        print(f"  {exc}")
+        return 2
+
+    try:
+        run_experiment(args, run_gateways)
     finally:
-        if not args.dry_run:
-            stop_backend()
-            print("\n  后端已停止。")
+        stop_backend()
+        print("\n  Backend stopped.")
 
-    print(f"\n  ✓ 实验完成！")
-
-
-def _check_env():
-    """检查 API 配置是否就绪"""
-    # 加载 .env
-    env_path = os.path.join(ROOT_DIR, ".env")
-    if os.path.exists(env_path):
-        with open(env_path, encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if not line or line.startswith("#"):
-                    continue
-                if "=" in line:
-                    key, _, value = line.partition("=")
-                    key, value = key.strip(), value.strip()
-                    if value and len(value) >= 2 and value[0] == value[-1] and value[0] in ('"', "'"):
-                        value = value[1:-1]
-                    if key and value and key not in os.environ:
-                        os.environ[key] = value
-        print(f"  .env 已加载: {env_path}")
-
-    llm_base = os.environ.get("AGENT_LLM_BASE", os.environ.get("LLM_API_BASE", ""))
-    llm_key = os.environ.get("AGENT_LLM_KEY", os.environ.get("LLM_API_KEY", ""))
-    llm_model = os.environ.get("AGENT_LLM_MODEL", os.environ.get("LLM_MODEL", ""))
-
-    print(f"  LLM Base:  {llm_base[:50]}..." if len(llm_base) > 50 else f"  LLM Base:  {llm_base}")
-    print(f"  LLM Model: {llm_model}")
-    print(f"  LLM Key:   {'***已配置***' if llm_key else '⚠ 未配置!'}")
-
-    if not llm_key:
-        raise RuntimeError("LLM API Key 未配置! 请设置 AGENT_LLM_KEY 或 LLM_API_KEY 环境变量")
+    print("\n  Real-LLM smoke run complete.")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

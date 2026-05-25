@@ -187,6 +187,55 @@ recovery. That specific claim is covered by
 `cloudlab_p3_small_random_redis_cp_v2`, while the sticky run remains a simpler
 gateway-local recovery-affinity baseline.
 
+## Mock Regression Artifact Refresh
+
+Lightweight local mock regression evidence is checked into:
+
+- [artifact_results/mock_regression_p4_refresh_v1](artifact_results/mock_regression_p4_refresh_v1)
+
+This bundle is a local mock regression refresh from `2026-05-24`, not a
+CloudLab run. It covers `Exp1`, `Exp4`, `Exp8`, and `Exp10` after the
+Commitment / Amendment / Recovery / Redis CheckpointStore work:
+
+- `Exp1`: `plangate_full EffGP/s = 54.76`, above the best baseline
+  `sbac = 45.36`, with `cascade_failed_mean = 0.20`
+- `Exp4`: `wo_budgetlock EffGP/s = 10.95`, `cascade_failed_mean = 8.80`
+- `Exp4`: `wo_sessioncap` stays near full throughput, but
+  `cascade_failed_mean = 3.60`, so session cap still matters as a safety
+  component
+- `Exp10`: `plangate_full EffGP/s = 57.28`, above `sbac = 44.70`, with
+  `cascade_failed_mean = 0.40`
+
+`Exp8` is included as **diagnostic evidence** only: the regression refresh
+completes, but the current run has low success counts and relatively high
+cascade counts, so it should not be used as a strong paper claim without a
+later configuration review.
+
+## Live GLM Artifact Refresh
+
+Lightweight live GLM real-LLM evidence is checked into:
+
+- [artifact_results/glm_real_llm_c10_refresh_v1](artifact_results/glm_real_llm_c10_refresh_v1)
+
+This bundle is separate from both the mock regression evidence and the CloudLab
+recovery evidence. It records a local `glm-4-flash` rerun with `200 agents`,
+`concurrency 10`, `3 repeats`, and gateways `ng / rajomon / pp / plangate_real`.
+The bundle includes only summary CSVs, flattened `steps_summary_*.csv`, and
+validation metadata; it intentionally omits API keys, `.env`, full logs, and
+full `steps.csv`.
+
+Key results from `week5_agg.csv`:
+
+- `ng`: `success_rate_mean=97.83`, `ABD=2.17`, `EffGP/s=0.46`
+- `rajomon`: `success_rate_mean=96.33`, `ABD=3.50`, `EffGP/s=0.45`
+- `pp`: `success_rate_mean=94.50`, `ABD=5.03`, `EffGP/s=0.43`
+- `plangate_real`: `success_rate_mean=95.83`, `ABD=3.67`, `EffGP/s=0.43`
+
+This live GLM refresh validates that the post-P4 stack still supports real-LLM
+ReAct workloads without client/runtime errors or timeout in this C10 rerun. It
+should **not be over-claimed** as PlanGate outperforming every baseline on
+every real-LLM metric in this particular run.
+
 ## Gateway Processing Overhead
 
 The gateway-overhead benchmark is split into two layers:
@@ -351,13 +400,46 @@ cp .env.example .env
 ```
 
 ```bash
-# Tier 2: Steady real-LLM (GLM-4-Flash or DeepSeek-V3)
-python scripts/run_real_llm_week5.py --llm glm --concurrency 10
-python scripts/run_real_llm_week5.py --llm deepseek --concurrency 10
+# 1) Minimal GLM connectivity check
+python scripts/check_glm_connectivity.py
+
+# 2) Small single-gateway smoke
+python scripts/run_real_llm_week5.py \
+  --repeats 1 \
+  --agents 5 \
+  --concurrency 1 \
+  --max-steps 3 \
+  --gateways pp \
+  --client-timeout 300 \
+  --client-log-live
+
+# 3) Two-gateway smoke
+python scripts/run_real_llm_week5.py \
+  --repeats 1 \
+  --agents 20 \
+  --concurrency 2 \
+  --max-steps 5 \
+  --gateways pp plangate_real \
+  --client-timeout 900 \
+  --client-log-live
+
+# 4) Only after the smoke passes, consider larger real-LLM runs
+python scripts/run_real_llm_week5.py --repeats 5 --agents 200 --concurrency 10
 
 # Tier 3: Bursty real-LLM
 python scripts/run_real_llm_bursty.py --repeats 3 --burst-size 30
 ```
+
+Notes:
+
+- `run_real_llm_week5.py` now runs a GLM preflight by default before it starts
+  the backend or gateway. Use `--skip-llm-preflight` only when you have already
+  confirmed connectivity.
+- The runner writes per-gateway client logs to
+  `results/log/real_llm/_client_<gateway>_week5.log`.
+- If the provider call fails, the preflight or client log should show whether
+  the failure was due to a missing key, auth error, timeout, network issue, or
+  SDK/dependency problem.
 
 ---
 

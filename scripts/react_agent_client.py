@@ -37,6 +37,14 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Optional
 
+from real_llm_utils import (
+    classify_llm_error,
+    format_exception_message,
+    load_project_dotenv,
+    mask_secret,
+    resolve_llm_config,
+)
+
 # ── 加载 .env ──
 def _load_dotenv():
     env_path = Path(__file__).resolve().parent.parent / ".env"
@@ -56,6 +64,8 @@ def _load_dotenv():
                     os.environ[key] = value
 
 _load_dotenv()
+load_project_dotenv(Path(__file__).resolve().parent.parent)
+LLM_CONFIG_PRINTED = False
 
 # ══════════════════════════════════════════════════
 # 1. MCP 工具定义 (OpenAI function calling 格式)
@@ -425,19 +435,38 @@ async def run_agent(
     task_prompt: str,
     max_steps: int = 8,
     budget: int = 500,
+    llm_timeout: float = 60.0,
 ) -> AgentResult:
     """运行单个 ReAct Agent，LLM 驱动工具选择。"""
-    from openai import OpenAI
-    import httpx
+    try:
+        from openai import OpenAI
+        import httpx
+    except ImportError as e:
+        result = AgentResult(
+            agent_id=agent_id,
+            task_prompt=task_prompt,
+            task_category=_categorize_task(task_prompt),
+            state="ERROR",
+            total_steps=0,
+            success_steps=0,
+            start_time=time.time(),
+            final_answer=f"LLM sdk error: {format_exception_message(e)}",
+        )
+        print(f"[ReAct Agent] agent={agent_id} llm_sdk_error: {format_exception_message(e)}", flush=True)
+        result.end_time = time.time()
+        result.total_latency_ms = (result.end_time - result.start_time) * 1000
+        return result
 
-    llm_base = os.getenv("AGENT_LLM_BASE", os.getenv("LLM_API_BASE", "https://open.bigmodel.cn/api/paas/v4"))
-    llm_key = os.getenv("AGENT_LLM_KEY", os.getenv("LLM_API_KEY", ""))
-    llm_model = os.getenv("AGENT_LLM_MODEL", os.getenv("LLM_MODEL", "glm-4-flash"))
+    global LLM_CONFIG_PRINTED
+    cfg = resolve_llm_config()
+    llm_base = cfg.base
+    llm_key = cfg.key
+    llm_model = cfg.model
 
     client = OpenAI(
         api_key=llm_key,
         base_url=llm_base,
-        http_client=httpx.Client(proxy=None, timeout=120),
+        http_client=httpx.Client(timeout=httpx.Timeout(llm_timeout), trust_env=False),
     )
 
     result = AgentResult(
@@ -458,6 +487,13 @@ async def run_agent(
     session_id = f"agent-{agent_id}"
     consecutive_rejects = 0
 
+    if not LLM_CONFIG_PRINTED:
+        print(
+            f"[ReAct Agent] LLM config: model={llm_model} base={llm_base} key={mask_secret(llm_key)}",
+            flush=True,
+        )
+        LLM_CONFIG_PRINTED = True
+
     for step_idx in range(max_steps):
         # ── 调用 LLM 决定下一步 ──
         try:
@@ -471,7 +507,10 @@ async def run_agent(
             )
         except Exception as e:
             result.state = "ERROR"
-            result.final_answer = f"LLM API error: {str(e)[:200]}"
+            err_kind = classify_llm_error(e)
+            err_text = format_exception_message(e)
+            result.final_answer = f"LLM {err_kind}: {err_text}"
+            print(f"[ReAct Agent] agent={agent_id} llm_{err_kind}: {err_text}", flush=True)
             break
 
         # 统计 brain token 消耗
@@ -562,10 +601,17 @@ async def run_all_agents(args):
     for i in range(n):
         prompts.append(random.choice(TASK_PROMPTS))
 
+    cfg = resolve_llm_config()
+    if not cfg.key:
+        raise SystemExit("LLM API key missing. Configure AGENT_LLM_KEY or LLM_API_KEY before running.")
+
     semaphore = asyncio.Semaphore(args.concurrency)
     results: List[AgentResult] = []
     lock = asyncio.Lock()
+    started = [0]
     completed = [0]
+    progress_every = args.progress_every if args.progress_every > 0 else (5 if args.agents <= 20 else 10)
+    status_counts = {"SUCCESS": 0, "PARTIAL": 0, "ALL_REJECTED": 0, "ERROR": 0}
 
     connector = aiohttp.TCPConnector(
         limit=args.concurrency * 2,
@@ -575,19 +621,39 @@ async def run_all_agents(args):
     async def run_one(idx: int, prompt: str):
         agent_id = f"{idx:04d}-{uuid.uuid4().hex[:6]}"
         async with semaphore:
+            async with lock:
+                started[0] += 1
+                if started[0] % progress_every == 0 or started[0] == n:
+                    print(
+                        f"  progress started={started[0]}/{n} completed={completed[0]}/{n} "
+                        f"success={status_counts['SUCCESS']} partial={status_counts['PARTIAL']} "
+                        f"rejected={status_counts['ALL_REJECTED']} error={status_counts['ERROR']}",
+                        flush=True,
+                    )
             agent_result = await run_agent(
                 http_session, args.gateway, agent_id,
                 prompt, max_steps=args.max_steps, budget=args.budget,
+                llm_timeout=args.llm_timeout,
             )
             async with lock:
                 results.append(agent_result)
                 completed[0] += 1
-                if completed[0] % 10 == 0 or completed[0] == n:
-                    print(f"  进度: {completed[0]}/{n} agents 完成")
+                status_counts[agent_result.state] = status_counts.get(agent_result.state, 0) + 1
+                if completed[0] % progress_every == 0 or completed[0] == n:
+                    print(
+                        f"  progress started={started[0]}/{n} completed={completed[0]}/{n} "
+                        f"success={status_counts['SUCCESS']} partial={status_counts['PARTIAL']} "
+                        f"rejected={status_counts['ALL_REJECTED']} error={status_counts['ERROR']}",
+                        flush=True,
+                    )
 
     print(f"[ReAct Agent] 网关: {args.gateway}")
     print(f"[ReAct Agent] Agents: {n}  并发: {args.concurrency}  最大步数: {args.max_steps}")
     print(f"[ReAct Agent] 网关模式: {args.gateway_mode}")
+    print(f"[ReAct Agent] LLM base: {cfg.base}")
+    print(f"[ReAct Agent] LLM model: {cfg.model}")
+    print(f"[ReAct Agent] LLM key: {mask_secret(cfg.key)}")
+    print(f"[ReAct Agent] LLM timeout: {args.llm_timeout}s")
     if args.burst_size > 0:
         print(f"[ReAct Agent] 突发模式: batch={args.burst_size}  gap={args.burst_gap}s")
 
@@ -801,6 +867,10 @@ def main():
                         help="网关模式标签 (用于 CSV, 如 ng/srl/mcpdp-real)")
     parser.add_argument("--output", "-o", type=str, default=None,
                         help="输出 CSV 路径")
+    parser.add_argument("--llm-timeout", type=float, default=60.0,
+                        help="single LLM call timeout in seconds (default: 60)")
+    parser.add_argument("--progress-every", type=int, default=0,
+                        help="progress print interval; 0 means auto")
     args = parser.parse_args()
     asyncio.run(run_all_agents(args))
 
