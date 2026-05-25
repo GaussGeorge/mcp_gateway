@@ -80,6 +80,7 @@ logs and large per-step traces.
 | `artifact_results/cloudlab_p3_small_random_redis_cp_v2/` | `p3_summary.csv`, `p3_adversarial_summary.csv`, `summary.csv`, `validation.json`, `README_RESULT.md` | P4 CloudLab random-routing recovery/amendment evidence with Redis CheckpointStore |
 | `artifact_results/mock_regression_p4_refresh_v1/` | `exp1_core_summary.csv`, `exp4_ablation_summary.csv`, `exp8_discountablation_summary.csv`, `exp10_adversarial_summary.csv`, `mock_regression_means.csv`, `validation.json`, `README_RESULT.md` | Local mock regression refresh evidence after P4/P4.1 |
 | `artifact_results/exp11_newmechanismablation_v1/` | `exp11_newmechanismablation_summary.csv`, `exp11_newmechanismablation_agg.csv`, `validation.json`, `README_RESULT.md` | Local post-P3/P4 new-mechanism ablation diagnostic/regression evidence |
+| `artifact_results/p3_failure_mechanism_ablation_v1/` | `p3_failure_mechanism_ablation_summary.csv`, `p3_failure_mechanism_ablation_agg.csv`, `validation.json`, `README_RESULT.md` | Local controlled P3 failure/amendment mechanism ablation evidence |
 | `artifact_results/glm_real_llm_c10_refresh_v1/` | `week5_summary.csv`, `week5_agg.csv`, `12 x steps_summary_*.csv`, `validation.json`, `README_RESULT.md` | Local live-GLM real-LLM refresh evidence after runner observability fixes |
 | `artifact_results/deepseek_v4_flash_smoke_v1/` | `week5_summary.csv`, `week5_agg.csv`, `4 x steps_summary_*.csv`, `validation.json`, `README_RESULT.md` | Local live-DeepSeek V4 Flash provider/tool-call compatibility smoke evidence |
 
@@ -112,6 +113,13 @@ introduced after P3/P4 by comparing `plangate_full`, `wo_commitment`,
 useful as a lightweight regression check and summary-format compatibility
 artifact, but it should **not** replace the failure-specific P3 evidence when
 arguing about Recovery/Amendment behavior.
+
+`artifact_results/p3_failure_mechanism_ablation_v1/README_RESULT.md` is the
+entry point for the stronger local failure-specific ablation. Unlike the
+standard mock-load Exp11 bundle, this one uses a controlled P3
+failure/amendment workload and is meant to expose whether Commitment,
+Amendment, and Recovery actually activate under failure pressure. It is still
+local controlled evidence, not a CloudLab multi-node result.
 
 `artifact_results/glm_real_llm_c10_refresh_v1/` is a different layer of
 evidence again: it is a **live GLM** local rerun, not a mock regression and not

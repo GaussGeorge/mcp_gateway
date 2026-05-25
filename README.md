@@ -228,6 +228,33 @@ the failure-specific P3 workload remains the more direct evidence for
 Recovery/Amendment behavior. It is instead useful as a lightweight regression
 check that the new mechanism toggles remain runnable and summary-compatible.
 
+## P3 Failure Mechanism Ablation
+
+Lightweight local P3 failure/amendment ablation evidence is checked into:
+
+- [artifact_results/p3_failure_mechanism_ablation_v1/README_RESULT.md](artifact_results/p3_failure_mechanism_ablation_v1/README_RESULT.md)
+
+This bundle is separate from the standard mock regression evidence and from the
+CloudLab recovery evidence. It is a controlled local P3 workload that isolates
+the post-P3 mechanisms under failure/amendment pressure:
+
+- `plangate_full`
+- `wo_commitment`
+- `wo_amendment`
+- `wo_recovery`
+
+Key signals from the aggregate CSV:
+
+- `plangate_full`: `success_mean=192.33`, `recovery_success_mean=38.0`,
+  `amendment_success_mean=7.67`
+- `wo_commitment`: `commitment_issued_mean=0.0`, `success_mean=178.67`
+- `wo_amendment`: `amendment_success_mean=0.0`
+- `wo_recovery`: `recovery_success_mean=0.0`, `cascade_failed_mean=42.0`
+
+This is stronger than the standard mock-load Exp11 ablation for the new
+mechanisms, but it remains **local controlled evidence**, not a multi-node
+CloudLab result.
+
 ## Live GLM Artifact Refresh
 
 Lightweight live GLM real-LLM evidence is checked into:

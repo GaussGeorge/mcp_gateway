@@ -1,0 +1,34 @@
+﻿{
+    "experiment":  "P3FailureMechanismAblation",
+    "workload":  "p3 failure/amendment",
+    "sessions":  200,
+    "concurrency":  50,
+    "failure_rate":  0.2,
+    "amendment_rate":  0.2,
+    "repeats":  3,
+    "row_count":  12,
+    "agg_row_count":  4,
+    "gateway_counts":  {
+                           "plangate_full":  3,
+                           "wo_commitment":  3,
+                           "wo_amendment":  3,
+                           "wo_recovery":  3
+                       },
+    "all_client_rc_zero":  true,
+    "all_client_timed_out_zero":  true,
+    "all_error_empty":  true,
+    "signal_checks":  {
+                          "full_has_recovery_success":  true,
+                          "full_has_amendment_success":  true,
+                          "wo_commitment_zero_commitment":  true,
+                          "wo_amendment_zero_amendment_success":  true,
+                          "wo_recovery_zero_recovery_success":  true
+                      },
+    "sha256":  {
+                   "p3_failure_mechanism_ablation_summary_csv":  "df835fae3a5c7216b7cf7d0e454eee8ec4cb48cd290d7110ca9080fdb5e42129",
+                   "p3_failure_mechanism_ablation_agg_csv":  "0b308bed87ff700b88c8a69527c62f641f943d030b2ae755929b2196ced0b550"
+               },
+    "errors":  [
+
+               ]
+}
