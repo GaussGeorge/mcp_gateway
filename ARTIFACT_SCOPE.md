@@ -79,6 +79,7 @@ logs and large per-step traces.
 | `artifact_results/cloudlab_p3_small_sticky_v2/` | `p3_summary.csv`, `p3_adversarial_summary.csv`, `summary.csv`, `validation.json`, `README_RESULT.md` | P3 CloudLab sticky-routing recovery/amendment evidence |
 | `artifact_results/cloudlab_p3_small_random_redis_cp_v2/` | `p3_summary.csv`, `p3_adversarial_summary.csv`, `summary.csv`, `validation.json`, `README_RESULT.md` | P4 CloudLab random-routing recovery/amendment evidence with Redis CheckpointStore |
 | `artifact_results/mock_regression_p4_refresh_v1/` | `exp1_core_summary.csv`, `exp4_ablation_summary.csv`, `exp8_discountablation_summary.csv`, `exp10_adversarial_summary.csv`, `mock_regression_means.csv`, `validation.json`, `README_RESULT.md` | Local mock regression refresh evidence after P4/P4.1 |
+| `artifact_results/throughput_latency_summary_v1/` | `throughput_latency_summary.csv`, `throughput_latency_agg.csv`, `validation.json`, `README_RESULT.md` | Lightweight throughput/latency summary built from existing Exp1 / Exp5 / Exp6 / Exp10 summaries |
 | `artifact_results/exp11_newmechanismablation_v1/` | `exp11_newmechanismablation_summary.csv`, `exp11_newmechanismablation_agg.csv`, `validation.json`, `README_RESULT.md` | Local post-P3/P4 new-mechanism ablation diagnostic/regression evidence |
 | `artifact_results/p3_failure_mechanism_ablation_v1/` | `p3_failure_mechanism_ablation_summary.csv`, `p3_failure_mechanism_ablation_agg.csv`, `validation.json`, `README_RESULT.md` | Local controlled P3 failure/amendment mechanism ablation evidence |
 | `artifact_results/glm_real_llm_c10_refresh_v1/` | `week5_summary.csv`, `week5_agg.csv`, `12 x steps_summary_*.csv`, `validation.json`, `README_RESULT.md` | Local live-GLM real-LLM refresh evidence after runner observability fixes |
@@ -104,6 +105,14 @@ from the CloudLab evidence. It is a local mock regression refresh that checks
 whether `Exp1`, `Exp4`, `Exp8`, and `Exp10` still preserve their expected
 qualitative behavior after the P4/P4.1 mechanism work. Its `Exp8` result should
 be treated as **diagnostic evidence** rather than a strong paper claim.
+
+`artifact_results/throughput_latency_summary_v1/README_RESULT.md` is a
+lightweight summary-only artifact built from existing `Exp1`, `Exp5`, `Exp6`,
+and `Exp10` CSVs. It exists to report both `raw_goodput_s` and
+`effective_goodput_s`, together with `success`, `rejected_s0`,
+`cascade_failed`, `p95_ms`, and `e2e_p95_ms`, without introducing any new
+throughput experiment. Its role is explanatory and aggregation-oriented, not a
+new claim surface.
 
 `artifact_results/exp11_newmechanismablation_v1/README_RESULT.md` is the entry
 point for another local mock

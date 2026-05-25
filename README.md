@@ -193,6 +193,7 @@ Lightweight local mock regression evidence is checked into:
 
 - [artifact_results/mock_regression_p4_refresh_v1](artifact_results/mock_regression_p4_refresh_v1)
 - [artifact_results/exp11_newmechanismablation_v1/README_RESULT.md](artifact_results/exp11_newmechanismablation_v1/README_RESULT.md)
+- [artifact_results/throughput_latency_summary_v1/README_RESULT.md](artifact_results/throughput_latency_summary_v1/README_RESULT.md)
 
 This bundle is a local mock regression refresh from `2026-05-24`, not a
 CloudLab run. It covers `Exp1`, `Exp4`, `Exp8`, and `Exp10` after the
@@ -227,6 +228,14 @@ This bundle should **not** be over-claimed as the strongest recovery evidence;
 the failure-specific P3 workload remains the more direct evidence for
 Recovery/Amendment behavior. It is instead useful as a lightweight regression
 check that the new mechanism toggles remain runnable and summary-compatible.
+
+The `throughput_latency_summary_v1` bundle is a summary-only artifact built
+from existing `Exp1`, `Exp5`, `Exp6`, and `Exp10` summary CSVs. It reports
+both `raw_goodput_s` and `effective_goodput_s`, alongside `success`,
+`rejected_s0`, `cascade_failed`, `p95_ms`, and `e2e_p95_ms`. This helps answer
+the natural throughput/latency question without introducing a new experiment:
+raw throughput captures admitted/processed work rate, while effective goodput
+discounts wasted progress and remains the main governance-facing metric.
 
 ## P3 Failure Mechanism Ablation
 
