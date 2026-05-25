@@ -192,6 +192,7 @@ gateway-local recovery-affinity baseline.
 Lightweight local mock regression evidence is checked into:
 
 - [artifact_results/mock_regression_p4_refresh_v1](artifact_results/mock_regression_p4_refresh_v1)
+- [artifact_results/exp11_newmechanismablation_v1/README_RESULT.md](artifact_results/exp11_newmechanismablation_v1/README_RESULT.md)
 
 This bundle is a local mock regression refresh from `2026-05-24`, not a
 CloudLab run. It covers `Exp1`, `Exp4`, `Exp8`, and `Exp10` after the
@@ -210,6 +211,22 @@ Commitment / Amendment / Recovery / Redis CheckpointStore work:
 completes, but the current run has low success counts and relatively high
 cascade counts, so it should not be used as a strong paper claim without a
 later configuration review.
+
+The `exp11_newmechanismablation_v1` bundle is a separate post-P3/P4 mock
+diagnostic/regression evidence pack for the newly added control mechanisms. It
+records `plangate_full`, `wo_commitment`, `wo_amendment`, and `wo_recovery`
+under the standard Exp11 load shape, with `20` summary rows and `4` aggregate
+rows. It also documents that:
+
+- `plangate_full`: `success_mean=90.6`, `EffGP/s=55.38`
+- `wo_commitment`: `success_mean=82.2`, `EffGP/s=50.64`
+- `wo_amendment`: `success_mean=87.6`, `EffGP/s=56.75`
+- `wo_recovery`: `success_mean=88.0`, `cascade_failed_mean=0.2`, `EffGP/s=55.60`
+
+This bundle should **not** be over-claimed as the strongest recovery evidence;
+the failure-specific P3 workload remains the more direct evidence for
+Recovery/Amendment behavior. It is instead useful as a lightweight regression
+check that the new mechanism toggles remain runnable and summary-compatible.
 
 ## Live GLM Artifact Refresh
 
@@ -235,6 +252,29 @@ This live GLM refresh validates that the post-P4 stack still supports real-LLM
 ReAct workloads without client/runtime errors or timeout in this C10 rerun. It
 should **not be over-claimed** as PlanGate outperforming every baseline on
 every real-LLM metric in this particular run.
+
+## DeepSeek Live Smoke Evidence
+
+Lightweight DeepSeek V4 Flash live-smoke evidence is checked into:
+
+- [artifact_results/deepseek_v4_flash_smoke_v1](artifact_results/deepseek_v4_flash_smoke_v1)
+
+This bundle is post-GLM live-provider evidence for `deepseek-v4-flash` at
+`C5`, with `50 agents`, `concurrency 5`, and one run each for
+`ng / rajomon / pp / plangate_real`. It is distinct from the mock regression
+evidence and the CloudLab P3/P4 recovery evidence, and it intentionally omits
+API keys, `.env`, full logs, and full per-step traces.
+
+Key smoke results:
+
+- `ng`: `success_rate=98.0`, `ABD=2.0`, `EffGP/s=0.59`
+- `rajomon`: `success_rate=96.0`, `ABD=4.0`, `EffGP/s=0.52`
+- `pp`: `success_rate=98.0`, `ABD=2.0`, `EffGP/s=0.56`
+- `plangate_real`: `success_rate=98.0`, `ABD=2.0`, `EffGP/s=0.57`
+
+This evidence confirms live DeepSeek V4 Flash connectivity and tool-call
+execution through the real-LLM runner, but it should **not be over-claimed** as
+PlanGate outperforming every baseline in real-LLM experiments.
 
 ## Gateway Processing Overhead
 

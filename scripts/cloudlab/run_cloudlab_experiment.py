@@ -87,14 +87,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--arrival-rate", type=float, default=DEFAULT_ARRIVAL_RATE)
     parser.add_argument("--backend-workers", type=int, default=DEFAULT_BACKEND_WORKERS)
     parser.add_argument("--routing", default="random", choices=["single", "random", "sticky", "round_robin"])
-    parser.add_argument("--recovery-store", default="inmemory", choices=["inmemory", "redis"])
+    parser.add_argument("--recovery-store", default="inmemory", choices=["inmemory", "memory", "redis"])
     parser.add_argument("--min-success-rate", type=float, default=0.95)
     parser.add_argument("--validation-mode", choices=["correctness", "stress"], default="correctness")
     parser.add_argument("--skip-setup", action="store_true")
     parser.add_argument("--skip-build", action="store_true")
     parser.add_argument("--skip-validate", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
-    return parser.parse_args()
+    args = parser.parse_args()
+    if args.recovery_store == "memory":
+        args.recovery_store = "inmemory"
+    return args
 
 
 def load_inventory(path: str) -> Dict[str, object]:

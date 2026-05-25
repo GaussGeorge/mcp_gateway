@@ -95,6 +95,30 @@ def get_gateways(experiment_name: str) -> List[GatewayConfig]:
     srl = TUNED_PARAMS["srl"]
     pg = TUNED_PARAMS["plangate_full"]
 
+    def plangate_base_args() -> list:
+        return [
+            "--plangate-price-step", str(pg["price_step"]),
+            "--plangate-max-sessions", str(pg["max_sessions"]),
+            "--plangate-sunk-cost-alpha", str(pg["sunk_cost_alpha"]),
+        ]
+
+    def plangate_mechanism_args(
+        *,
+        commitment_mode: str = "optional",
+        amendment_mode: str = "recovery-only",
+        enable_recovery: bool = True,
+        recovery_store: str = "inmemory",
+    ) -> list:
+        # Post-P3/P4 diagnostic/regression ablation wiring. Keep the tuned
+        # pricing/session-cap parameters fixed and only toggle the mechanism
+        # under test.
+        return [
+            "--commitment-token-mode", commitment_mode,
+            "--plan-amendment-mode", amendment_mode,
+            f"--enable-recovery={'true' if enable_recovery else 'false'}",
+            "--recovery-store", recovery_store,
+        ]
+
     common = [
         GatewayConfig("ng", "ng"),
         GatewayConfig("srl", "srl", [
@@ -105,68 +129,80 @@ def get_gateways(experiment_name: str) -> List[GatewayConfig]:
         GatewayConfig("sbac", "sbac", [
             "--sbac-max-sessions", str(sb["max_sessions"]),
         ]),
-        GatewayConfig("plangate_full", "mcpdp", [
-            "--plangate-price-step", str(pg["price_step"]),
-            "--plangate-max-sessions", str(pg["max_sessions"]),
-            "--plangate-sunk-cost-alpha", str(pg["sunk_cost_alpha"]),
-        ]),
+        GatewayConfig("plangate_full", "mcpdp", plangate_base_args()),
     ]
 
     if experiment_name == "Exp4_Ablation":
         return [
-            GatewayConfig("plangate_full", "mcpdp", [
-                "--plangate-price-step", str(pg["price_step"]),
-                "--plangate-max-sessions", str(pg["max_sessions"]),
-                "--plangate-sunk-cost-alpha", str(pg["sunk_cost_alpha"]),
-            ]),
-            GatewayConfig("wo_budgetlock", "mcpdp-no-budgetlock", [
-                "--plangate-price-step", str(pg["price_step"]),
-                "--plangate-max-sessions", str(pg["max_sessions"]),
-                "--plangate-sunk-cost-alpha", str(pg["sunk_cost_alpha"]),
-            ]),
-            GatewayConfig("wo_sessioncap", "mcpdp-no-sessioncap", [
-                "--plangate-price-step", str(pg["price_step"]),
-                "--plangate-max-sessions", str(pg["max_sessions"]),
-                "--plangate-sunk-cost-alpha", str(pg["sunk_cost_alpha"]),
-            ]),
+            GatewayConfig("plangate_full", "mcpdp", plangate_base_args()),
+            GatewayConfig("wo_budgetlock", "mcpdp-no-budgetlock", plangate_base_args()),
+            GatewayConfig("wo_sessioncap", "mcpdp-no-sessioncap", plangate_base_args()),
+        ]
+
+    if experiment_name == "Exp11_NewMechanismAblation":
+        return [
+            GatewayConfig(
+                "plangate_full",
+                "mcpdp",
+                plangate_base_args() + plangate_mechanism_args(
+                    commitment_mode="optional",
+                    amendment_mode="recovery-only",
+                    enable_recovery=True,
+                    recovery_store="inmemory",
+                ),
+            ),
+            GatewayConfig(
+                "wo_commitment",
+                "mcpdp",
+                plangate_base_args() + plangate_mechanism_args(
+                    commitment_mode="off",
+                    amendment_mode="recovery-only",
+                    enable_recovery=True,
+                    recovery_store="inmemory",
+                ),
+            ),
+            GatewayConfig(
+                "wo_amendment",
+                "mcpdp",
+                plangate_base_args() + plangate_mechanism_args(
+                    commitment_mode="optional",
+                    amendment_mode="off",
+                    enable_recovery=True,
+                    recovery_store="inmemory",
+                ),
+            ),
+            GatewayConfig(
+                "wo_recovery",
+                "mcpdp",
+                plangate_base_args() + plangate_mechanism_args(
+                    commitment_mode="optional",
+                    amendment_mode="recovery-only",
+                    enable_recovery=False,
+                    recovery_store="inmemory",
+                ),
+            ),
         ]
 
     if experiment_name == "Exp7_ClientReject":
         # Exp7: 对比 PlanGate (Shadow) vs PlanGate (Hard Reject)
         # 两者都使用相同网关, hard_reject 在发压机侧控制
         return [
-            GatewayConfig("plangate_full", "mcpdp", [
-                "--plangate-price-step", str(pg["price_step"]),
-                "--plangate-max-sessions", str(pg["max_sessions"]),
-                "--plangate-sunk-cost-alpha", str(pg["sunk_cost_alpha"]),
-            ]),
+            GatewayConfig("plangate_full", "mcpdp", plangate_base_args()),
         ]
 
     if experiment_name == "Exp8_DiscountAblation":
         # Exp8: 折扣函数消融实验 — 4 种折扣函数 × PlanGate
         return [
-            GatewayConfig("plangate_quadratic", "mcpdp", [
-                "--plangate-price-step", str(pg["price_step"]),
-                "--plangate-max-sessions", str(pg["max_sessions"]),
-                "--plangate-sunk-cost-alpha", str(pg["sunk_cost_alpha"]),
+            GatewayConfig("plangate_quadratic", "mcpdp", plangate_base_args() + [
                 "--plangate-discount-func", "quadratic",
             ]),
-            GatewayConfig("plangate_linear", "mcpdp", [
-                "--plangate-price-step", str(pg["price_step"]),
-                "--plangate-max-sessions", str(pg["max_sessions"]),
-                "--plangate-sunk-cost-alpha", str(pg["sunk_cost_alpha"]),
+            GatewayConfig("plangate_linear", "mcpdp", plangate_base_args() + [
                 "--plangate-discount-func", "linear",
             ]),
-            GatewayConfig("plangate_exponential", "mcpdp", [
-                "--plangate-price-step", str(pg["price_step"]),
-                "--plangate-max-sessions", str(pg["max_sessions"]),
-                "--plangate-sunk-cost-alpha", str(pg["sunk_cost_alpha"]),
+            GatewayConfig("plangate_exponential", "mcpdp", plangate_base_args() + [
                 "--plangate-discount-func", "exponential",
             ]),
-            GatewayConfig("plangate_logarithmic", "mcpdp", [
-                "--plangate-price-step", str(pg["price_step"]),
-                "--plangate-max-sessions", str(pg["max_sessions"]),
-                "--plangate-sunk-cost-alpha", str(pg["sunk_cost_alpha"]),
+            GatewayConfig("plangate_logarithmic", "mcpdp", plangate_base_args() + [
                 "--plangate-discount-func", "logarithmic",
             ]),
         ]
@@ -229,6 +265,16 @@ EXPERIMENTS = {
     "Exp4_Ablation": ExperimentConfig(
         name="Exp4_Ablation",
         description="严格单变量消融实验: Full vs w/o-BudgetLock vs w/o-SessionCap",
+        sessions=500,
+        ps_ratio=1.0,
+        duration=60,
+        arrival_rate=50.0,
+        heavy_ratio=0.3,
+        concurrency=200,
+    ),
+    "Exp11_NewMechanismAblation": ExperimentConfig(
+        name="Exp11_NewMechanismAblation",
+        description="Post-P3/P4 diagnostic/regression ablation: Full vs w/o-Commitment vs w/o-Amendment vs w/o-Recovery",
         sessions=500,
         ps_ratio=1.0,
         duration=60,
@@ -704,7 +750,10 @@ def run_single_trial(exp: ExperimentConfig, gw: GatewayConfig,
     csv_path = os.path.join(output_dir, csv_name)
 
     if dry_run:
+        extra = " ".join(gw.extra_args) if gw.extra_args else "(default)"
         print(f"    [DRY-RUN] {csv_name}")
+        print(f"      mode={gw.mode}")
+        print(f"      extra_args={extra}")
         return {"dry_run": True}
 
     proc = None
