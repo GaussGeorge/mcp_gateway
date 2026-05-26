@@ -84,6 +84,7 @@ logs and large per-step traces.
 | `artifact_results/p3_failure_mechanism_ablation_v1/` | `p3_failure_mechanism_ablation_summary.csv`, `p3_failure_mechanism_ablation_agg.csv`, `validation.json`, `README_RESULT.md` | Local controlled P3 failure/amendment mechanism ablation evidence |
 | `artifact_results/glm_real_llm_c10_refresh_v1/` | `week5_summary.csv`, `week5_agg.csv`, `12 x steps_summary_*.csv`, `validation.json`, `README_RESULT.md` | Local live-GLM real-LLM refresh evidence after runner observability fixes |
 | `artifact_results/deepseek_v4_flash_smoke_v1/` | `week5_summary.csv`, `week5_agg.csv`, `4 x steps_summary_*.csv`, `validation.json`, `README_RESULT.md` | Local live-DeepSeek V4 Flash provider/tool-call compatibility smoke evidence |
+| `artifact_results/selfhosted_vllm_stress_c16w8_tuned_5gw_v1/` | `selfhosted_vllm_stress_summary.csv`, `selfhosted_vllm_stress_agg.csv`, `validation.json`, `README_RESULT.md` | Submitted self-hosted vLLM stress evidence with the paper display 5-gateway subset (`ng/static/pp/rajomon/plangate_relaxed`) |
 
 Important boundary:
 
@@ -145,6 +146,14 @@ observe later tool-call execution, and complete a `C5` smoke run without
 client/runtime errors or timeout. It is not a mock result, not a CloudLab
 recovery result, and should **not be over-claimed** as PlanGate outperforming
 every baseline in real-LLM experiments.
+
+`artifact_results/selfhosted_vllm_stress_c16w8_tuned_5gw_v1/` is the submitted
+self-hosted vLLM evidence layer: a 5-gateway display subset aligned with the
+main-paper figure/table (`ng`, `static`, `pp`, `rajomon`, `plangate_relaxed`).
+The submitted bundle omits `plangate_real` and records this explicitly in
+`validation.json` via `plangate_real_absent=true`. It is still local congestion
+evidence (not a CloudLab multi-node result) and should not be over-claimed as a
+universal ranking of all governance policies.
 
 ---
 

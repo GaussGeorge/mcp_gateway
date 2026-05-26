@@ -312,6 +312,39 @@ This evidence confirms live DeepSeek V4 Flash connectivity and tool-call
 execution through the real-LLM runner, but it should **not be over-claimed** as
 PlanGate outperforming every baseline in real-LLM experiments.
 
+## Self-Hosted vLLM Stress Evidence
+
+Lightweight self-hosted vLLM stress evidence is checked into:
+
+- [artifact_results/selfhosted_vllm_stress_c16w8_tuned_5gw_v1/README_RESULT.md](artifact_results/selfhosted_vllm_stress_c16w8_tuned_5gw_v1/README_RESULT.md)
+
+This bundle is a local self-hosted stress artifact, not a CloudLab result and
+not a new paper-wide claim surface. It records the submitted 5-gateway
+comparison under moderate congestion with:
+
+- `ng`
+- `static`
+- `pp`
+- `rajomon`
+- `plangate_relaxed`
+
+Key checks recorded in `validation.json`:
+
+- `row_count = 15`
+- `agg_row_count = 5`
+- `plangate_real_absent = true`
+- `all_error_zero = true`
+- `all_client_rc_zero = true`
+- `all_client_timed_out_zero = true`
+- `plangate_relaxed_present = true`
+- `congestion_present = true`
+
+The value of this bundle is comparative and diagnostic: it preserves a concrete
+self-hosted vLLM congestion snapshot for the main-paper display subset,
+without claiming that this single stress result settles every real-LLM
+governance comparison. A conservative diagnostic profile was used during local
+sensitivity checking but is not included in the submitted vLLM artifact.
+
 ## Gateway Processing Overhead
 
 The gateway-overhead benchmark is split into two layers:

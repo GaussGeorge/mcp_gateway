@@ -39,6 +39,7 @@ from typing import List, Optional
 
 from real_llm_utils import (
     classify_llm_error,
+    extract_llm_text,
     format_exception_message,
     load_project_dotenv,
     mask_secret,
@@ -287,6 +288,16 @@ def _categorize_task(prompt: str) -> str:
     return "pure_calc"
 
 
+def prompt_pool_for_profile(task_profile: str) -> List[str]:
+    if task_profile == "stress":
+        llm = [prompt for prompt in TASK_PROMPTS if _categorize_task(prompt) == "llm_reasoning"]
+        multi = [prompt for prompt in TASK_PROMPTS if _categorize_task(prompt) == "multi_step"]
+        weather = [prompt for prompt in TASK_PROMPTS if _categorize_task(prompt) == "weather_calc"]
+        pool = (llm * 4) + (multi * 3) + (weather * 2)
+        return pool or TASK_PROMPTS
+    return TASK_PROMPTS
+
+
 # ══════════════════════════════════════════════════
 # 5. MCP 网关工具调用 — 异常格式化 (导师细节2)
 # ══════════════════════════════════════════════════
@@ -462,6 +473,7 @@ async def run_agent(
     llm_base = cfg.base
     llm_key = cfg.key
     llm_model = cfg.model
+    llm_temperature = 0.2 if "deepseek" in llm_model.lower() or "deepseek" in llm_base.lower() else 0.7
 
     client = OpenAI(
         api_key=llm_key,
@@ -503,7 +515,7 @@ async def run_agent(
                 tools=MCP_TOOLS,
                 tool_choice="auto",
                 max_tokens=1024,
-                temperature=0.7,
+                temperature=llm_temperature,
             )
         except Exception as e:
             result.state = "ERROR"
@@ -518,11 +530,35 @@ async def run_agent(
             result.agent_llm_tokens += llm_resp.usage.total_tokens
 
         choice = llm_resp.choices[0]
+        tool_calls = choice.message.tool_calls or []
+        message_info = extract_llm_text(choice.message)
+        finish_reason = getattr(choice, "finish_reason", "") or ""
+
+        if step_idx == 0 or (message_info["empty_content"] and not tool_calls):
+            print(
+                f"[ReAct Agent] agent={agent_id} step={step_idx} finish_reason={finish_reason} "
+                f"tool_calls={len(tool_calls)} empty_content={message_info['empty_content']} "
+                f"message_keys={message_info['message_keys']}",
+                flush=True,
+            )
 
         # ── LLM 选择结束 (不再调工具) ──
-        if choice.finish_reason == "stop" or not choice.message.tool_calls:
-            result.final_answer = (choice.message.content or "")[:500]
-            if result.total_steps == 0:
+        if not tool_calls:
+            if message_info["content"]:
+                result.final_answer = message_info["content"][:500]
+            elif message_info["text_preview"]:
+                result.final_answer = f"empty content; preview={message_info['text_preview']}"
+            else:
+                result.final_answer = "empty content; no tool calls"
+
+            if not tool_calls and message_info["empty_content"]:
+                if message_info["text_preview"]:
+                    print(
+                        f"[ReAct Agent] agent={agent_id} empty_content_preview={message_info['text_preview']}",
+                        flush=True,
+                    )
+                result.state = "ERROR" if result.success_steps == 0 else "PARTIAL"
+            elif result.total_steps == 0:
                 result.state = "SUCCESS"  # 直接回答，不需要工具
             elif result.success_steps == result.total_steps:
                 result.state = "SUCCESS"  # 所有工具调用成功
@@ -536,7 +572,7 @@ async def run_agent(
         # 先把 assistant message 加入历史
         messages.append(choice.message)
 
-        for tool_call in choice.message.tool_calls:
+        for tool_call in tool_calls:
             fn_name = tool_call.function.name
             try:
                 fn_args = json.loads(tool_call.function.arguments)
@@ -597,9 +633,10 @@ async def run_all_agents(args):
 
     # 根据任务分布选择 prompt
     n = args.agents
+    prompt_pool = prompt_pool_for_profile(args.task_profile)
     prompts = []
     for i in range(n):
-        prompts.append(random.choice(TASK_PROMPTS))
+        prompts.append(random.choice(prompt_pool))
 
     cfg = resolve_llm_config()
     if not cfg.key:
@@ -650,6 +687,7 @@ async def run_all_agents(args):
     print(f"[ReAct Agent] 网关: {args.gateway}")
     print(f"[ReAct Agent] Agents: {n}  并发: {args.concurrency}  最大步数: {args.max_steps}")
     print(f"[ReAct Agent] 网关模式: {args.gateway_mode}")
+    print(f"[ReAct Agent] Task profile: {args.task_profile}")
     print(f"[ReAct Agent] LLM base: {cfg.base}")
     print(f"[ReAct Agent] LLM model: {cfg.model}")
     print(f"[ReAct Agent] LLM key: {mask_secret(cfg.key)}")
@@ -871,6 +909,8 @@ def main():
                         help="single LLM call timeout in seconds (default: 60)")
     parser.add_argument("--progress-every", type=int, default=0,
                         help="progress print interval; 0 means auto")
+    parser.add_argument("--task-profile", type=str, choices=["default", "stress"], default="default",
+                        help="prompt mix profile; stress biases toward multi-step and heavy-tool tasks")
     args = parser.parse_args()
     asyncio.run(run_all_agents(args))
 
