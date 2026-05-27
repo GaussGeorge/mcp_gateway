@@ -50,6 +50,15 @@ DEFAULT_PS_RATIO = 1.0
 DEFAULT_BACKEND_WORKERS = 16
 
 
+def normalize_store_name(value: str) -> str:
+    normalized = str(value).strip().lower()
+    if normalized == "memory":
+        return "inmemory"
+    if normalized not in {"redis", "inmemory"}:
+        raise SystemExit(f"unsupported store value: {value!r}; expected redis|inmemory|memory")
+    return normalized
+
+
 @dataclass(frozen=True)
 class Service:
     host: str
@@ -87,6 +96,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--arrival-rate", type=float, default=DEFAULT_ARRIVAL_RATE)
     parser.add_argument("--backend-workers", type=int, default=DEFAULT_BACKEND_WORKERS)
     parser.add_argument("--routing", default="random", choices=["single", "random", "sticky", "round_robin"])
+    parser.add_argument("--plangate-state-store", default="redis", choices=["redis", "inmemory", "memory"])
     parser.add_argument("--recovery-store", default="inmemory", choices=["inmemory", "memory", "redis"])
     parser.add_argument("--min-success-rate", type=float, default=0.95)
     parser.add_argument("--validation-mode", choices=["correctness", "stress"], default="correctness")
@@ -95,8 +105,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--skip-validate", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
-    if args.recovery_store == "memory":
-        args.recovery_store = "inmemory"
+    args.plangate_state_store = normalize_store_name(args.plangate_state_store)
+    args.recovery_store = normalize_store_name(args.recovery_store)
     return args
 
 
@@ -246,38 +256,78 @@ def start_backends(topology: Topology, backend_workers: int, *, dry_run: bool = 
     run_parallel("start-backends", jobs, topology.user, dry_run=dry_run)
 
 
-def start_gateways(topology: Topology, secret: str, recovery_store: str, *, dry_run: bool = False) -> None:
+def expanded_gateway_command(
+    topology: Topology,
+    svc: Service,
+    backend: Service,
+    *,
+    secret: str,
+    plangate_state_store: str,
+    recovery_store: str,
+) -> str:
+    redis_addr = f"{topology.redis_host}:{topology.redis_port}"
+    parts = [
+        "./gateway_linux",
+        "--mode", "mcpdp",
+        "--host", "0.0.0.0",
+        "--port", str(svc.port),
+        "--backend", backend.url,
+        "--node-id", f"{svc.host}:{svc.port}",
+        "--plangate-state-store", plangate_state_store,
+    ]
+    if plangate_state_store == "redis":
+        parts.extend(["--plangate-redis-addr", redis_addr])
+    parts.extend(
+        [
+            "--commitment-token-mode", "optional",
+            "--commitment-token-secret", secret if secret else "<shared-secret>",
+            "--enable-recovery=true",
+            "--recovery-store", recovery_store,
+            "--plan-amendment-mode", "recovery-only",
+            "--plan-amendment-require-commitment=true",
+            "--plan-amendment-max-count", "3",
+            "--plan-amendment-max-budget-delta", "0",
+            "--plangate-max-sessions", "300",
+            "--plangate-price-step", "40",
+        ]
+    )
+    return " ".join(shlex.quote(part) for part in parts)
+
+
+def start_gateways(
+    topology: Topology,
+    secret: str,
+    plangate_state_store: str,
+    recovery_store: str,
+    *,
+    dry_run: bool = False,
+) -> None:
     redis_addr = f"{topology.redis_host}:{topology.redis_port}"
     jobs: List[Tuple[str, str]] = []
     for idx, svc in enumerate(topology.gateways):
         backend = topology.backends[idx % len(topology.backends)]
-        expanded_gateway_cmd = (
-            "./gateway_linux "
-            "--mode mcpdp "
-            "--host 0.0.0.0 "
-            f"--port {svc.port} "
-            f"--backend {backend.url} "
-            f"--node-id {svc.host}:{svc.port} "
-            "--plangate-state-store redis "
-            f"--plangate-redis-addr {redis_addr} "
-            "--commitment-token-mode optional "
-            f"--commitment-token-secret {secret if secret else '<shared-secret>'} "
-            "--enable-recovery=true "
-            f"--recovery-store {recovery_store} "
-            "--plan-amendment-mode recovery-only "
-            "--plan-amendment-require-commitment=true "
-            "--plan-amendment-max-count 3 "
-            "--plan-amendment-max-budget-delta 0 "
-            "--plangate-max-sessions 300 "
-            "--plangate-price-step 40"
+        expanded_gateway_cmd = expanded_gateway_command(
+            topology,
+            svc,
+            backend,
+            secret=secret,
+            plangate_state_store=plangate_state_store,
+            recovery_store=recovery_store,
         )
         if dry_run:
             print(f"[dry-run] gateway-cmd {svc.host}:{svc.port}: {expanded_gateway_cmd}")
+        startup_line = (
+            f"cloudlab-gateway node-id={svc.host}:{svc.port} port={svc.port} backend={backend.url} "
+            f"plangate-state-store={plangate_state_store} "
+            f"redis-addr={redis_addr if plangate_state_store == 'redis' else 'disabled'} "
+            f"commitment-token-mode=optional plan-amendment-mode=recovery-only recovery-store={recovery_store}"
+        )
+        log_path = f"results/log/cloudlab/gateway_{svc.host}:{svc.port}_{svc.port}.log"
         cmd = (
-            f"cd {shlex.quote(topology.repo_dir)} && "
-            f"bash scripts/cloudlab/start_gateway.sh {svc.port} {shlex.quote(backend.url)} "
-            f"{shlex.quote(redis_addr)} {shlex.quote(f'{svc.host}:{svc.port}')} "
-            f"{shlex.quote(secret)} {shlex.quote(recovery_store)}"
+            f"cd {shlex.quote(topology.repo_dir)} && mkdir -p results/log/cloudlab && "
+            f"printf '%s\\n' {shlex.quote(startup_line)} > {shlex.quote(log_path)} && "
+            f"nohup {expanded_gateway_cmd} >> {shlex.quote(log_path)} 2>&1 & "
+            f"echo $! > {shlex.quote(f'results/log/cloudlab/gateway_{svc.port}.pid')}"
         )
         jobs.append((svc.host, cmd))
     run_parallel("start-gateways", jobs, topology.user, dry_run=dry_run)
@@ -531,6 +581,7 @@ def print_dry_run(topology: Topology, args: argparse.Namespace) -> None:
             "amendment_rate": args.amendment_rate,
             "repeats": args.repeats,
             "routing": args.routing,
+            "plangate_state_store": args.plangate_state_store,
             "recovery_store": args.recovery_store,
             "min_success_rate": args.min_success_rate,
             "validation_mode": args.validation_mode,
@@ -581,7 +632,13 @@ def main() -> int:
         stop_cluster(topology, dry_run=True)
         start_redis(topology, dry_run=True)
         start_backends(topology, args.backend_workers, dry_run=True)
-        start_gateways(topology, args.commitment_secret or "<shared-secret>", args.recovery_store, dry_run=True)
+        start_gateways(
+            topology,
+            args.commitment_secret or "<shared-secret>",
+            args.plangate_state_store,
+            args.recovery_store,
+            dry_run=True,
+        )
         verify_gateways(topology, dry_run=True)
         if args.workload == "standard":
             run_loaders(
@@ -654,7 +711,13 @@ def main() -> int:
             stop_cluster(topology, dry_run=False)
             start_redis(topology, dry_run=False)
             start_backends(topology, args.backend_workers, dry_run=False)
-            start_gateways(topology, args.commitment_secret, args.recovery_store, dry_run=False)
+            start_gateways(
+                topology,
+                args.commitment_secret,
+                args.plangate_state_store,
+                args.recovery_store,
+                dry_run=False,
+            )
             verify_gateways(topology, dry_run=False)
 
             if args.workload == "standard":
@@ -694,7 +757,11 @@ def main() -> int:
                         validation_mode=args.validation_mode,
                         gateway_log_dir=os.path.join(local_run_dir, "logs", "gateways"),
                         expected_commitment_mode="optional",
-                        expected_redis_addr=f"{topology.redis_host}:{topology.redis_port}",
+                        expected_redis_addr=(
+                            f"{topology.redis_host}:{topology.redis_port}"
+                            if args.plangate_state_store == "redis"
+                            else None
+                        ),
                         expected_recovery_store=args.recovery_store,
                     )
                     validate_results.write_summary(
@@ -716,6 +783,7 @@ def main() -> int:
                         "failure_rate": failure_rate,
                         "amendment_rate": amendment_rate,
                         "repeat": repeat,
+                        "plangate_state_store": args.plangate_state_store,
                         "recovery_store": args.recovery_store,
                         "total_sessions": summary.total_sessions,
                         "success_sessions": summary.success_sessions,
@@ -776,7 +844,11 @@ def main() -> int:
                     min_success_rate=args.min_success_rate,
                     gateway_log_dir=os.path.join(local_run_dir, "logs", "gateways"),
                     expected_commitment_mode="optional",
-                    expected_redis_addr=f"{topology.redis_host}:{topology.redis_port}",
+                    expected_redis_addr=(
+                        f"{topology.redis_host}:{topology.redis_port}"
+                        if args.plangate_state_store == "redis"
+                        else None
+                    ),
                     expected_recovery_store=args.recovery_store,
                 )
                 with open(os.path.join(local_run_dir, "validation.json"), "w", encoding="utf-8") as handle:
@@ -803,6 +875,7 @@ def main() -> int:
                     "failure_rates": ",".join(format_rate(rate) for rate in args.failure_rate),
                     "amendment_rate": amendment_rate,
                     "repeat": repeat,
+                    "plangate_state_store": args.plangate_state_store,
                     "recovery_store": args.recovery_store,
                     "policies": ",".join(args.policies),
                     "cross_node_sessions": p3_summary.cross_node_sessions,

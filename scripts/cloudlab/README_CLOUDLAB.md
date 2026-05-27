@@ -38,6 +38,14 @@ The current harness covers P0-P3:
 Create `scripts/cloudlab/inventory.json` from `inventory.example.json` and fill
 in the actual CloudLab hostnames plus the repo location on each node.
 
+For the current 6-node `m510` small deployment, you can also use
+`scripts/cloudlab/inventory.m510_6.json`, which fixes:
+
+- `node-0`: Redis
+- `node-1`: Loader
+- `node-2`, `node-3`: Gateways
+- `node-4`, `node-5`: Backends
+
 ## Commands
 
 1. Environment and command-plan check:
@@ -133,6 +141,37 @@ python3 scripts/cloudlab/run_cloudlab_experiment.py \
   --skip-setup \
   --skip-build
 ```
+
+7. Random-routing Redis vs memory shared-state comparison (6-node `m510` small profile):
+
+```bash
+python scripts/cloudlab/run_random_state_store_comparison.py \
+  --inventory scripts/cloudlab/inventory.m510_6.json \
+  --sessions 1000 \
+  --concurrency 100 \
+  --repeats 3 \
+  --failure-rate 0.1 0.2 0.3 \
+  --amendment-rate 0.2 \
+  --results-dir results/cloudlab_random_redis_memory \
+  --dry-run
+```
+
+This wrapper expands two runs:
+
+- Redis correctness evidence:
+  - `--plangate-state-store redis`
+  - `--recovery-store redis`
+  - `--validation-mode correctness`
+- Memory no-shared-state diagnostic control:
+  - `--plangate-state-store inmemory`
+  - `--recovery-store inmemory`
+  - `--validation-mode stress`
+
+The Redis run is the shared-state correctness evidence. The memory run is a
+diagnostic control for the no-shared-state boundary; if it shows `state_miss`
+or related continuation failures under random routing, that is an expected
+boundary signal rather than a contradiction of the Redis result. This is not a
+claim about production Redis HA or fault-tolerant distributed control planes.
 
 Validated sticky-routing command:
 
@@ -367,9 +406,15 @@ P3 validation checks:
 ## Notes
 
 - Every gateway must share the same `--commitment-secret`.
+- `run_cloudlab_experiment.py` now treats `--plangate-state-store` and
+  `--recovery-store` as separate knobs and prints both in dry-run output.
 - Random-routing P3 recovery across multiple gateways requires
   `--recovery-store redis`; the sticky validated artifact intentionally uses the
   default `--recovery-store inmemory`.
+- For the 6-node Redis-vs-memory comparison, the Redis mode uses
+  `--plangate-state-store redis --recovery-store redis`, while the diagnostic
+  memory control uses
+  `--plangate-state-store inmemory --recovery-store inmemory`.
 - Random-routing checkpoint progress also relies on the shared reservation
   snapshot (`plan_steps` + `budget`) so any gateway can save the next recovery
   checkpoint after a successful continuation step.
