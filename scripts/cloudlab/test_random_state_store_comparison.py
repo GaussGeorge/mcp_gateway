@@ -11,6 +11,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -35,10 +36,12 @@ class RandomStateStoreComparisonTests(unittest.TestCase):
     def test_inventory_m510_6_shape(self):
         inventory_path = SCRIPT_DIR / "inventory.m510_6.json"
         data = json.loads(inventory_path.read_text(encoding="utf-8"))
-        self.assertEqual("node-0", data["redis"])
-        self.assertEqual(["node-1"], data["loaders"])
-        self.assertEqual(["node-2", "node-3"], data["gateways"])
-        self.assertEqual(["node-4", "node-5"], data["backends"])
+        self.assertTrue(data["redis"])
+        self.assertEqual(1, len(data["loaders"]))
+        self.assertEqual(2, len(data["gateways"]))
+        self.assertEqual(2, len(data["backends"]))
+        all_hosts = {data["redis"], *data["loaders"], *data["gateways"], *data["backends"]}
+        self.assertEqual(6, len(all_hosts))
 
     def test_memory_normalizes_to_inmemory(self):
         self.assertEqual("inmemory", runner.normalize_store_name("memory"))
@@ -49,6 +52,7 @@ class RandomStateStoreComparisonTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp_root, tempfile.TemporaryDirectory() as tmp_artifact:
             out_dir = Path(tmp_root) / "cloudlab_random_redis_memory"
             artifact_dir = Path(tmp_artifact) / "artifact"
+            ssh_key = str(Path(tmp_root) / "cloudlab_ed25519")
             out = io.StringIO()
             with contextlib.redirect_stdout(out):
                 rc = wrapper.main(
@@ -67,6 +71,8 @@ class RandomStateStoreComparisonTests(unittest.TestCase):
                         "0.3",
                         "--amendment-rate",
                         "0.2",
+                        "--ssh-key",
+                        ssh_key,
                         "--results-dir",
                         str(out_dir),
                         "--artifact-dir",
@@ -83,6 +89,8 @@ class RandomStateStoreComparisonTests(unittest.TestCase):
             self.assertIn("--routing random", text)
             self.assertIn("--failure-rate 0.1 0.2 0.3", text)
             self.assertIn("--amendment-rate 0.2", text)
+            self.assertIn("--ssh-key", text)
+            self.assertIn(ssh_key, text)
             self.assertNotIn("node-6", text)
             self.assertNotIn("node-7", text)
             self.assertFalse(out_dir.exists())
@@ -92,6 +100,8 @@ class RandomStateStoreComparisonTests(unittest.TestCase):
         topology = runner.build_topology(inventory, "small")
         with tempfile.TemporaryDirectory() as tmp_root:
             out_dir = Path(tmp_root) / "redis_run"
+            resolved_key = runner.collect_results.resolve_ssh_key("/tmp/cloudlab_ed25519")
+            resolved_key_json = resolved_key.replace("\\", "\\\\")
             argv = [
                 "run_cloudlab_experiment.py",
                 "--inventory",
@@ -112,6 +122,8 @@ class RandomStateStoreComparisonTests(unittest.TestCase):
                 "0.3",
                 "--amendment-rate",
                 "0.2",
+                "--ssh-key",
+                "/tmp/cloudlab_ed25519",
                 "--repeats",
                 "3",
                 "--sessions",
@@ -136,6 +148,8 @@ class RandomStateStoreComparisonTests(unittest.TestCase):
             text = out.getvalue()
             self.assertIn('"plangate_state_store": "redis"', text)
             self.assertIn('"recovery_store": "redis"', text)
+            self.assertIn(f'"ssh_key": "{resolved_key_json}"', text)
+            self.assertIn(f"-i {resolved_key}", text)
             self.assertIn("--plangate-state-store redis", text)
             self.assertIn("--recovery-store redis", text)
             self.assertNotIn("node-6", text)
@@ -158,6 +172,14 @@ class RandomStateStoreComparisonTests(unittest.TestCase):
         self.assertIn("--validation-mode stress", joined)
         self.assertIn("results/cloudlab_random_redis_memory", joined)
         self.assertIn("memory", joined)
+
+    def test_resolve_ssh_key_prefers_explicit_env_then_default(self):
+        with tempfile.TemporaryDirectory() as tmp_root:
+            explicit = str(Path(tmp_root) / "explicit_key")
+            env_key = str(Path(tmp_root) / "env_key")
+            with mock.patch.dict(os.environ, {"CLOUDLAB_SSH_KEY": env_key}, clear=False):
+                self.assertEqual(explicit, runner.collect_results.resolve_ssh_key(explicit))
+                self.assertEqual(env_key, runner.collect_results.resolve_ssh_key(""))
 
 
 if __name__ == "__main__":

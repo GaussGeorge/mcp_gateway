@@ -33,6 +33,26 @@ The current harness covers P0-P3:
 - `../compute_p3_recovery_amendment_stats.py`: writes `p3_summary.csv` and
   `p3_adversarial_summary.csv`
 
+All CloudLab entrypoints also support:
+
+```bash
+--ssh-key ~/.ssh/cloudlab_ed25519
+```
+
+Resolution order is:
+
+1. explicit `--ssh-key`
+2. `CLOUDLAB_SSH_KEY`
+3. `~/.ssh/cloudlab_ed25519` if present
+4. otherwise fall back to the local SSH default behavior
+
+Every `ssh` and `scp` invocation uses:
+
+- `-i <key>` when a key path resolves
+- `-o IdentitiesOnly=yes`
+- `-o BatchMode=yes`
+- `-o StrictHostKeyChecking=no`
+
 ## Inventory
 
 Create `scripts/cloudlab/inventory.json` from `inventory.example.json` and fill
@@ -152,6 +172,7 @@ python scripts/cloudlab/run_random_state_store_comparison.py \
   --repeats 3 \
   --failure-rate 0.1 0.2 0.3 \
   --amendment-rate 0.2 \
+  --ssh-key ~/.ssh/cloudlab_ed25519 \
   --results-dir results/cloudlab_random_redis_memory \
   --dry-run
 ```

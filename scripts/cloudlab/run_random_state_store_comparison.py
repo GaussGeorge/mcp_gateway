@@ -47,10 +47,13 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--results-dir", default=os.path.join("results", "cloudlab_random_redis_memory"))
     parser.add_argument("--artifact-dir", default=os.path.join("artifact_results", "cloudlab_random_redis_memory_v1"))
     parser.add_argument("--commitment-secret", default="")
+    parser.add_argument("--ssh-key", default="")
     parser.add_argument("--skip-setup", action="store_true")
     parser.add_argument("--skip-build", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
-    return parser.parse_args(argv)
+    args = parser.parse_args(argv)
+    args.ssh_key = cloudlab_runner.collect_results.resolve_ssh_key(args.ssh_key)
+    return args
 
 
 def mode_results_dir(root: str, mode: str) -> str:
@@ -105,6 +108,8 @@ def build_mode_command(args: argparse.Namespace, *, mode: str) -> list[str]:
     ]
     if args.commitment_secret:
         cmd.extend(["--commitment-secret", args.commitment_secret])
+    if args.ssh_key:
+        cmd.extend(["--ssh-key", args.ssh_key])
     if args.skip_setup:
         cmd.append("--skip-setup")
     if args.skip_build:
@@ -131,6 +136,7 @@ def print_dry_run(args: argparse.Namespace) -> int:
     print(f"amendment_rate={args.amendment_rate}")
     print(f"results_dir={os.path.abspath(args.results_dir)}")
     print(f"artifact_dir={os.path.abspath(args.artifact_dir)}")
+    print(f"ssh_key={args.ssh_key or ''}")
     print(f"skip_setup={args.skip_setup}")
     print(f"skip_build={args.skip_build}")
     for mode in ("redis", "memory"):

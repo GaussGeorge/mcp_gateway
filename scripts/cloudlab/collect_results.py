@@ -9,10 +9,40 @@ import os
 import posixpath
 import shutil
 import subprocess
+from pathlib import Path
 from typing import Iterable, List, Sequence, Tuple
 
 
-SSH_BASE_ARGS = ["-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=no"]
+DEFAULT_SSH_KEY = Path("~/.ssh/cloudlab_ed25519").expanduser()
+
+
+def resolve_ssh_key(ssh_key: str | None = None) -> str | None:
+    if ssh_key:
+        return str(Path(ssh_key).expanduser())
+    env_key = os.environ.get("CLOUDLAB_SSH_KEY", "").strip()
+    if env_key:
+        return str(Path(env_key).expanduser())
+    if DEFAULT_SSH_KEY.exists():
+        return str(DEFAULT_SSH_KEY)
+    return None
+
+
+def ssh_base_args(ssh_key: str | None = None) -> List[str]:
+    args: List[str] = []
+    resolved = resolve_ssh_key(ssh_key)
+    if resolved:
+        args.extend(["-i", resolved])
+    args.extend(
+        [
+            "-o",
+            "IdentitiesOnly=yes",
+            "-o",
+            "BatchMode=yes",
+            "-o",
+            "StrictHostKeyChecking=no",
+        ]
+    )
+    return args
 
 
 def remote_spec(user: str, host: str, path: str) -> str:
@@ -25,11 +55,12 @@ def scp_from_remote(
     remote_path: str,
     local_path: str,
     *,
+    ssh_key: str | None = None,
     recursive: bool = False,
     allow_missing: bool = False,
 ) -> None:
     os.makedirs(os.path.dirname(local_path) or ".", exist_ok=True)
-    cmd = ["scp", *SSH_BASE_ARGS]
+    cmd = ["scp", *ssh_base_args(ssh_key)]
     if recursive:
         cmd.append("-r")
     cmd.extend([remote_spec(user, host, remote_path), local_path])
@@ -40,9 +71,9 @@ def scp_from_remote(
         raise RuntimeError(f"scp failed for {host}:{remote_path}: {result.stderr.strip()}")
 
 
-def fetch_remote_text(user: str, host: str, command: str) -> str:
+def fetch_remote_text(user: str, host: str, command: str, *, ssh_key: str | None = None) -> str:
     result = subprocess.run(
-        ["ssh", *SSH_BASE_ARGS, f"{user}@{host}", command],
+        ["ssh", *ssh_base_args(ssh_key), f"{user}@{host}", command],
         capture_output=True,
         text=True,
         check=False,
@@ -88,6 +119,7 @@ def collect_run_artifacts(
     gateway_hosts: Sequence[str],
     backend_hosts: Sequence[str],
     local_run_dir: str,
+    ssh_key: str | None = None,
 ) -> str:
     os.makedirs(local_run_dir, exist_ok=True)
     loader_local_dir = os.path.join(local_run_dir, "loaders")
@@ -102,16 +134,16 @@ def collect_run_artifacts(
     loader_csvs: List[str] = []
     for host, remote_csv in loader_outputs:
         local_csv = os.path.join(loader_local_dir, f"{host}_steps.csv")
-        scp_from_remote(user, host, remote_csv, local_csv)
+        scp_from_remote(user, host, remote_csv, local_csv, ssh_key=ssh_key)
         loader_csvs.append(local_csv)
 
         remote_sessions = remote_csv.replace(".csv", "_sessions.csv")
         local_sessions = os.path.join(loader_local_dir, f"{host}_sessions.csv")
-        scp_from_remote(user, host, remote_sessions, local_sessions, allow_missing=True)
+        scp_from_remote(user, host, remote_sessions, local_sessions, ssh_key=ssh_key, allow_missing=True)
 
         remote_loader_log = os.path.join(os.path.dirname(remote_csv), f"loader_{host}.log").replace("\\", "/")
         local_loader_log = os.path.join(loader_local_dir, f"{host}.log")
-        scp_from_remote(user, host, remote_loader_log, local_loader_log, allow_missing=True)
+        scp_from_remote(user, host, remote_loader_log, local_loader_log, ssh_key=ssh_key, allow_missing=True)
 
     for host in gateway_hosts:
         host_dir = os.path.join(gateway_log_dir, host)
@@ -121,6 +153,7 @@ def collect_run_artifacts(
             host,
             f"{repo_dir}/results/log/cloudlab/",
             host_dir,
+            ssh_key=ssh_key,
             recursive=True,
             allow_missing=True,
         )
@@ -133,6 +166,7 @@ def collect_run_artifacts(
             host,
             f"{repo_dir}/results/log/cloudlab/",
             host_dir,
+            ssh_key=ssh_key,
             recursive=True,
             allow_missing=True,
         )
@@ -141,6 +175,7 @@ def collect_run_artifacts(
         user,
         redis_host,
         f"redis-cli -h 127.0.0.1 -p {redis_port} INFO",
+        ssh_key=ssh_key,
     )
     with open(os.path.join(redis_dir, "redis_info.txt"), "w", encoding="utf-8") as handle:
         handle.write(redis_info)
@@ -161,6 +196,7 @@ def collect_p3_run_artifacts(
     backend_hosts: Sequence[str],
     local_run_dir: str,
     policies: Sequence[str],
+    ssh_key: str | None = None,
 ) -> Tuple[str, str]:
     os.makedirs(local_run_dir, exist_ok=True)
     loader_local_dir = os.path.join(local_run_dir, "loaders")
@@ -179,12 +215,13 @@ def collect_p3_run_artifacts(
 
     for host, remote_results_dir, remote_loader_log in loader_outputs:
         local_results_dir = os.path.join(loader_local_dir, host)
-        scp_from_remote(user, host, remote_results_dir, local_results_dir, recursive=True)
+        scp_from_remote(user, host, remote_results_dir, local_results_dir, ssh_key=ssh_key, recursive=True)
         scp_from_remote(
             user,
             host,
             remote_loader_log,
             os.path.join(loader_local_dir, f"{host}.log"),
+            ssh_key=ssh_key,
             allow_missing=True,
         )
         for policy in policies:
@@ -206,6 +243,7 @@ def collect_p3_run_artifacts(
             host,
             f"{repo_dir}/results/log/cloudlab/",
             host_dir,
+            ssh_key=ssh_key,
             recursive=True,
             allow_missing=True,
         )
@@ -218,6 +256,7 @@ def collect_p3_run_artifacts(
             host,
             f"{repo_dir}/results/log/cloudlab/",
             host_dir,
+            ssh_key=ssh_key,
             recursive=True,
             allow_missing=True,
         )
@@ -226,6 +265,7 @@ def collect_p3_run_artifacts(
         user,
         redis_host,
         f"redis-cli -h 127.0.0.1 -p {redis_port} INFO",
+        ssh_key=ssh_key,
     )
     with open(os.path.join(redis_dir, "redis_info.txt"), "w", encoding="utf-8") as handle:
         handle.write(redis_info)
@@ -261,11 +301,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--repo-dir", required=True)
     parser.add_argument("--redis-host", required=True)
     parser.add_argument("--redis-port", type=int, required=True)
+    parser.add_argument("--ssh-key", default="")
     parser.add_argument("--loader-output", action="append", default=[], help="HOST=/remote/path/to/steps.csv")
     parser.add_argument("--gateway-host", action="append", default=[])
     parser.add_argument("--backend-host", action="append", default=[])
     parser.add_argument("--local-run-dir", required=True)
-    return parser.parse_args()
+    args = parser.parse_args()
+    args.ssh_key = resolve_ssh_key(args.ssh_key)
+    return args
 
 
 def main() -> int:
@@ -279,6 +322,7 @@ def main() -> int:
         gateway_hosts=args.gateway_host,
         backend_hosts=args.backend_host,
         local_run_dir=args.local_run_dir,
+        ssh_key=args.ssh_key,
     )
     print(merged_steps)
     return 0

@@ -40,7 +40,6 @@ PROFILE_COUNTS = {
     "large": {"loaders": 2, "gateways": 8, "backends": 8},
 }
 
-SSH_BASE_ARGS = ["-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=no"]
 DEFAULT_ARRIVAL_RATE = 50.0
 DEFAULT_BUDGET = 500
 DEFAULT_MIN_STEPS = 3
@@ -80,7 +79,7 @@ class Topology:
     backends: Tuple[Service, ...]
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run distributed PlanGate CloudLab experiments")
     parser.add_argument("--inventory", required=True)
     parser.add_argument("--profile", required=True, choices=sorted(PROFILE_COUNTS))
@@ -93,6 +92,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--amendment-rate", nargs="+", type=float, default=[0.0])
     parser.add_argument("--results-dir", default=os.path.join("results", "cloudlab_runs"))
     parser.add_argument("--commitment-secret", default="")
+    parser.add_argument("--ssh-key", default="")
     parser.add_argument("--arrival-rate", type=float, default=DEFAULT_ARRIVAL_RATE)
     parser.add_argument("--backend-workers", type=int, default=DEFAULT_BACKEND_WORKERS)
     parser.add_argument("--routing", default="random", choices=["single", "random", "sticky", "round_robin"])
@@ -104,9 +104,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--skip-build", action="store_true")
     parser.add_argument("--skip-validate", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     args.plangate_state_store = normalize_store_name(args.plangate_state_store)
     args.recovery_store = normalize_store_name(args.recovery_store)
+    args.ssh_key = collect_results.resolve_ssh_key(args.ssh_key)
     return args
 
 
@@ -177,25 +178,44 @@ def unique_hosts(topology: Topology) -> List[str]:
     return hosts
 
 
-def run_remote(user: str, host: str, command: str, *, capture_output: bool = False, dry_run: bool = False) -> subprocess.CompletedProcess[str]:
-    ssh_cmd = ["ssh", *SSH_BASE_ARGS, f"{user}@{host}", f"bash -lc {shlex.quote(command)}"]
+def run_remote(
+    user: str,
+    host: str,
+    command: str,
+    *,
+    ssh_key: str | None = None,
+    capture_output: bool = False,
+    dry_run: bool = False,
+) -> subprocess.CompletedProcess[str]:
+    ssh_cmd = ["ssh", *collect_results.ssh_base_args(ssh_key), f"{user}@{host}", f"bash -lc {shlex.quote(command)}"]
     if dry_run:
         print(f"[dry-run] {host}: {' '.join(ssh_cmd)}")
         return subprocess.CompletedProcess(ssh_cmd, 0, stdout="", stderr="")
     return subprocess.run(ssh_cmd, check=False, capture_output=capture_output, text=True)
 
 
-def run_parallel(label: str, jobs: Sequence[Tuple[str, str]], user: str, *, dry_run: bool = False) -> None:
+def build_ssh_command(user: str, host: str, command: str, *, ssh_key: str | None = None) -> List[str]:
+    return ["ssh", *collect_results.ssh_base_args(ssh_key), f"{user}@{host}", f"bash -lc {shlex.quote(command)}"]
+
+
+def run_parallel(
+    label: str,
+    jobs: Sequence[Tuple[str, str]],
+    user: str,
+    *,
+    ssh_key: str | None = None,
+    dry_run: bool = False,
+) -> None:
     if not jobs:
         return
     print(f"[cloudlab] {label}: {len(jobs)} job(s)")
     if dry_run:
         for host, command in jobs:
-            run_remote(user, host, command, dry_run=True)
+            run_remote(user, host, command, ssh_key=ssh_key, dry_run=True)
         return
     with ThreadPoolExecutor(max_workers=min(len(jobs), 8)) as pool:
         future_map = {
-            pool.submit(run_remote, user, host, command, capture_output=True, dry_run=False): (host, command)
+            pool.submit(run_remote, user, host, command, ssh_key=ssh_key, capture_output=True, dry_run=False): (host, command)
             for host, command in jobs
         }
         for future in as_completed(future_map):
@@ -207,45 +227,45 @@ def run_parallel(label: str, jobs: Sequence[Tuple[str, str]], user: str, *, dry_
                 )
 
 
-def check_ssh(topology: Topology, *, dry_run: bool = False) -> None:
+def check_ssh(topology: Topology, *, ssh_key: str | None = None, dry_run: bool = False) -> None:
     jobs = [(host, "echo cloudlab-ok") for host in unique_hosts(topology)]
-    run_parallel("ssh-check", jobs, topology.user, dry_run=dry_run)
+    run_parallel("ssh-check", jobs, topology.user, ssh_key=ssh_key, dry_run=dry_run)
 
 
-def setup_nodes(topology: Topology, *, dry_run: bool = False) -> None:
+def setup_nodes(topology: Topology, *, ssh_key: str | None = None, dry_run: bool = False) -> None:
     jobs: List[Tuple[str, str]] = []
     for host in unique_hosts(topology):
         suffix = " --install-redis" if host == topology.redis_host else ""
         cmd = f"cd {shlex.quote(topology.repo_dir)} && bash scripts/cloudlab/setup_node.sh{suffix}"
         jobs.append((host, cmd))
-    run_parallel("setup", jobs, topology.user, dry_run=dry_run)
+    run_parallel("setup", jobs, topology.user, ssh_key=ssh_key, dry_run=dry_run)
 
 
-def build_gateways(topology: Topology, *, dry_run: bool = False) -> None:
+def build_gateways(topology: Topology, *, ssh_key: str | None = None, dry_run: bool = False) -> None:
     jobs = [
         (svc.host, f"cd {shlex.quote(topology.repo_dir)} && bash scripts/cloudlab/build_gateway.sh")
         for svc in topology.gateways
     ]
-    run_parallel("build-gateways", jobs, topology.user, dry_run=dry_run)
+    run_parallel("build-gateways", jobs, topology.user, ssh_key=ssh_key, dry_run=dry_run)
 
 
-def stop_cluster(topology: Topology, *, dry_run: bool = False) -> None:
+def stop_cluster(topology: Topology, *, ssh_key: str | None = None, dry_run: bool = False) -> None:
     jobs: List[Tuple[str, str]] = []
     for host in unique_hosts(topology):
         arg = f" 127.0.0.1:{topology.redis_port}" if host == topology.redis_host else ""
         cmd = f"cd {shlex.quote(topology.repo_dir)} && bash scripts/cloudlab/stop_all.sh{arg}"
         jobs.append((host, cmd))
-    run_parallel("stop-clean", jobs, topology.user, dry_run=dry_run)
+    run_parallel("stop-clean", jobs, topology.user, ssh_key=ssh_key, dry_run=dry_run)
 
 
-def start_redis(topology: Topology, *, dry_run: bool = False) -> None:
+def start_redis(topology: Topology, *, ssh_key: str | None = None, dry_run: bool = False) -> None:
     command = f"sudo systemctl restart redis-server && redis-cli -h 127.0.0.1 -p {topology.redis_port} ping"
-    result = run_remote(topology.user, topology.redis_host, command, capture_output=True, dry_run=dry_run)
+    result = run_remote(topology.user, topology.redis_host, command, ssh_key=ssh_key, capture_output=True, dry_run=dry_run)
     if not dry_run and result.returncode != 0:
         raise RuntimeError(f"redis start failed: {result.stderr.strip() or result.stdout.strip()}")
 
 
-def start_backends(topology: Topology, backend_workers: int, *, dry_run: bool = False) -> None:
+def start_backends(topology: Topology, backend_workers: int, *, ssh_key: str | None = None, dry_run: bool = False) -> None:
     jobs = [
         (
             svc.host,
@@ -253,7 +273,7 @@ def start_backends(topology: Topology, backend_workers: int, *, dry_run: bool = 
         )
         for svc in topology.backends
     ]
-    run_parallel("start-backends", jobs, topology.user, dry_run=dry_run)
+    run_parallel("start-backends", jobs, topology.user, ssh_key=ssh_key, dry_run=dry_run)
 
 
 def expanded_gateway_command(
@@ -300,10 +320,12 @@ def start_gateways(
     plangate_state_store: str,
     recovery_store: str,
     *,
+    ssh_key: str | None = None,
     dry_run: bool = False,
 ) -> None:
     redis_addr = f"{topology.redis_host}:{topology.redis_port}"
-    jobs: List[Tuple[str, str]] = []
+    if dry_run:
+        jobs: List[Tuple[str, str]] = []
     for idx, svc in enumerate(topology.gateways):
         backend = topology.backends[idx % len(topology.backends)]
         expanded_gateway_cmd = expanded_gateway_command(
@@ -323,14 +345,30 @@ def start_gateways(
             f"commitment-token-mode=optional plan-amendment-mode=recovery-only recovery-store={recovery_store}"
         )
         log_path = f"results/log/cloudlab/gateway_{svc.host}:{svc.port}_{svc.port}.log"
-        cmd = (
+        remote_cmd = (
             f"cd {shlex.quote(topology.repo_dir)} && mkdir -p results/log/cloudlab && "
             f"printf '%s\\n' {shlex.quote(startup_line)} > {shlex.quote(log_path)} && "
-            f"nohup {expanded_gateway_cmd} >> {shlex.quote(log_path)} 2>&1 & "
+            f"nohup setsid {expanded_gateway_cmd} < /dev/null >> {shlex.quote(log_path)} 2>&1 & "
             f"echo $! > {shlex.quote(f'results/log/cloudlab/gateway_{svc.port}.pid')}"
         )
-        jobs.append((svc.host, cmd))
-    run_parallel("start-gateways", jobs, topology.user, dry_run=dry_run)
+        if dry_run:
+            jobs.append((svc.host, remote_cmd))
+            continue
+        ssh_cmd = build_ssh_command(topology.user, svc.host, remote_cmd, ssh_key=ssh_key)
+        proc = subprocess.Popen(
+            ssh_cmd,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        time.sleep(0.25)
+        rc = proc.poll()
+        if rc not in (None, 0):
+            raise RuntimeError(f"start-gateways failed to launch ssh for {svc.host}:{svc.port} rc={rc}")
+    if dry_run:
+        run_parallel("start-gateways", jobs, topology.user, ssh_key=ssh_key, dry_run=True)
+    else:
+        time.sleep(2)
 
 
 def ping_gateway(url: str, timeout_seconds: float = 2.0) -> bool:
@@ -430,6 +468,7 @@ def run_loaders(
     arrival_rate: float,
     backend_workers: int,
     routing: str,
+    ssh_key: str | None = None,
     dry_run: bool = False,
 ) -> List[Tuple[str, str]]:
     del backend_workers  # reserved for future loader-side tuning
@@ -472,7 +511,7 @@ def run_loaders(
         jobs.append((host, command))
         outputs.append((host, remote_csv))
 
-    run_parallel("run-loaders", jobs, topology.user, dry_run=dry_run)
+    run_parallel("run-loaders", jobs, topology.user, ssh_key=ssh_key, dry_run=dry_run)
     return outputs
 
 
@@ -488,6 +527,7 @@ def run_p3_loaders(
     policies: Sequence[str],
     routing: str,
     commitment_secret: str,
+    ssh_key: str | None = None,
     dry_run: bool = False,
 ) -> List[Tuple[str, str, str]]:
     remote_run_dir = resolve_remote_run_dir(topology.repo_dir, results_dir, remote_run_dir_suffix)
@@ -526,7 +566,7 @@ def run_p3_loaders(
         jobs.append((host, command))
         outputs.append((host, remote_loader_dir, loader_log))
 
-    run_parallel("run-p3-loaders", jobs, topology.user, dry_run=dry_run)
+    run_parallel("run-p3-loaders", jobs, topology.user, ssh_key=ssh_key, dry_run=dry_run)
     return outputs
 
 
@@ -581,6 +621,7 @@ def print_dry_run(topology: Topology, args: argparse.Namespace) -> None:
             "amendment_rate": args.amendment_rate,
             "repeats": args.repeats,
             "routing": args.routing,
+            "ssh_key": args.ssh_key or "",
             "plangate_state_store": args.plangate_state_store,
             "recovery_store": args.recovery_store,
             "min_success_rate": args.min_success_rate,
@@ -626,17 +667,18 @@ def main() -> int:
                 collapse_to_root=single_p3_root,
             )
         print_dry_run(topology, args)
-        check_ssh(topology, dry_run=True)
-        setup_nodes(topology, dry_run=True)
-        build_gateways(topology, dry_run=True)
-        stop_cluster(topology, dry_run=True)
-        start_redis(topology, dry_run=True)
-        start_backends(topology, args.backend_workers, dry_run=True)
+        check_ssh(topology, ssh_key=args.ssh_key, dry_run=True)
+        setup_nodes(topology, ssh_key=args.ssh_key, dry_run=True)
+        build_gateways(topology, ssh_key=args.ssh_key, dry_run=True)
+        stop_cluster(topology, ssh_key=args.ssh_key, dry_run=True)
+        start_redis(topology, ssh_key=args.ssh_key, dry_run=True)
+        start_backends(topology, args.backend_workers, ssh_key=args.ssh_key, dry_run=True)
         start_gateways(
             topology,
             args.commitment_secret or "<shared-secret>",
             args.plangate_state_store,
             args.recovery_store,
+            ssh_key=args.ssh_key,
             dry_run=True,
         )
         verify_gateways(topology, dry_run=True)
@@ -650,6 +692,7 @@ def main() -> int:
                 arrival_rate=args.arrival_rate,
                 backend_workers=args.backend_workers,
                 routing=args.routing,
+                ssh_key=args.ssh_key,
                 dry_run=True,
             )
         else:
@@ -664,15 +707,16 @@ def main() -> int:
                 policies=args.policies,
                 routing=args.routing,
                 commitment_secret=args.commitment_secret or "<shared-secret>",
+                ssh_key=args.ssh_key,
                 dry_run=True,
             )
         return 0
 
-    check_ssh(topology, dry_run=False)
+    check_ssh(topology, ssh_key=args.ssh_key, dry_run=False)
     if not args.skip_setup:
-        setup_nodes(topology, dry_run=False)
+        setup_nodes(topology, ssh_key=args.ssh_key, dry_run=False)
     if not args.skip_build:
-        build_gateways(topology, dry_run=False)
+        build_gateways(topology, ssh_key=args.ssh_key, dry_run=False)
 
     summary_rows: List[Dict[str, object]] = []
     validation_failures = 0
@@ -708,14 +752,15 @@ def main() -> int:
                     f"failure_rates={args.failure_rate} amendment_rate={amendment_rate} repeat={repeat}"
                 )
 
-            stop_cluster(topology, dry_run=False)
-            start_redis(topology, dry_run=False)
-            start_backends(topology, args.backend_workers, dry_run=False)
+            stop_cluster(topology, ssh_key=args.ssh_key, dry_run=False)
+            start_redis(topology, ssh_key=args.ssh_key, dry_run=False)
+            start_backends(topology, args.backend_workers, ssh_key=args.ssh_key, dry_run=False)
             start_gateways(
                 topology,
                 args.commitment_secret,
                 args.plangate_state_store,
                 args.recovery_store,
+                ssh_key=args.ssh_key,
                 dry_run=False,
             )
             verify_gateways(topology, dry_run=False)
@@ -730,6 +775,7 @@ def main() -> int:
                     arrival_rate=args.arrival_rate,
                     backend_workers=args.backend_workers,
                     routing=args.routing,
+                    ssh_key=args.ssh_key,
                     dry_run=False,
                 )
 
@@ -742,6 +788,7 @@ def main() -> int:
                     gateway_hosts=[svc.host for svc in topology.gateways],
                     backend_hosts=[svc.host for svc in topology.backends],
                     local_run_dir=local_run_dir,
+                    ssh_key=args.ssh_key,
                 )
 
                 summary = validate_results.summarize_steps_csv(merged_steps)
@@ -815,6 +862,7 @@ def main() -> int:
                 policies=args.policies,
                 routing=args.routing,
                 commitment_secret=args.commitment_secret,
+                ssh_key=args.ssh_key,
                 dry_run=False,
             )
 
@@ -828,6 +876,7 @@ def main() -> int:
                 backend_hosts=[svc.host for svc in topology.backends],
                 local_run_dir=local_run_dir,
                 policies=args.policies,
+                ssh_key=args.ssh_key,
             )
             compute_p3_summaries(local_run_dir)
 
@@ -892,7 +941,7 @@ def main() -> int:
             )
             write_summary_csv(summary_rows, os.path.join(os.path.abspath(args.results_dir), "summary.csv"))
     finally:
-        stop_cluster(topology, dry_run=False)
+        stop_cluster(topology, ssh_key=args.ssh_key, dry_run=False)
 
     return 1 if validation_failures else 0
 
