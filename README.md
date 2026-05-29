@@ -312,6 +312,39 @@ This evidence confirms live DeepSeek V4 Flash connectivity and tool-call
 execution through the real-LLM runner, but it should **not be over-claimed** as
 PlanGate outperforming every baseline in real-LLM experiments.
 
+## BurstGPT-Shaped Arrival Replay Evidence
+
+Lightweight BurstGPT-shaped arrival replay evidence is checked into:
+
+- [artifact_results/burstgpt_trace_replay_v1](artifact_results/burstgpt_trace_replay_v1)
+
+This bundle replays trace-derived inter-arrival timing windows from
+`external/BurstGPT/data/BurstGPT_1.csv` (sha256:
+`4bb3783693d0a435686fbfc885615d2349bd067239079fa4b749f2e679e12122`) through
+controlled PlanGate session templates in local mock mode
+(`mock_sterile_single_machine`).
+
+Recorded matrix and checks in `validation.json`:
+
+- windows: 3 (`normal`, `burst`, `peak_burst`), each with `window_size=24`
+- scales: `1.0 / 1.5 / 2.0`
+- repeats: `3`
+- gateways: `ng / static / pp / rajomon / plangate_relaxed`
+- summary rows: `135`, aggregate rows: `45`
+- `plangate_real_absent = true`
+- `all_client_rc_zero = true`
+- `all_client_timed_out_zero = true`
+- `all_error_empty_or_zero = true`
+- `no_raw_trace_in_artifact = true`
+
+Boundary of interpretation:
+
+- This is arrival-pattern realism evidence only.
+- It is **not** a real agent workflow trace experiment.
+- It is **not** CloudLab/distributed-state evidence.
+- It should **not** be interpreted as universal gateway dominance across all
+  trace windows.
+
 ## MCP-Bench Small Workflow-Shape Smoke Evidence
 
 Lightweight MCP-Bench workflow-shape smoke evidence is checked into:

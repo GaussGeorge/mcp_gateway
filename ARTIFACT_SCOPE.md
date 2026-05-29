@@ -84,6 +84,7 @@ logs and large per-step traces.
 | `artifact_results/p3_failure_mechanism_ablation_v1/` | `p3_failure_mechanism_ablation_summary.csv`, `p3_failure_mechanism_ablation_agg.csv`, `validation.json`, `README_RESULT.md` | Local controlled P3 failure/amendment mechanism ablation evidence |
 | `artifact_results/glm_real_llm_c10_refresh_v1/` | `week5_summary.csv`, `week5_agg.csv`, `12 x steps_summary_*.csv`, `validation.json`, `README_RESULT.md` | Local live-GLM real-LLM refresh evidence after runner observability fixes |
 | `artifact_results/deepseek_v4_flash_smoke_v1/` | `week5_summary.csv`, `week5_agg.csv`, `4 x steps_summary_*.csv`, `validation.json`, `README_RESULT.md` | Local live-DeepSeek V4 Flash provider/tool-call compatibility smoke evidence |
+| `artifact_results/burstgpt_trace_replay_v1/` | `burstgpt_trace_replay_summary.csv`, `burstgpt_trace_replay_agg.csv`, `validation.json`, `README_RESULT.md` | Local BurstGPT-shaped arrival replay evidence over 3 windows x 3 scales x 3 repeats x 5 gateways; strictly arrival-pattern realism only (not real workflow trace, not CloudLab evidence) |
 | `artifact_results/mcpbench_smoke_v1/` | `mcpbench_smoke_tasks.csv`, `mcpbench_smoke_summary.csv`, `mcpbench_smoke_agg.csv`, `validation.json`, `README_RESULT.md` | Local MCP-Bench metadata-derived small workflow-shape compatibility smoke evidence (5 gateways x 3 repeats x 30 selected tasks); strictly single-machine controlled smoke, not full MCP-Bench deployment, not model-accuracy evidence |
 | `artifact_results/selfhosted_vllm_stress_c16w8_tuned_5gw_v1/` | `selfhosted_vllm_stress_summary.csv`, `selfhosted_vllm_stress_agg.csv`, `validation.json`, `README_RESULT.md` | Submitted self-hosted vLLM stress evidence with the paper display 5-gateway subset (`ng/static/pp/rajomon/plangate_relaxed`) |
 | `artifact_results/selfhosted_vllm_profile_sweep_v1/` | `selfhosted_vllm_profile_sweep_summary.csv`, `selfhosted_vllm_profile_sweep_agg.csv`, `validation.json`, `README_RESULT.md` | Submitted self-hosted vLLM multi-intensity sweep evidence (`C=8/12/16/20`) for boundary characterization with `ng/static/pp/rajomon/plangate_relaxed` |
@@ -151,6 +152,14 @@ observe later tool-call execution, and complete a `C5` smoke run without
 client/runtime errors or timeout. It is not a mock result, not a CloudLab
 recovery result, and should **not be over-claimed** as PlanGate outperforming
 every baseline in real-LLM experiments.
+
+`artifact_results/burstgpt_trace_replay_v1/` is a local BurstGPT-shaped
+arrival replay bundle. It replays trace-derived inter-arrival timing windows
+and scales using controlled PlanGate session templates in a single-machine mock
+backend mode. This bundle should be read narrowly as arrival-pattern realism
+evidence; it is **not** a real MCP workflow-trace experiment, **not** CloudLab
+distributed-state evidence, and **not** a universal ranking claim across all
+trace windows.
 
 `artifact_results/mcpbench_smoke_v1/` is a local MCP-Bench-derived workflow-shape
 smoke bundle. It uses MCP-Bench task metadata and dependency descriptions to

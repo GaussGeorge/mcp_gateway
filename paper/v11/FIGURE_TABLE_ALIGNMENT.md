@@ -123,6 +123,12 @@ Scope: paper/v11 + paper/figures + scripts/build_paper_figures_v2.py + artifact_
   - Source: `artifact_results/cloudlab_random_redis_memory_v1/cloudlab_random_redis_memory_summary.csv`
   - Status: aligned
 
+- tab:burstgpt_replay_appendix
+  - Source: `artifact_results/burstgpt_trace_replay_v1/burstgpt_trace_replay_agg.csv`
+  - Scope: compact appendix-only arrival-pattern realism summary over 3 windows x 3 scales x 3 repeats x 5 gateways
+  - Boundary: not real workflow traces, not CloudLab/distributed-state evidence, not universal ranking evidence
+  - Status: aligned
+
 - statistical/effect listings appendix
   - Source:
     - `artifact_results/statistical_summary_v1/statistical_summary.csv`
@@ -158,6 +164,9 @@ Scope: paper/v11 + paper/figures + scripts/build_paper_figures_v2.py + artifact_
 
 5. v11 lacked explicit integration points for the new profile-sweep, P3 grid, CloudLab Redis-vs-memory, and statistical-summary artifacts.
   - Fix: added main-text narrative/table/figure references plus supplementary full-table listings and source mapping entries.
+
+6. v11 previously lacked an explicit appendix table for BurstGPT-shaped arrival replay.
+  - Fix: added `tab:burstgpt_replay_appendix` and linked it from `main.tex` as bounded arrival-pattern realism support only.
 
 ## 5) Explicit Non-Changes and Boundaries
 
