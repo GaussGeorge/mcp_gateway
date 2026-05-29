@@ -345,6 +345,85 @@ without claiming that this single stress result settles every real-LLM
 governance comparison. A conservative diagnostic profile was used during local
 sensitivity checking but is not included in the submitted vLLM artifact.
 
+## Self-Hosted vLLM Multi-Intensity Sweep Evidence
+
+Lightweight self-hosted vLLM multi-intensity sweep evidence is checked into:
+
+- [artifact_results/selfhosted_vllm_profile_sweep_v1/README_RESULT.md](artifact_results/selfhosted_vllm_profile_sweep_v1/README_RESULT.md)
+
+This bundle is the profile sweep artifact for backend-congestion boundary
+characterization over `C=8/12/16/20` with the submitted gateway set
+`ng/static/pp/rajomon/plangate_relaxed` (`PlanGate (tuned)` in paper labels).
+It intentionally excludes `plangate_real` and keeps only summary-level files:
+
+- `selfhosted_vllm_profile_sweep_summary.csv`
+- `selfhosted_vllm_profile_sweep_agg.csv`
+- `validation.json`
+- `README_RESULT.md`
+
+Interpretation boundary: low-contention points need not favor PlanGate, while
+higher-congestion points (`C16/C20`) are used to characterize completion and
+cascade-pressure behavior under saturation.
+
+## CloudLab Random-Routing Redis vs Memory Evidence
+
+Lightweight CloudLab Redis-vs-memory shared-state evidence is checked into:
+
+- [artifact_results/cloudlab_random_redis_memory_v1/README_RESULT.md](artifact_results/cloudlab_random_redis_memory_v1/README_RESULT.md)
+
+This bundle is a narrow shared-state correctness artifact under random routing.
+It compares a Redis-backed correctness arm against an in-memory diagnostic
+control without copying raw logs or rerunning CloudLab:
+
+- `cloudlab_random_redis_memory_summary.csv`
+- `cloudlab_random_redis_memory_agg.csv`
+- `validation.json`
+- `README_RESULT.md`
+
+Key aggregate facts:
+
+- Redis: `runs=3`, `cross_node_sessions_sum=21877`, `state_miss_sum=0`
+- Memory control: `runs=3`, `cross_node_sessions_sum=12398`, `state_miss_sum=9813`
+- `validation.json` records `errors=[]`
+
+Interpretation boundary: this supports random-routing shared-state lookup
+correctness, not a universal performance claim and not a production Redis HA
+claim.
+
+## P3 Failure/Amendment Grid Evidence
+
+Lightweight P3 failure/amendment grid evidence is checked into:
+
+- [artifact_results/p3_failure_amendment_grid_v1/README_RESULT.md](artifact_results/p3_failure_amendment_grid_v1/README_RESULT.md)
+
+This bundle extends the local failure/amendment mechanism evidence from a
+single workload point to a six-cell `(failure_rate, amendment_rate)` grid.
+Its role is mechanism-consistency boundary checking, not a universal ranking:
+
+- disabling recovery drives `recovery_success_mean=0.0` in every cell
+- disabling amendment drives `amendment_success_mean=0.0` in every cell
+- Full is favorable in most cells, but not every low-failure boundary cell
+
+## Statistical Summary / CI Evidence
+
+The machine-readable statistical summary artifact is checked into:
+
+- [artifact_results/statistical_summary_v1/README_RESULT.md](artifact_results/statistical_summary_v1/README_RESULT.md)
+
+This bundle aggregates existing artifact CSVs only. It now includes:
+
+- mock regression summaries
+- P3 mechanism ablation
+- P3 failure/amendment grid
+- self-hosted vLLM stress and profile sweep
+- throughput/latency summary
+- CloudLab Redis-vs-memory shared-state diagnostic
+
+Its validation target is:
+
+- `cloudlab_included = true`
+- `errors = []`
+
 ## Gateway Processing Overhead
 
 The gateway-overhead benchmark is split into two layers:

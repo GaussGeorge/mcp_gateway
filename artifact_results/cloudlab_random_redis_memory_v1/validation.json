@@ -1,0 +1,35 @@
+{
+  "artifact": "cloudlab_random_redis_memory_v1",
+  "source_dir": "results/cloudlab_random_redis_memory",
+  "row_count": 6,
+  "store_counts": {
+    "redis": 3,
+    "memory": 3
+  },
+  "protocol": {
+    "profile": "small",
+    "workload": "p3",
+    "routing": "random",
+    "sessions": 1000,
+    "concurrency": 100,
+    "repeats": 3,
+    "failure_rates": [
+      "0.1",
+      "0.2",
+      "0.3"
+    ],
+    "amendment_rate": "0.2"
+  },
+  "redis_correctness_checks": {
+    "state_miss_zero": true,
+    "duplicate_admission_zero": true,
+    "commitment_errors_zero": true,
+    "adversarial_all_rejected": true
+  },
+  "memory_diagnostic_checks": {
+    "state_miss_positive_all_runs": true,
+    "state_miss_sum_positive": true,
+    "adversarial_has_rejection_failures": true
+  },
+  "errors": []
+}

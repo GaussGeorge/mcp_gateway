@@ -5,6 +5,7 @@
 \usepackage{xcolor}
 \usepackage{pifont}
 \usepackage{multirow}
+\usepackage{fancyvrb}
 \usepackage{enumitem}
 \setlist[itemize]{nosep,leftmargin=*}
 \setlist[enumerate]{nosep,leftmargin=*}
@@ -48,8 +49,11 @@ The updated paper text and the figures under \texttt{paper/figures} are generate
 \texttt{throughput\_latency\_summary\_v1} & \texttt{throughput\_latency\_summary.csv}, \texttt{throughput\_latency\_agg.csv} & Covers Exp1/Exp5/Exp6/Exp10; \texttt{row\_count=200}, \texttt{agg\_row\_count=40}, required columns present. \\
 \texttt{exp11\_newmechanismablation\_v1} & Exp11 summary and aggregate & Four variants, five repeats each; \texttt{row\_count=20}, \texttt{agg\_row\_count=4}, empty error column. \\
 \texttt{p3\_failure\_mechanism\_ablation\_v1} & P3 failure/amendment summary and aggregate & Four variants, three repeats each; all client return codes and timeouts zero; signal checks confirm full recovery/amendment success and zeroed disabled mechanisms. \\
+\texttt{p3\_failure\_amendment\_grid\_v1} & P3 grid summary and aggregate & Six $(failure,amendment)$ cells; majority of cells preserve the intended mechanism ordering, while low-failure boundary cells remain mixed rather than universally favorable to Full. \\
 \texttt{selfhosted\_vllm\_stress\_c16w8\_tuned\_5gw\_v1} & \texttt{selfhosted\_vllm\_stress\_summary.csv}, \texttt{selfhosted\_vllm\_stress\_agg.csv} & Submitted self-hosted vLLM stress evidence with validation \texttt{errors=[]}; exactly the main-paper 5-gateway subset (ng/static/pp/rajomon/\texttt{plangate\_relaxed}), with \texttt{plangate\_real} omitted. \\
-\texttt{cloudlab\_p3\_small\_random\_redis\_cp\_v2} & CloudLab validation summaries & Random routing with Redis checkpoint/reservation state; 843 cross-node sessions, zero state misses, zero duplicate admissions. \\
+\texttt{selfhosted\_vllm\_profile\_sweep\_v1} & \texttt{selfhosted\_vllm\_profile\_sweep\_summary.csv}, \texttt{selfhosted\_vllm\_profile\_sweep\_agg.csv} & Multi-intensity self-hosted vLLM boundary evidence over $C{=}8/12/16/20$; explicitly retains the low-contention region where PlanGate is not always the top gateway. \\
+\texttt{cloudlab\_random\_redis\_memory\_v1} & Redis-vs-memory CloudLab summary and aggregate & Random routing with Redis checkpoint/reservation state versus in-memory control; Redis records zero state misses while the control shows substantial state loss. \\
+\texttt{statistical\_summary\_v1} & \texttt{statistical\_summary.csv}, \texttt{effect\_size\_summary.csv}, \texttt{claim\_summary.csv} & Bootstrap-based summary over existing artifact CSVs; validation now records \texttt{cloudlab\_included=true} with \texttt{errors=[]}. \\
 \texttt{deepseek\_v4\_flash\_smoke\_v1} and \texttt{glm\_real\_llm\_c10\_refresh\_v1} & Provider smoke summaries & Real-provider compatibility and boundary evidence; used as support rather than primary dominance evidence. \\
 \bottomrule
 \end{tabular}}
@@ -274,7 +278,7 @@ For $N\in[3,10]$ with $\alpha{=}0.5$, evaluating the exact sums:
 The ratio grows with session length---explaining the amplified long-tail benefits---and is already practically significant ($\geq 2\times$) at the shortest sessions in our workload.
 
 \textbf{Qualitative design arguments.}
-In PlanGate's P\&S mode, sessions declare a DAG at admission; budget reservation prevents price-induced rejection within the declared plan scope under the stated assumptions. ReAct sessions cannot declare future steps, so risk exposure $R(K) = \sum_{i=1}^{K} c_i$ grows with each step and the discount function directly controls the tradeoff. The convex $d(K)=1/(1+K^2\alpha)$ captures the acceleration: at $K{=}3$ with $\alpha{=}0.5$, the effective price drops to 18\% of base. A linear discount $d(K)=1/(1+K\alpha)$ achieves only $O(N)$ waste; a constant discount ignores sunk cost entirely. The discount function ablation in the main paper empirically confirms: $K^2$ outperforms linear (21.0 cascades) and logarithmic (31.2) in cascade prevention.
+In PlanGate's P\&S mode, sessions declare a DAG at admission; budget reservation prevents price-induced rejection within the declared plan scope under the stated assumptions. ReAct sessions cannot declare future steps, so risk exposure $R(K) = \sum_{i=1}^{K} c_i$ grows with each step and the discount function directly controls the tradeoff. The convex $d(K)=1/(1+K^2\alpha)$ captures the acceleration: at $K{=}3$ with $\alpha{=}0.5$, the effective price drops to 18\% of base. A linear discount $d(K)=1/(1+K\alpha)$ achieves only $O(N)$ waste; a constant discount ignores sunk cost entirely. The refreshed discount-function ablation in the main paper should therefore be read as diagnostic sensitivity evidence rather than as proof that $K^2$ is the empirical winner in every workload: in the current artifact, exponential and linear variants complete slightly more sessions and achieve higher effective goodput than quadratic and logarithmic, while cascade counts remain clustered and JFI is effectively 1.0 for all four variants. We retain the quadratic form as the default because it is the simplest convex schedule with predictable monotone growth and conservative continuation pricing, not because Exp8 currently shows it dominating all alternatives.
 
 
 % ================================================================
@@ -368,6 +372,150 @@ PlanGate achieves 72.6 successful tasks ($2.5\times$ NG's 28.8) with only 1.0 ca
 % ================================================================
 
 The self-hosted vLLM high-contention experiment is reported in the main paper's self-hosted vLLM section, self-hosted vLLM table, and self-hosted vLLM figure. The protocol is: $N{=}3$ repeats, 80 agents, $C{=}16$, burst arrival (12 per burst with 5\,s gap), \texttt{max\_steps=8}, 8 backend/GPU workers, and vLLM \texttt{max-num-seqs=8}. The submitted artifact contains the main-paper 5-gateway display subset: \texttt{ng}, \texttt{static}, \texttt{pp}, \texttt{rajomon}, and \texttt{plangate\_relaxed} (shown as PlanGate (tuned)); it does not include \texttt{plangate\_real}. A conservative diagnostic profile was used during local sensitivity checking but is not included in the submitted vLLM artifact.
+
+% ================================================================
+\section{Self-Hosted vLLM Multi-Intensity Sweep}
+\label{sec:selfhosted_profile_appendix}
+% ================================================================
+
+Table~\ref{tab:selfhosted_profile_appendix} reproduces the complete aggregate CSV from \texttt{artifact\_results/selfhosted\_vllm\_profile\_sweep\_v1}. The main-paper interpretation is intentionally bounded: the $C{=}8$ row set preserves the low-contention region where PlanGate (tuned) is not the top success-rate gateway, while the $C{=}16/20$ rows show the harsher saturation regime where its success/ABD trade-off improves relative to several baselines.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\columnwidth]{fig_selfhosted_vllm_profile_sweep}
+\caption{Full self-hosted vLLM profile sweep figure generated from \texttt{selfhosted\_vllm\_profile\_sweep\_agg.csv}.}
+\label{fig:selfhosted_profile_appendix}
+\end{figure}
+
+\begin{table*}[h]
+\centering
+\caption{Complete self-hosted vLLM profile-sweep aggregate table from \texttt{artifact\_results/selfhosted\_vllm\_profile\_sweep\_v1/selfhosted\_vllm\_profile\_sweep\_agg.csv}. P95 is reported in seconds.}
+\label{tab:selfhosted_profile_appendix}
+\small
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}rrrcccc@{}}
+\toprule
+\textbf{C} & \textbf{Gateway} & \textbf{Runs} & \textbf{Succ.\%} & \textbf{ABD\%} & \textbf{Cascade} & \textbf{P95 (s)} \\
+\midrule
+8 & ng & 3 & 78.77 & 20.23 & 17.00 & 199.7 \\
+8 & plangate\_relaxed & 3 & 77.93 & 20.10 & 17.67 & 206.3 \\
+8 & pp & 3 & 90.00 & 9.63 & 8.00 & 205.8 \\
+8 & rajomon & 3 & 91.27 & 7.97 & 7.00 & 204.9 \\
+8 & static & 3 & 87.50 & 11.73 & 10.00 & 225.4 \\
+12 & ng & 3 & 23.33 & 74.10 & 61.33 & 178.5 \\
+12 & plangate\_relaxed & 3 & 31.67 & 64.50 & 54.67 & 176.2 \\
+12 & pp & 3 & 22.93 & 74.33 & 61.67 & 176.6 \\
+12 & rajomon & 3 & 37.90 & 59.23 & 49.67 & 205.3 \\
+12 & static & 3 & 28.33 & 69.57 & 57.33 & 176.4 \\
+16 & ng & 3 & 17.53 & 80.17 & 66.00 & 187.6 \\
+16 & plangate\_relaxed & 3 & 25.40 & 71.67 & 59.67 & 185.7 \\
+16 & pp & 3 & 19.57 & 77.03 & 64.33 & 226.4 \\
+16 & rajomon & 3 & 16.27 & 80.97 & 67.00 & 188.1 \\
+16 & static & 3 & 15.03 & 80.50 & 68.00 & 175.8 \\
+20 & ng & 3 & 16.27 & 80.37 & 67.00 & 186.8 \\
+20 & plangate\_relaxed & 3 & 28.30 & 68.43 & 57.33 & 163.7 \\
+20 & pp & 3 & 19.20 & 77.87 & 64.67 & 157.8 \\
+20 & rajomon & 3 & 23.33 & 73.00 & 61.33 & 194.2 \\
+20 & static & 3 & 15.83 & 81.73 & 67.33 & 173.9 \\
+\bottomrule
+\end{tabular}}
+\end{table*}
+
+% ================================================================
+\section{P3 Failure/Amendment Grid Aggregate}
+\label{sec:p3_grid_appendix}
+% ================================================================
+
+Table~\ref{tab:p3_grid_appendix} reproduces the complete aggregate CSV from \texttt{artifact\_results/p3\_failure\_amendment\_grid\_v1}. Figure~\ref{fig:p3_grid_appendix} visualizes the same boundary: the dominant qualitative signal is stable mechanism activation, not that Full wins every cell on every aggregate metric.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\columnwidth]{fig_p3_failure_amendment_grid}
+\caption{P3 failure/amendment grid figure generated from \texttt{p3\_failure\_amendment\_grid\_agg.csv}.}
+\label{fig:p3_grid_appendix}
+\end{figure}
+
+\begin{table*}[h]
+\centering
+\caption{Complete P3 failure/amendment grid aggregate from \texttt{artifact\_results/p3\_failure\_amendment\_grid\_v1/p3\_failure\_amendment\_grid\_agg.csv}.}
+\label{tab:p3_grid_appendix}
+\small
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}cccrrrrr@{}}
+\toprule
+\textbf{Fail.} & \textbf{Amend.} & \textbf{Gateway} & \textbf{Runs} & \textbf{Success} & \textbf{Cascade} & \textbf{Recovery} & \textbf{Amendment} \\
+\midrule
+0.1 & 0.1 & plangate\_full & 3 & 184.7 & 15.3 & 17.7 & 2.0 \\
+0.1 & 0.1 & wo\_amendment & 3 & 188.3 & 11.7 & 16.3 & 0.0 \\
+0.1 & 0.1 & wo\_commitment & 3 & 187.3 & 12.7 & 14.3 & 0.0 \\
+0.1 & 0.1 & wo\_recovery & 3 & 170.3 & 29.7 & 0.0 & 0.0 \\
+0.1 & 0.2 & plangate\_full & 3 & 191.7 & 8.3 & 19.3 & 3.7 \\
+0.1 & 0.2 & wo\_amendment & 3 & 179.0 & 21.0 & 12.3 & 0.0 \\
+0.1 & 0.2 & wo\_commitment & 3 & 176.0 & 24.0 & 14.7 & 0.0 \\
+0.1 & 0.2 & wo\_recovery & 3 & 148.7 & 51.3 & 0.0 & 0.0 \\
+0.2 & 0.1 & plangate\_full & 3 & 188.7 & 11.3 & 36.3 & 3.7 \\
+0.2 & 0.1 & wo\_amendment & 3 & 184.7 & 15.3 & 33.7 & 0.0 \\
+0.2 & 0.1 & wo\_commitment & 3 & 184.0 & 16.0 & 30.7 & 0.0 \\
+0.2 & 0.1 & wo\_recovery & 3 & 155.7 & 44.3 & 0.0 & 0.0 \\
+0.2 & 0.2 & plangate\_full & 3 & 191.7 & 8.3 & 36.0 & 7.0 \\
+0.2 & 0.2 & wo\_amendment & 3 & 181.0 & 19.0 & 29.7 & 0.0 \\
+0.2 & 0.2 & wo\_commitment & 3 & 178.3 & 21.7 & 29.0 & 0.0 \\
+0.2 & 0.2 & wo\_recovery & 3 & 137.7 & 62.3 & 0.0 & 0.0 \\
+0.3 & 0.1 & plangate\_full & 3 & 188.0 & 12.0 & 48.0 & 4.7 \\
+0.3 & 0.1 & wo\_amendment & 3 & 182.0 & 18.0 & 46.7 & 0.0 \\
+0.3 & 0.1 & wo\_commitment & 3 & 182.0 & 18.0 & 46.3 & 0.0 \\
+0.3 & 0.1 & wo\_recovery & 3 & 140.0 & 60.0 & 0.0 & 0.0 \\
+0.3 & 0.2 & plangate\_full & 3 & 191.0 & 9.0 & 51.0 & 12.0 \\
+0.3 & 0.2 & wo\_amendment & 3 & 175.3 & 24.7 & 42.3 & 0.0 \\
+0.3 & 0.2 & wo\_commitment & 3 & 178.7 & 21.3 & 45.3 & 0.0 \\
+0.3 & 0.2 & wo\_recovery & 3 & 131.3 & 68.7 & 0.0 & 0.0 \\
+\bottomrule
+\end{tabular}}
+\end{table*}
+
+% ================================================================
+\section{CloudLab Random-Routing Redis vs Memory}
+\label{sec:cloudlab_random_redis_memory_appendix}
+% ================================================================
+
+Table~\ref{tab:cloudlab_random_redis_memory_appendix} reproduces the per-run summary CSV from \texttt{artifact\_results/cloudlab\_random\_redis\_memory\_v1}. The Redis arm is the correctness arm and the in-memory arm is the diagnostic control. The table should be read narrowly as shared-state lookup evidence under random routing.
+
+\begin{table*}[h]
+\centering
+\caption{Complete CloudLab Redis-vs-memory per-run summary from \texttt{artifact\_results/cloudlab\_random\_redis\_memory\_v1/cloudlab\_random\_redis\_memory\_summary.csv}.}
+\label{tab:cloudlab_random_redis_memory_appendix}
+\small
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lrrrrrrr@{}}
+\toprule
+\textbf{Store} & \textbf{Repeat} & \textbf{Cross-node} & \textbf{StateMiss} & \textbf{DupAdm} & \textbf{Invalid} & \textbf{Mismatch} & \textbf{Expired} \\
+\midrule
+memory & 1 & 4049 & 3215 & 0 & 0 & 0 & 0 \\
+memory & 2 & 4190 & 3330 & 0 & 0 & 0 & 0 \\
+memory & 3 & 4159 & 3268 & 0 & 0 & 0 & 0 \\
+redis & 1 & 7381 & 0 & 0 & 0 & 0 & 0 \\
+redis & 2 & 7057 & 0 & 0 & 0 & 0 & 0 \\
+redis & 3 & 7439 & 0 & 0 & 0 & 0 & 0 \\
+\bottomrule
+\end{tabular}}
+\end{table*}
+
+% ================================================================
+\section{Full Statistical Summary Listings}
+\label{sec:statistical_summary_appendix}
+% ================================================================
+
+The complete statistical-summary and effect-size tables are preserved as machine-readable appendix listings under \texttt{artifact\_results/statistical\_summary\_v1}. They are reproduced directly below to avoid manual transcription drift. These listings should be read with the same evidence hierarchy as the main text: CloudLab rows are state-consistency evidence, provider rows remain boundary evidence if added later, and diagnostics such as Exp8 remain explicitly labeled diagnostic.
+
+\subsection*{Full \texttt{statistical\_summary.csv}}
+\IfFileExists{../../artifact_results/statistical_summary_v1/statistical_summary.csv}{%
+{\scriptsize\VerbatimInput{../../artifact_results/statistical_summary_v1/statistical_summary.csv}}%
+}{\textbf{Missing file:} \texttt{../../artifact\_results/statistical\_summary\_v1/statistical\_summary.csv}}
+
+\subsection*{Full \texttt{effect\_size\_summary.csv}}
+\IfFileExists{../../artifact_results/statistical_summary_v1/effect_size_summary.csv}{%
+{\scriptsize\VerbatimInput{../../artifact_results/statistical_summary_v1/effect_size_summary.csv}}%
+}{\textbf{Missing file:} \texttt{../../artifact\_results/statistical\_summary\_v1/effect\_size\_summary.csv}}
 
 
 % ================================================================

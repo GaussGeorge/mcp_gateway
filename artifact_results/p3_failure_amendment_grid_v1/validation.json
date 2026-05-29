@@ -1,0 +1,105 @@
+{
+  "row_count": 72,
+  "agg_row_count": 24,
+  "failure_rates": [
+    0.1,
+    0.2,
+    0.3
+  ],
+  "amendment_rates": [
+    0.1,
+    0.2
+  ],
+  "gateways": [
+    "plangate_full",
+    "wo_commitment",
+    "wo_amendment",
+    "wo_recovery"
+  ],
+  "gateway_counts": {
+    "plangate_full": 18,
+    "wo_commitment": 18,
+    "wo_amendment": 18,
+    "wo_recovery": 18
+  },
+  "gateway_counts_by_cell": {
+    "F0.1_A0.1": {
+      "plangate_full": 3,
+      "wo_commitment": 3,
+      "wo_amendment": 3,
+      "wo_recovery": 3
+    },
+    "F0.1_A0.2": {
+      "plangate_full": 3,
+      "wo_commitment": 3,
+      "wo_amendment": 3,
+      "wo_recovery": 3
+    },
+    "F0.2_A0.1": {
+      "plangate_full": 3,
+      "wo_commitment": 3,
+      "wo_amendment": 3,
+      "wo_recovery": 3
+    },
+    "F0.2_A0.2": {
+      "plangate_full": 3,
+      "wo_commitment": 3,
+      "wo_amendment": 3,
+      "wo_recovery": 3
+    },
+    "F0.3_A0.1": {
+      "plangate_full": 3,
+      "wo_commitment": 3,
+      "wo_amendment": 3,
+      "wo_recovery": 3
+    },
+    "F0.3_A0.2": {
+      "plangate_full": 3,
+      "wo_commitment": 3,
+      "wo_amendment": 3,
+      "wo_recovery": 3
+    }
+  },
+  "all_client_rc_zero": true,
+  "all_client_timed_out_zero": true,
+  "all_error_empty_or_zero": true,
+  "signal_checks": {
+    "wo_recovery_zero_recovery_success": true,
+    "wo_amendment_zero_amendment_success": true,
+    "wo_commitment_zero_commitment_issued": true,
+    "full_has_commitment_issued": true,
+    "full_has_recovery_success_in_any_cell": true,
+    "full_has_amendment_success_in_any_cell": true
+  },
+  "trend_deltas": {
+    "full_vs_wo_commitment_success_delta_by_cell": {
+      "0.1/0.1": -2.6666,
+      "0.1/0.2": 15.6667,
+      "0.2/0.1": 4.6667,
+      "0.2/0.2": 13.3334,
+      "0.3/0.1": 6.0,
+      "0.3/0.2": 12.3333
+    },
+    "full_vs_wo_recovery_cascade_delta_by_cell": {
+      "0.1/0.1": -14.3334,
+      "0.1/0.2": -43.0,
+      "0.2/0.1": -33.0,
+      "0.2/0.2": -54.0,
+      "0.3/0.1": -48.0,
+      "0.3/0.2": -59.6667
+    },
+    "full_vs_wo_amendment_amendment_success_delta_by_cell": {
+      "0.1/0.1": 2.0,
+      "0.1/0.2": 3.6667,
+      "0.2/0.1": 3.6667,
+      "0.2/0.2": 7.0,
+      "0.3/0.1": 4.6667,
+      "0.3/0.2": 12.0
+    }
+  },
+  "errors": [],
+  "source_sha256": {
+    "p3_failure_amendment_grid_summary.csv": "d8041a1000aeb85e94c16ea30cd84399e2d8bfc3063d1f165dd0ffdecdc1b5b0",
+    "p3_failure_amendment_grid_agg.csv": "dc3ea28aa19155d9545f24643b1d56fa66ec0f58178ab0b405e9c76b9689fa8d"
+  }
+}

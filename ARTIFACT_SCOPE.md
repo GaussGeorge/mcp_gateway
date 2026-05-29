@@ -85,6 +85,10 @@ logs and large per-step traces.
 | `artifact_results/glm_real_llm_c10_refresh_v1/` | `week5_summary.csv`, `week5_agg.csv`, `12 x steps_summary_*.csv`, `validation.json`, `README_RESULT.md` | Local live-GLM real-LLM refresh evidence after runner observability fixes |
 | `artifact_results/deepseek_v4_flash_smoke_v1/` | `week5_summary.csv`, `week5_agg.csv`, `4 x steps_summary_*.csv`, `validation.json`, `README_RESULT.md` | Local live-DeepSeek V4 Flash provider/tool-call compatibility smoke evidence |
 | `artifact_results/selfhosted_vllm_stress_c16w8_tuned_5gw_v1/` | `selfhosted_vllm_stress_summary.csv`, `selfhosted_vllm_stress_agg.csv`, `validation.json`, `README_RESULT.md` | Submitted self-hosted vLLM stress evidence with the paper display 5-gateway subset (`ng/static/pp/rajomon/plangate_relaxed`) |
+| `artifact_results/selfhosted_vllm_profile_sweep_v1/` | `selfhosted_vllm_profile_sweep_summary.csv`, `selfhosted_vllm_profile_sweep_agg.csv`, `validation.json`, `README_RESULT.md` | Submitted self-hosted vLLM multi-intensity sweep evidence (`C=8/12/16/20`) for boundary characterization with `ng/static/pp/rajomon/plangate_relaxed` |
+| `artifact_results/cloudlab_random_redis_memory_v1/` | `cloudlab_random_redis_memory_summary.csv`, `cloudlab_random_redis_memory_agg.csv`, `validation.json`, `README_RESULT.md` | Lightweight CloudLab random-routing Redis-vs-memory shared-state correctness bundle; Redis is the correctness arm and in-memory is the diagnostic control |
+| `artifact_results/p3_failure_amendment_grid_v1/` | `p3_failure_amendment_grid_summary.csv`, `p3_failure_amendment_grid_agg.csv`, `validation.json`, `README_RESULT.md` | Lightweight six-cell P3 failure/amendment boundary grid used to summarize mechanism consistency and edge cases |
+| `artifact_results/statistical_summary_v1/` | `statistical_summary.csv`, `effect_size_summary.csv`, `claim_summary.csv`, `validation.json`, `README_RESULT.md` | Bootstrap-based summary over existing artifact CSVs; now includes the CloudLab Redis-vs-memory bundle and records `cloudlab_included=true` |
 
 Important boundary:
 
@@ -154,6 +158,32 @@ The submitted bundle omits `plangate_real` and records this explicitly in
 `validation.json` via `plangate_real_absent=true`. It is still local congestion
 evidence (not a CloudLab multi-node result) and should not be over-claimed as a
 universal ranking of all governance policies.
+
+`artifact_results/selfhosted_vllm_profile_sweep_v1/` is the submitted
+self-hosted vLLM multi-intensity sweep layer. It uses the same 5-gateway
+display subset, extends congestion levels to `C=8/12/16/20`, and keeps only
+summary-level CSVs plus validation metadata. This bundle is for boundary
+characterization (including the low-contention region where PlanGate is not
+always best), not for universal dominance claims.
+
+`artifact_results/cloudlab_random_redis_memory_v1/` is a separate CloudLab
+shared-state diagnostic bundle. It deliberately keeps only six summary rows,
+two aggregate rows, validation metadata, and a README. Its purpose is to show
+that under random routing, Redis-backed shared state preserves continuation
+lookup semantics while an in-memory control loses them. It does not claim a
+complete distributed control plane or a production Redis HA deployment.
+
+`artifact_results/p3_failure_amendment_grid_v1/` extends the failure-specific
+mechanism evidence from one local P3 point to a six-cell grid over failure and
+amendment rates. Its role is to show that recovery/amendment signals stay
+qualitatively consistent across most cells while still surfacing low-failure
+boundary cases where Full is not strictly best on every aggregate metric.
+
+`artifact_results/statistical_summary_v1/` is the machine-readable CI/effect
+summary layer built only from existing artifact CSVs. It is aggregation and
+evidence-auditing infrastructure, not a new experiment. The CloudLab rows in
+that bundle should be read as state-consistency evidence rather than a new
+throughput claim surface.
 
 ---
 

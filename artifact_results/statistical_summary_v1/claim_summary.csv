@@ -1,0 +1,9 @@
+﻿claim_id,source_artifact,metric,result_text,support_level,caveat
+C1,mock_regression_p4_refresh_v1,effective_goodput_s,"Exp1 core: PlanGate vs NG delta=38.412000 GP/s, CI[32.220000, 44.136000].",strong,Mock workload evidence; not a production-trace causal claim.
+C2,mock_regression_p4_refresh_v1,cascade_failed,"Exp1 core: PlanGate vs NG cascade delta=-163.200000, CI[-168.800000, -158.200000].",strong,Lower-is-better metric; scoped to controlled mock load.
+C3,p3_failure_mechanism_ablation_v1,recovery_success,"P3 mechanism: Full vs wo_recovery recovery_success delta=38.000000, CI[37.000000, 40.000000].",strong,Failure-specific controlled workload; not real-LLM semantic recovery.
+C4,p3_failure_amendment_grid_v1,success,"P3 grid (f=0.3,a=0.2): Full vs wo_recovery success delta=59.666667, CI[51.000000, 75.000000].",strong,Grid cell evidence; effect size can vary by failure/amendment regime.
+C5,selfhosted_vllm_profile_sweep_v1,success_rate,"vLLM profile C20: PlanGate(tuned) vs NG success_rate delta=12.033333pp, CI[6.600000, 17.033333].",strong,Boundary evidence under saturated local-vLLM backend.
+C6,selfhosted_vllm_profile_sweep_v1,success_rate,"vLLM profile C8: PlanGate(tuned) vs Rajomon success_rate delta=-13.333333pp, CI[-17.866667, -8.800000].",boundary,Low-contention boundary where PlanGate is not always best.
+C7,mock_regression_p4_refresh_v1/exp8_discountablation_summary.csv,exp8_discount_diagnostic,Exp8 discount-family statistics are included as diagnostic only.,diagnostic,Do not use Exp8 as a standalone strong mechanism claim.
+C8,cloudlab_random_redis_memory_v1,state_miss,"CloudLab random routing: Redis vs memory state_miss delta=-3271.000000, CI[-3330.000000, -3215.000000].",strong,Shared-state lookup correctness evidence only; not a production Redis HA claim.

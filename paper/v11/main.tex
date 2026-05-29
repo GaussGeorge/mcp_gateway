@@ -84,7 +84,7 @@ PlanGate makes three contributions:
 
 \noindent\textbf{(2) PlanGate design and implementation.} We design and implement an MCP-compatible gateway that provides budget-reserved, scoped price-isolation protection for plan-accurate P\&S agents and sunk-cost-aware soft commitments for ReAct agents. The implementation combines pre-flight DAG admission, locked-price budget reservation, continuation-aware pricing, load-sensitive governance intensity, commitment tokens, bounded amendment, checkpoint-aware recovery, and optional Redis-backed shared state in a single reverse proxy.
 
-\noindent\textbf{(3) Evidence hierarchy and boundary characterization.} Across controlled mock experiments, failure/amendment ablations, CloudLab shared-state validation, and provider-backed smoke runs, we compare PlanGate against request-level and session-level baselines. The results show that session commitment substantially reduces ABD and cascading waste under hard or bursty constraints, while real-LLM smoke runs delineate the elastic-provider boundary rather than establishing universal dominance. A throughput--latency summary over Exp1/Exp5/Exp6/Exp10 consolidates raw/effective goodput and P95 latency, and a two-gateway validation demonstrates the deployment boundary: without shared state, random per-step routing creates continuation state misses; with Redis-backed state, those misses drop to zero despite real cross-node execution.
+\noindent\textbf{(3) Evidence hierarchy and boundary characterization.} Across controlled mock experiments, failure/amendment ablations, CloudLab shared-state validation, and provider-backed smoke runs, we compare PlanGate against request-level and session-level baselines. The results show that session commitment substantially reduces ABD and cascading waste under hard or bursty constraints, while real-LLM smoke runs delineate the elastic-provider boundary rather than establishing any blanket ranking. A throughput--latency summary over Exp1/Exp5/Exp6/Exp10 consolidates raw/effective goodput and P95 latency, and a two-gateway validation demonstrates the deployment boundary: without shared state, random per-step routing creates continuation state misses; with Redis-backed state, those misses drop to zero despite real cross-node execution.
 
 \section{Background and Motivation}
 
@@ -501,28 +501,28 @@ Table~\ref{tab:p3_failure_mech} isolates the semantics of the added mechanisms. 
 We additionally sweep the load-modulation coefficient $\beta$ in Supplementary Material, Section~3. The sweep confirms that $\beta{=}1$ is a conservative default rather than a fragile magic constant: all settings complete the same number of sessions, while larger $\beta$ values only marginally reduce cascades at the cost of slightly higher step-0 rejection or lower fairness.
 \label{sec:discountablation}
 
-A key design choice in PlanGate's sunk-cost pricing is the use of a quadratic discount function $1/(1+K^2\alpha)$. To validate this choice, we compare four discount function families: \emph{quadratic} ($K^2$), \emph{linear} ($K$), \emph{exponential} ($e^{K}-1$), and \emph{logarithmic} ($\ln(1+K)$). All variants use the same $\alpha$ and session parameters.
+A key design choice in PlanGate's sunk-cost pricing is the use of a quadratic discount function $1/(1+K^2\alpha)$. To probe how sensitive this choice is to the discount-family shape, we compare four discount function families: \emph{quadratic} ($K^2$), \emph{linear} ($K$), \emph{exponential} ($e^{K}-1$), and \emph{logarithmic} ($\ln(1+K)$). All variants use the same $\alpha$ and session parameters.
 
 \begin{table}[t]
-\caption{Discount function ablation (500 sessions, pure ReAct mode \texttt{ps\_ratio=0.0}, averaged over 5 runs). All functions achieve identical success (30), but differ substantially in cascade protection and goodput.}
+\caption{Discount function diagnostic/sensitivity ablation (500 sessions, pure ReAct mode \texttt{ps\_ratio=0.0}, averaged over 5 runs). Under the current artifact summary, exponential and linear complete more sessions and achieve higher effective goodput than quadratic and logarithmic; this table is used as diagnostic evidence rather than as a proof of global optimality for any single discount family.}
 \label{tab:discount}
 \small
 \resizebox{\columnwidth}{!}{%
-\begin{tabular}{@{}lrrrr@{}}
+\begin{tabular}{@{}lrrrrr@{}}
 \toprule
-\textbf{Function} & \textbf{Casc.} & \textbf{Eff.GP/s} & \textbf{P95} & \textbf{JFI$_s$} \\
+\textbf{Function} & \textbf{Succ.} & \textbf{Casc.} & \textbf{Eff.GP/s} & \textbf{P95} & \textbf{JFI$_s$} \\
 \midrule
-\textbf{Quadratic} ($K^2$)    & 15.8           & 23.3          & 843  & 0.763 \\
-Linear ($K$)                   & 21.0           & 23.3          & 842  & \textbf{0.776} \\
-Exponential ($e^K$)            & \textbf{11.8}  & \textbf{23.7} & \textbf{827}  & 0.772 \\
-Logarithmic ($\ln(1{+}K)$)    & 31.2           & 21.0          & 830  & 0.735 \\
+Quadratic ($K^2$)              & 3.2            & 26.8          & 0.29          & \textbf{5.4}  & 1.000 \\
+Linear ($K$)                   & 4.6            & 25.4          & 0.39          & 13.9          & 1.000 \\
+\textbf{Exponential} ($e^K$)  & \textbf{5.0}  & \textbf{25.0} & \textbf{0.42} & 14.5          & 1.000 \\
+Logarithmic ($\ln(1{+}K)$)    & 3.4            & 26.6          & 0.30          & 5.5           & 1.000 \\
 \bottomrule
 \end{tabular}}
 \end{table}
 
-Table~\ref{tab:discount} shows that \emph{aggressive} discounters outperform \emph{moderate} ones. Exponential achieves the fewest cascade failures (11.8) and highest effective goodput (23.7~GP/s), followed closely by quadratic (15.8 cascades, 23.3~GP/s). The moderate discounters---linear and logarithmic---suffer substantially more cascades (21.0 and 31.2) and lower goodput, with logarithmic worst at 21.0~GP/s. This confirms that steeper discount curves at early steps ($K{=}2,3$) provide critical protection during the mid-session window where most cascades occur.
+Table~\ref{tab:discount} should be read narrowly as current diagnostic evidence from the artifact summary. Under this CSV, exponential achieves the highest mean success (5.0), the lowest mean cascade count (25.0), and the highest effective goodput (0.42~GP/s), with linear next at 4.6 successes, 25.4 cascades, and 0.39~GP/s. Quadratic and logarithmic are weaker in the current summary (3.2/3.4 successes and 26.8/26.6 cascades, respectively). At the same time, the cascade counts remain clustered in the 25--27 range and the fairness metric no longer separates the policies: JFI$_s$ is approximately 1.0 for all four variants. The appropriate interpretation is therefore sensitivity/diagnostic ranking under this workload, not a broad empirical claim that one family is globally best.
 
-We choose the quadratic discount ($K^2$) as the practical operating point. Exponential discounting achieves marginally fewer cascades in this experiment (11.8 vs.\ 15.8), but $K^2$ provides near-equal cascade protection while keeping the admission hot path simple---no floating-point exponential required---and remaining more predictable for deeper sessions ($K{>}10$) where $e^K$ can grow excessively permissive. The ablation should be read not as a claim of global optimality, but as evidence that aggressive convex discounts are necessary and that $K^2$ provides a stable practical tradeoff in our workload. 
+We nevertheless keep the quadratic discount ($K^2$) as the default practical operating point for mechanism-design reasons rather than because Table~\ref{tab:discount} makes it the empirical winner. The quadratic form is simple to compute on the admission hot path, grows monotonically and predictably with session depth, and is easier to reason about as a conservative continuation policy than exponential growth, which can become more permissive for deeper sessions. In that sense, the current Exp8 ablation is best understood as diagnostic/sensitivity evidence about how different discount families behave in one summarized workload, not as proof that quadratic is globally optimal. 
 \subsection{Robustness and Stress Summary}
 \label{sec:sensitivity_main}
 \label{sec:sensitivity}
@@ -571,7 +571,7 @@ Table~\ref{tab:reallm} supports a bounded interpretation.
 First, both providers complete cleanly with \texttt{error\_sum=0} and
 \texttt{timeout\_sum=0}, validating end-to-end compatibility of tool calls and
 gateway policies in live APIs.
-Second, there is no universal dominance trend in these smoke/boundary runs:
+Second, there is no single-policy dominance trend in these smoke/boundary runs:
 under GLM C10, NG has the highest success and GP/s, while PlanGate remains in a
 competitive band with Rajomon/PP; under DeepSeek C5, NG/PP/PlanGate all reach
 98.0\% success while PlanGate has the lowest P95 among that 98\%-success group.
@@ -582,7 +582,7 @@ experiments where capacity and failure semantics are explicit.
 \begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{fig_real_llm_smoke}
-\caption{Provider-backed smoke evidence from GLM and DeepSeek runs. These runs are included as compatibility and boundary evidence: they confirm that the ReAct client, tool-call handling, and gateway policies operate against real provider APIs, while provider elasticity and model-specific behavior prevent a universal ``PlanGate wins all'' interpretation.}
+\caption{Provider-backed smoke evidence from GLM and DeepSeek runs. These runs are included as compatibility and boundary evidence: they confirm that the ReAct client, tool-call handling, and gateway policies operate against real provider APIs, while provider elasticity and model-specific behavior prevent any one-size-fits-all ranking interpretation.}
 \label{fig:real_llm_smoke}
 \end{figure}
 
@@ -591,7 +591,7 @@ The DeepSeek and GLM rows in Table~\ref{tab:reallm}, together with
 Figure~\ref{fig:real_llm_smoke}, should be read as compatibility and boundary
 evidence. They show that provider-side tool-call execution remains stable and
 that PlanGate does not introduce obvious integration failures, but they are not
-used as universal dominance evidence.
+used as blanket-ranking evidence.
 
 
 \subsection{Bursty Real-LLM: Waste Reduction Under Backend-Limited Burst Overload}
@@ -690,6 +690,15 @@ PlanGate (tuned)  & $23.4\pm4.4$          & $74.2\pm4.2$          & $\mathbf{8.0
 \end{figure}
 
 Under saturated GPU capacity, all gateways operate in a harsh regime: success remains low and ABD remains high because the backend itself is the hard bottleneck. The tuned PlanGate configuration is therefore best read as a \emph{boundary characterization} rather than a universal win: it restores PlanGate to the same qualitative band as NG and Rajomon on success and ABD, while achieving the lowest all-rejected count in the main-paper subset (8.0 vs.\ 11.7--17.0). The correct conclusion is not that governance creates capacity. Rather, the tuned configuration shows that once backend-local saturation is acknowledged explicitly, PlanGate can remain competitive on useful completion while avoiding the overly conservative admission profile seen in earlier diagnostics. Scaling GPU workers remains the primary remedy under full saturation; governance only shapes how scarce capacity is spent.
+
+The new multi-intensity profile sweep extends this boundary reading from a single saturated point to $C\in\{8,12,16,20\}$ using the same submitted 5-gateway subset. Figure~\ref{fig:selfhosted_vllm_profile_sweep} shows that PlanGate (tuned) is \emph{not} uniformly best at lower contention: at $C{=}8$, its success rate is $77.9\%$, below PP ($90.0\%$) and Rajomon ($91.3\%$). Under tighter local-vLLM saturation, however, the tuned policy moves into a stronger completion band: at $C{=}20$, PlanGate (tuned) reaches $28.3\%$ success versus NG's $16.3\%$, Static's $15.8\%$, PP's $19.2\%$, and Rajomon's $23.3\%$, while also lowering ABD relative to NG/Static/PP. The statistical summary artifact records this as a $+12.0$ percentage-point success delta against NG at $C{=}20$, but also as a $-13.3$ percentage-point delta against Rajomon at $C{=}8$. The correct interpretation is therefore boundary characterization: once backend-local scarcity is explicit, session-aware tuning can recover useful completion relative to several baselines, but low-contention points do not establish one policy as best everywhere.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{fig_selfhosted_vllm_profile_sweep}
+\caption{Self-hosted vLLM multi-intensity boundary characterization from \texttt{artifact\_results/selfhosted\_vllm\_profile\_sweep\_v1}. PlanGate (tuned) is not the best gateway at $C{=}8$, but its success/ABD trade-off improves relative to several baselines once the local vLLM backend enters the harsher $C{=}16/20$ regime.}
+\label{fig:selfhosted_vllm_profile_sweep}
+\end{figure}
 
 \subsection{Throughput--Latency Trade-off Under Increasing Concurrency}
 \label{sec:tput_latency}
@@ -829,7 +838,23 @@ With Redis-backed reservation state, state misses drop to zero while 19.7--22.8\
 The reconstructed active-session peak remains near the configured global cap (20--31), and Redis leak checks after the full run report \texttt{pg:active\_sessions=0} with no residual admission or reservation keys.
 
 \textbf{CloudLab checkpoint-store validation.}
-The newer CloudLab artifact repeats the same semantic question with the post-P3 checkpoint-store path enabled and random routing across gateways. Across 843 cross-node sessions, Redis-backed state records \texttt{state\_miss=0}, \texttt{duplicate\_admission=0}, and zero commitment invalid, mismatch, or expiry events. This does not make Redis a fault-tolerant control plane by itself, but it closes the main implementation gap in the earlier local validation: reservation, commitment, and checkpoint metadata can be looked up correctly when a session crosses gateway processes.
+The newer CloudLab artifact repeats the same semantic question with the post-P3 checkpoint-store path enabled and random routing across gateways, but now with an explicit Redis-vs-memory control. Table~\ref{tab:cloudlab_redis_memory} aggregates the lightweight CloudLab summary: across three Redis-backed runs, random routing produces 21{,}877 cross-node sessions with \texttt{state\_miss=0}; the matched in-memory control records 12{,}398 cross-node sessions and 9{,}813 state misses. The diagnostic-control adversarial rows also separate cleanly: Redis rejects all 54 adversarial rows, while the memory control does so in only 9/54. This narrows the deployment claim to shared-state lookup correctness under cross-gateway continuation. It does not claim that Redis by itself provides a complete replicated control plane.
+
+\begin{table}[t]
+\centering
+\caption{CloudLab random-routing Redis-vs-memory shared-state check from \texttt{artifact\_results/cloudlab\_random\_redis\_memory\_v1}. The Redis arm is the correctness arm; the in-memory arm is the diagnostic control.}
+\label{tab:cloudlab_redis_memory}
+\small
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+\textbf{Store} & \textbf{Runs} & \textbf{Cross-node} & \textbf{StateMiss} & \textbf{Reject-all Rate} \\
+\midrule
+Redis  & $3$ & $21{,}877$ & $0$     & $1.000$ \\
+Memory & $3$ & $12{,}398$ & $9{,}813$ & $0.167$ \\
+\bottomrule
+\end{tabular}}
+\end{table}
 
 \textbf{Interpretation.}
 Sticky routing, reported in the artifact but omitted from the main table, also eliminates state misses by keeping each session on one node.
@@ -866,7 +891,7 @@ The live trace collection in the appendix is retained as a diagnostic signal onl
 \label{sec:fairness}
 \label{sec:stats}
 
-Fairness checks, computed separately from step-level execution traces, show comparable Jain Fairness Index across all gateways in the core mock comparison, reflecting binary admission rather than mid-session interruption. The statistical pattern matches the evidence hierarchy: mock and controlled failure-specific signals remain the primary causal evidence; provider-backed GLM/DeepSeek runs are interpreted as compatibility and boundary evidence rather than formal significance surfaces; bursty results remain significant for PARTIAL ($p{<}0.02$) and Rej\textsubscript{0} ($p{<}0.01$), with cascade waste reduction at one-tailed $p{<}0.05$. The new failure/amendment ablation is validated by deterministic mechanism signals (for example, zero amendment success when amendment is disabled and zero recovery success when recovery is disabled) rather than by treating effective goodput alone as the success criterion.
+Fairness checks, computed separately from step-level execution traces, show comparable Jain Fairness Index across all gateways in the core mock comparison, reflecting binary admission rather than mid-session interruption. The statistical pattern matches the evidence hierarchy: mock and controlled failure-specific signals remain the primary causal evidence; provider-backed GLM/DeepSeek runs are interpreted as compatibility and boundary evidence rather than formal significance surfaces; bursty results remain significant for PARTIAL ($p{<}0.02$) and Rej\textsubscript{0} ($p{<}0.01$), with cascade waste reduction at one-tailed $p{<}0.05$. The updated statistical summary artifact now also includes the CloudLab Redis-vs-memory bundle as shared-state correctness evidence, so the statistics layer covers mock, P3 failure, self-hosted boundary, throughput-latency, and cross-gateway state consistency without turning CloudLab into a throughput claim surface.
 
 \subsection{Controlled Runtime Recovery Evaluation}
 \label{sec:recovery-eval}
@@ -899,6 +924,8 @@ These results are scoped to the controlled mock runtime described above and shou
 
 \textbf{Connection to the mechanism ablation.}
 The failure/amendment ablation in Table~\ref{tab:p3_failure_mech} exercises the same recovery path under a larger workload with commitment and amendment toggles. Its signal is qualitative rather than a replacement for the controlled replay-waste table: disabling recovery drives recovery success to zero and increases cascade failures from 7.7 to 42.0, while disabling amendment drives amendment success to zero. Together, the two experiments show that checkpoint recovery reduces prefix replay when the failure is recoverable, and that the commitment/amendment guards are the mechanisms that keep recovery-scoped plan changes bounded.
+
+The new P3 failure/amendment grid extends that claim across six $(r,a)$ cells with $r\in\{0.1,0.2,0.3\}$ and amendment rate $a\in\{0.1,0.2\}$. Its signal is again mechanism consistency rather than a blanket throughput ranking. In all six cells, disabling recovery drives \texttt{recovery\_success} to zero and raises cascade failure relative to Full; in all six cells, disabling amendment drives \texttt{amendment\_success} to zero. Success-rate ordering is mostly, but not universally, favorable to Full: for example, at $(r{=}0.1,a{=}0.1)$, \texttt{wo\_commitment} is slightly ahead on mean success ($187.3$ vs.\ $184.7$), whereas at $(r{=}0.3,a{=}0.2)$ Full leads \texttt{wo\_recovery} by $59.7$ successful sessions and reduces cascade by the same magnitude. We therefore use the grid as boundary-sensitive mechanism evidence: most settings preserve the intended signal, while low-failure cells mark the edge of where Full is not strictly best on every aggregate metric.
 
 \begin{table}[t]
 \centering
@@ -943,7 +970,7 @@ Naive retry         & $1.000\pm0.000$          & $0.0$              & $294.4\pm8
 \section{Discussion, Limitations, and Threats to Validity}
 
 \textbf{Discount design and adaptation.}
-The $K^2$ discount is one instantiation of session commitment, not the core contribution. The model in \S\ref{sec:discount-rationale} motivates it by reducing expected waste from $O(N^2)$ to $O(\ln N)$ under simplified assumptions; the discount function ablation (\S\ref{sec:discountablation}) confirms that aggressive discounters (exponential and quadratic) reduce cascades more than linear or logarithmic alternatives. We choose $K^2$ over $e^K$ because it is cheap to compute and grows less permissive for very deep sessions. Future work could adapt $\alpha$ online: increase it when ABD exceeds a target, and decrease it when step-0 rejections exceed a utilization target. Our $\alpha$ sweep suggests a wide operating envelope rather than a brittle hyperparameter. The load-modulation coefficient $\beta$ is similarly not a brittle constant: the Supplementary Material, Section~3 sweep over $\beta\in\{0,0.5,1,2,3\}$ shows identical completion counts across all settings, with only small cascade/fairness tradeoffs.
+The $K^2$ discount is one instantiation of session commitment, not the core contribution. The model in \S\ref{sec:discount-rationale} motivates it by reducing expected waste from $O(N^2)$ to $O(\ln N)$ under simplified assumptions; the discount function ablation (\S\ref{sec:discountablation}) should be read as sensitivity evidence rather than as proof that any one family is best in every workload. In the current artifact summary, exponential and linear achieve slightly higher success and effective goodput than quadratic and logarithmic, while cascade counts remain close and JFI no longer separates the variants. We nevertheless choose $K^2$ over $e^K$ as the default because it is cheap to compute and grows less permissive for very deep sessions. Future work could adapt $\alpha$ online: increase it when ABD exceeds a target, and decrease it when step-0 rejections exceed a utilization target. Our $\alpha$ sweep suggests a wide operating envelope rather than a brittle hyperparameter. The load-modulation coefficient $\beta$ is similarly not a brittle constant: the Supplementary Material, Section~3 sweep over $\beta\in\{0,0.5,1,2,3\}$ shows identical completion counts across all settings, with only small cascade/fairness tradeoffs.
 
 \textbf{Checkpointing and recovery.}
 PlanGate-R (\S\ref{sec:recovery-ext}, \S\ref{sec:recovery-eval}) complements, rather than replaces, PlanGate's admission integrity: base session commitment prevents governance-induced mid-session failures, while PlanGate-R handles the orthogonal case of recoverable transient backend interruptions within already-admitted P\&S sessions.
@@ -960,7 +987,7 @@ Checkpoint-aware recovery is a natural complement to session commitment; the cur
 The main experiments evaluate a 10-tool ecosystem spanning light and heavy costs. More tools would extend the weight table, but production deployments may require finer-grained weights, tool-specific quotas, and multi-node shared state for reservations, prices, checkpoints, and reputation. Section~\ref{sec:multigateway} validates a first step beyond process-local state: for P\&S sessions, Redis-backed shared state preserves continuation semantics under random two-gateway routing and CloudLab records zero state misses across 843 cross-node sessions. This does not make the prototype a complete distributed control plane. Shared ReAct progress, distributed reputation, dynamic price-state synchronization, node-failure recovery, and production-grade store replication remain future work. Mock workloads use \texttt{time.sleep} to isolate admission behavior; real-LLM steady, bursty, self-hosted, GLM, and DeepSeek smoke experiments mitigate this realism threat but do not replace production traces.
 
 \textbf{Real-provider interpretation.}
-Provider-backed experiments are intentionally interpreted conservatively. Commercial APIs add hidden queuing, elastic rate-limit headroom, stochastic generation latency, and provider-specific tool-call response behavior. The GLM and DeepSeek evidence is therefore used as smoke/support and boundary characterization rather than as headline dominance evidence. The core causal claims remain grounded in controlled workloads where backend capacity and failure injection are known.
+Provider-backed experiments are intentionally interpreted conservatively. Commercial APIs add hidden queuing, elastic rate-limit headroom, stochastic generation latency, and provider-specific tool-call response behavior. The GLM and DeepSeek evidence is therefore used as smoke/support and boundary characterization rather than as headline ranking evidence. The core causal claims remain grounded in controlled workloads where backend capacity and failure injection are known.
 
 \textbf{Availability.}
 The anonymized artifact contains the Go gateway, Python backend, agent clients, evaluation scripts, figure-generation scripts, and reproduction instructions for the no-key controlled mock experiments on a single machine. Provider-backed real-LLM experiments require API credentials and provider availability for live reruns. Lightweight evidence packages under \texttt{artifact\_results/} record the exact CSV summaries, validation checks, and SHA256 hashes used for the figures in \texttt{paper/figures}.
@@ -969,7 +996,7 @@ The anonymized artifact contains the Go gateway, Python backend, agent clients, 
 
 We presented \emph{session commitment}---the conjunction of atomic admission, temporal isolation, and continuation value---as a governance abstraction for multi-step LLM agent workloads, and implemented it in PlanGate, a plan-aware MCP-compatible gateway. Budget-reserved commitments for P\&S agents provide scoped price-isolation protection within declared plans; soft commitments for ReAct agents provide sunk-cost-aware continuation incentives---these are intentionally different guarantees, reflecting the fundamental information asymmetry between the two agent types. The updated implementation adds commitment tokens, bounded recovery-only amendment, checkpoint-aware recovery, and Redis-backed shared state. Our evaluation delineates session commitment's benefit boundary:
 \emph{(i)}~Under hard capacity limits (mock), PlanGate reduces price-induced cascade failures to near-zero under controlled assumptions and delivers $3.4\times$ effective goodput over no-governance baselines.
-\emph{(ii)}~Under provider-backed boundary/smoke evidence (GLM C10 refresh and DeepSeek C5), all gateways complete cleanly with zero client/runtime errors; PlanGate remains in a competitive band but does not claim universal dominance, so this layer is used as compatibility/boundary evidence rather than headline significance.
+\emph{(ii)}~Under provider-backed boundary/smoke evidence (GLM C10 refresh and DeepSeek C5), all gateways complete cleanly with zero client/runtime errors; PlanGate remains in a competitive band without claiming a single-policy ranking, so this layer is used as compatibility/boundary evidence rather than headline significance.
 \emph{(iii)}~Under bursty real-LLM workloads with backend-capacity bottlenecks ($N{=}7$), PlanGate significantly reduces doomed sessions by ${\sim}19$\% ($p{<}0.02$) and cascade waste by ${\sim}18$\% (one-tailed $p{<}0.05$) by converting mid-session failures into zero-compute-waste step-0 rejections.
 \emph{(iv)}~Under failure/amendment workloads, disabling commitment, amendment, or recovery removes the corresponding semantic signal and degrades session completion; disabling recovery increases cascade failures from 7.7 to 42.0.
 In controlled two-gateway and CloudLab validations, Redis-backed state eliminates continuation state misses under random cross-node routing, including 843 cross-node CloudLab sessions with zero state misses. Session commitment's value scales with resource-constraint severity: large gains under hard limits, waste reduction under bursty overload, and a provider-backed boundary regime where compatibility remains stable but dominance is not universal. PlanGate operates as a transparent reverse proxy requiring only lightweight header annotations, providing a principled foundation for session-aware governance as LLM agent deployments scale.

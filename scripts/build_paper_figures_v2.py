@@ -32,6 +32,16 @@ SELFHOSTED_VLLM_AGG = (
     / "selfhosted_vllm_stress_c16w8_tuned_5gw_v1"
     / "selfhosted_vllm_stress_agg.csv"
 )
+SELFHOSTED_VLLM_PROFILE_SWEEP_AGG = (
+    ARTIFACT_ROOT
+    / "selfhosted_vllm_profile_sweep_v1"
+    / "selfhosted_vllm_profile_sweep_agg.csv"
+)
+P3_FAILURE_AMENDMENT_GRID_AGG = (
+    ARTIFACT_ROOT
+    / "p3_failure_amendment_grid_v1"
+    / "p3_failure_amendment_grid_agg.csv"
+)
 
 GATEWAY_LABELS = {
     "ng": "NoGov",
@@ -140,8 +150,10 @@ def save_figure(fig: plt.Figure, stem: str, tight_rect: tuple[float, float, floa
     pdf = FIG_ROOT / f"{stem}.pdf"
     png = FIG_ROOT / f"{stem}.png"
     fig.tight_layout(rect=tight_rect)
-    fig.savefig(pdf, bbox_inches="tight")
-    fig.savefig(png, dpi=220, bbox_inches="tight")
+    with pdf.open("wb") as pdf_fh:
+        fig.savefig(pdf_fh, format="pdf", bbox_inches="tight")
+    with png.open("wb") as png_fh:
+        fig.savefig(png_fh, format="png", dpi=220, bbox_inches="tight")
     plt.close(fig)
 
 
@@ -391,6 +403,110 @@ def make_selfhosted_vllm_stress() -> None:
     save_figure(fig, "fig_selfhosted_vllm_stress")
 
 
+def make_selfhosted_vllm_profile_sweep() -> None:
+    rows = read_csv(SELFHOSTED_VLLM_PROFILE_SWEEP_AGG)
+    display_order = ["ng", "static", "pp", "rajomon", "plangate_relaxed"]
+    metrics = [
+        ("success_rate_mean", "Success Rate (%)", "Success Rate (higher is better)"),
+        ("abd_total_mean", "ABD (%)", "Admitted-but-Doomed (lower is better)"),
+        ("cascade_agents_mean", "Cascade Agents", "Cascade Pressure (lower is better)"),
+    ]
+
+    # Keep only the paper display subset and known concurrency points.
+    filtered = [
+        row
+        for row in rows
+        if row["gateway"] in display_order and str(row["concurrency"]).strip() in {"8", "12", "16", "20"}
+    ]
+    x_values = [8, 12, 16, 20]
+
+    fig, axes = plt.subplots(1, 3, figsize=(11.2, 3.8), sharex=True)
+    for ax, (field, ylabel, title) in zip(axes, metrics):
+        for gateway in display_order:
+            subset = sorted(
+                (row for row in filtered if row["gateway"] == gateway),
+                key=lambda row: int(str(row["concurrency"]).strip()),
+            )
+            if not subset:
+                continue
+            xs = [int(str(row["concurrency"]).strip()) for row in subset]
+            ys = [float(row[field]) for row in subset]
+            color, marker, linestyle = LINE_STYLE.get(gateway, ("#6c6c6c", "o", "-"))
+            ax.plot(
+                xs,
+                ys,
+                color=color,
+                marker=marker,
+                linestyle=linestyle,
+                linewidth=1.7,
+                markersize=5,
+                label=gateway_label(gateway),
+            )
+        ax.set_xticks(x_values)
+        ax.set_xlabel("Concurrency")
+        ax.set_ylabel(ylabel)
+        ax.set_title(title)
+        ax.grid(True, linestyle=":", linewidth=0.6, alpha=0.8)
+        ax.set_axisbelow(True)
+
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc="upper center", bbox_to_anchor=(0.5, 1.02), ncol=5, frameon=False)
+    fig.suptitle(
+        "Self-Hosted vLLM Multi-Intensity Boundary Characterization",
+        y=1.10,
+        fontsize=12,
+    )
+    save_figure(fig, "fig_selfhosted_vllm_profile_sweep", tight_rect=(0, 0, 1, 0.9))
+
+
+def make_p3_failure_amendment_grid() -> None:
+    rows = read_csv(P3_FAILURE_AMENDMENT_GRID_AGG)
+    display_order = ["plangate_full", "wo_commitment", "wo_amendment", "wo_recovery"]
+    gateway_rows = [row for row in rows if row["gateway"] in display_order]
+    cell_order = [("0.1", "0.1"), ("0.1", "0.2"), ("0.2", "0.1"), ("0.2", "0.2"), ("0.3", "0.1"), ("0.3", "0.2")]
+    x = list(range(len(cell_order)))
+    xlabels = [f"f={fr}\na={ar}" for fr, ar in cell_order]
+    metrics = [
+        ("success_mean", "Successful Sessions", "Success"),
+        ("cascade_failed_mean", "Cascade Failed Sessions", "Cascade Failure"),
+        ("recovery_success_mean", "Recovery Successes", "Recovery Success"),
+        ("amendment_success_mean", "Amendment Successes", "Amendment Success"),
+    ]
+
+    fig, axes = plt.subplots(2, 2, figsize=(10.2, 6.4), sharex=True)
+    for ax, (field, ylabel, title) in zip(axes.flatten(), metrics):
+        for gateway in display_order:
+            subset = {
+                (row["failure_rate"], row["amendment_rate"]): row
+                for row in gateway_rows
+                if row["gateway"] == gateway
+            }
+            ys = [float(subset[(fr, ar)][field]) for fr, ar in cell_order if (fr, ar) in subset]
+            xs = [idx for idx, pair in enumerate(cell_order) if pair in subset]
+            color, marker, linestyle = LINE_STYLE.get(gateway, ("#6c6c6c", "o", "-"))
+            ax.plot(
+                xs,
+                ys,
+                color=color,
+                marker=marker,
+                linestyle=linestyle,
+                linewidth=1.6,
+                markersize=5,
+                label=gateway_label(gateway),
+            )
+        ax.set_ylabel(ylabel)
+        ax.set_title(title)
+        ax.set_xticks(x)
+        ax.set_xticklabels(xlabels)
+        ax.grid(True, linestyle=":", linewidth=0.6, alpha=0.8)
+        ax.set_axisbelow(True)
+
+    handles, labels = axes[0, 0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc="upper center", bbox_to_anchor=(0.5, 0.99), ncol=4, frameon=False)
+    fig.suptitle("P3 Failure/Amendment Grid Boundary Characterization", y=1.03, fontsize=12)
+    save_figure(fig, "fig_p3_failure_amendment_grid", tight_rect=(0, 0, 1, 0.92))
+
+
 def main() -> None:
     plt.rcParams.update(
         {
@@ -412,6 +528,8 @@ def main() -> None:
     make_scale_concurrency()
     make_real_llm_smoke()
     make_selfhosted_vllm_stress()
+    make_selfhosted_vllm_profile_sweep()
+    make_p3_failure_amendment_grid()
     print(f"wrote figures to paper/figures: {FIG_ROOT}")
 
 
