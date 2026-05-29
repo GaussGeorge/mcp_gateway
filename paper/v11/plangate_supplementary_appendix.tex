@@ -50,7 +50,7 @@ The updated paper text and the figures under \texttt{paper/figures} are generate
 \texttt{exp11\_newmechanismablation\_v1} & Exp11 summary and aggregate & Four variants, five repeats each; \texttt{row\_count=20}, \texttt{agg\_row\_count=4}, empty error column. \\
 \texttt{p3\_failure\_mechanism\_ablation\_v1} & P3 failure/amendment summary and aggregate & Four variants, three repeats each; all client return codes and timeouts zero; signal checks confirm full recovery/amendment success and zeroed disabled mechanisms. \\
 \texttt{p3\_failure\_amendment\_grid\_v1} & P3 grid summary and aggregate & Six $(failure,amendment)$ cells; majority of cells preserve the intended mechanism ordering, while low-failure boundary cells remain mixed rather than universally favorable to Full. \\
-\texttt{selfhosted\_vllm\_stress\_c16w8\_tuned\_5gw\_v1} & \texttt{selfhosted\_vllm\_stress\_summary.csv}, \texttt{selfhosted\_vllm\_stress\_agg.csv} & Submitted self-hosted vLLM stress evidence with validation \texttt{errors=[]}; exactly the main-paper 5-gateway subset (ng/static/pp/rajomon/\texttt{plangate\_relaxed}), with \texttt{plangate\_real} omitted. \\
+\path{selfhosted_vllm_stress_c16w8_tuned_5gw_v1} & \texttt{selfhosted\_vllm\_stress\_summary.csv}, \texttt{selfhosted\_vllm\_stress\_agg.csv} & Submitted self-hosted vLLM stress evidence with validation \texttt{errors=[]}; exactly the main-paper 5-gateway subset (ng/static/pp/rajomon/\texttt{plangate\_relaxed}), with \texttt{plangate\_real} omitted. \\
 \texttt{selfhosted\_vllm\_profile\_sweep\_v1} & \texttt{selfhosted\_vllm\_profile\_sweep\_summary.csv}, \texttt{selfhosted\_vllm\_profile\_sweep\_agg.csv} & Multi-intensity self-hosted vLLM boundary evidence over $C{=}8/12/16/20$; explicitly retains the low-contention region where PlanGate is not always the top gateway. \\
 \texttt{cloudlab\_random\_redis\_memory\_v1} & Redis-vs-memory CloudLab summary and aggregate & Random routing with Redis checkpoint/reservation state versus in-memory control; Redis records zero state misses while the control shows substantial state loss. \\
 \texttt{statistical\_summary\_v1} & \texttt{statistical\_summary.csv}, \texttt{effect\_size\_summary.csv}, \texttt{claim\_summary.csv} & Bootstrap-based summary over existing artifact CSVs; validation now records \texttt{cloudlab\_included=true} with \texttt{errors=[]}. \\
@@ -123,7 +123,7 @@ The self-hosted vLLM stress evidence is retained as a bounded diagnostic note ra
 \section{Multi-Gateway Shared-State Validation Details}
 \label{sec:multigateway_appendix}
 
-This appendix section expands the main-paper multi-gateway result. The experiment is a controlled P\&S-only mock validation of shared reservation state. Each run submits $S{=}300$ declared-plan sessions to a 10-worker backend with PlanGate \texttt{max\_sessions=30}; we sweep $C\in\{20,40,60\}$ and repeat each configuration five times. The full run produces 60 per-step traces and 60 per-session traces under \texttt{results/exp\_multigateway\_shared\_state\_full/}. Quick validation runs are archived separately under \texttt{results/exp\_multigateway\_shared\_state\_quick/}.
+This appendix section expands the main-paper multi-gateway result. The experiment is a controlled P\&S-only mock validation of shared reservation state. Each run submits $S{=}300$ declared-plan sessions to a 10-worker backend with PlanGate \texttt{max\_sessions=30}; we sweep $C\in\{20,40,60\}$ and repeat each configuration five times. The full run produces 60 per-step traces and 60 per-session traces under \path{results/exp_multigateway_shared_state_full/}. Quick validation runs are archived separately under \path{results/exp_multigateway_shared_state_quick/}.
 
 Four deployment modes are used:
 \begin{itemize}
@@ -378,18 +378,20 @@ The self-hosted vLLM high-contention experiment is reported in the main paper's 
 \label{sec:selfhosted_profile_appendix}
 % ================================================================
 
-Table~\ref{tab:selfhosted_profile_appendix} reproduces the complete aggregate CSV from \texttt{artifact\_results/selfhosted\_vllm\_profile\_sweep\_v1}. The main-paper interpretation is intentionally bounded: the $C{=}8$ row set preserves the low-contention region where PlanGate (tuned) is not the top success-rate gateway, while the $C{=}16/20$ rows show the harsher saturation regime where its success/ABD trade-off improves relative to several baselines.
+Table~\ref{tab:selfhosted_profile_appendix} reproduces the complete aggregate CSV from the self-hosted vLLM profile-sweep artifact. The main-paper interpretation is intentionally bounded: the $C{=}8$ row set preserves the low-contention region where PlanGate (tuned) is not the top success-rate gateway, while the $C{=}16/20$ rows show the harsher saturation regime where its success/ABD trade-off improves relative to several baselines.
+
+\noindent\textit{Source bundle:} \path{artifact_results/selfhosted_vllm_profile_sweep_v1/}
 
 \begin{figure}[h]
 \centering
 \includegraphics[width=\columnwidth]{fig_selfhosted_vllm_profile_sweep}
-\caption{Full self-hosted vLLM profile sweep figure generated from \texttt{selfhosted\_vllm\_profile\_sweep\_agg.csv}.}
+\caption{Full self-hosted vLLM profile sweep generated from the profile-sweep aggregate CSV.}
 \label{fig:selfhosted_profile_appendix}
 \end{figure}
 
 \begin{table*}[h]
 \centering
-\caption{Complete self-hosted vLLM profile-sweep aggregate table from \texttt{artifact\_results/selfhosted\_vllm\_profile\_sweep\_v1/selfhosted\_vllm\_profile\_sweep\_agg.csv}. P95 is reported in seconds.}
+\caption{Complete self-hosted vLLM profile-sweep aggregate table. P95 is reported in seconds.}
 \label{tab:selfhosted_profile_appendix}
 \small
 \resizebox{\textwidth}{!}{%
@@ -426,18 +428,20 @@ Table~\ref{tab:selfhosted_profile_appendix} reproduces the complete aggregate CS
 \label{sec:p3_grid_appendix}
 % ================================================================
 
-Table~\ref{tab:p3_grid_appendix} reproduces the complete aggregate CSV from \texttt{artifact\_results/p3\_failure\_amendment\_grid\_v1}. Figure~\ref{fig:p3_grid_appendix} visualizes the same boundary: the dominant qualitative signal is stable mechanism activation, not that Full wins every cell on every aggregate metric.
+Table~\ref{tab:p3_grid_appendix} reproduces the complete aggregate CSV from the P3 failure/amendment grid artifact. Figure~\ref{fig:p3_grid_appendix} visualizes the same boundary: the dominant qualitative signal is stable mechanism activation, not that Full wins every cell on every aggregate metric.
+
+\noindent\textit{Source bundle:} \path{artifact_results/p3_failure_amendment_grid_v1/}
 
 \begin{figure}[h]
 \centering
 \includegraphics[width=\columnwidth]{fig_p3_failure_amendment_grid}
-\caption{P3 failure/amendment grid figure generated from \texttt{p3\_failure\_amendment\_grid\_agg.csv}.}
+\caption{P3 failure/amendment grid generated from the aggregate CSV.}
 \label{fig:p3_grid_appendix}
 \end{figure}
 
 \begin{table*}[h]
 \centering
-\caption{Complete P3 failure/amendment grid aggregate from \texttt{artifact\_results/p3\_failure\_amendment\_grid\_v1/p3\_failure\_amendment\_grid\_agg.csv}.}
+\caption{Complete P3 failure/amendment grid aggregate.}
 \label{tab:p3_grid_appendix}
 \small
 \resizebox{\textwidth}{!}{%
@@ -478,11 +482,13 @@ Table~\ref{tab:p3_grid_appendix} reproduces the complete aggregate CSV from \tex
 \label{sec:cloudlab_random_redis_memory_appendix}
 % ================================================================
 
-Table~\ref{tab:cloudlab_random_redis_memory_appendix} reproduces the per-run summary CSV from \texttt{artifact\_results/cloudlab\_random\_redis\_memory\_v1}. The Redis arm is the correctness arm and the in-memory arm is the diagnostic control. The table should be read narrowly as shared-state lookup evidence under random routing.
+Table~\ref{tab:cloudlab_random_redis_memory_appendix} reproduces the per-run summary CSV from the CloudLab Redis-vs-memory artifact. The Redis arm is the correctness arm and the in-memory arm is the diagnostic control. The table should be read narrowly as shared-state lookup evidence under random routing.
+
+\noindent\textit{Source bundle:} \path{artifact_results/cloudlab_random_redis_memory_v1/}
 
 \begin{table*}[h]
 \centering
-\caption{Complete CloudLab Redis-vs-memory per-run summary from \texttt{artifact\_results/cloudlab\_random\_redis\_memory\_v1/cloudlab\_random\_redis\_memory\_summary.csv}.}
+\caption{Complete CloudLab Redis-vs-memory per-run summary.}
 \label{tab:cloudlab_random_redis_memory_appendix}
 \small
 \resizebox{\textwidth}{!}{%
@@ -505,17 +511,23 @@ redis & 3 & 7439 & 0 & 0 & 0 & 0 & 0 \\
 \label{sec:statistical_summary_appendix}
 % ================================================================
 
-The complete statistical-summary and effect-size tables are preserved as machine-readable appendix listings under \texttt{artifact\_results/statistical\_summary\_v1}. They are reproduced directly below to avoid manual transcription drift. These listings should be read with the same evidence hierarchy as the main text: CloudLab rows are state-consistency evidence, provider rows remain boundary evidence if added later, and diagnostics such as Exp8 remain explicitly labeled diagnostic.
+The complete statistical-summary and effect-size CSV files are preserved as machine-readable appendix listings colocated with this appendix source. They are not typeset row-by-row in the PDF because the files are wide and primarily intended for reproducibility checks. Table~\ref{tab:statistical_summary_files} records the shipped files and their scope. These listings should be read with the same evidence hierarchy as the main text: CloudLab rows are state-consistency evidence, provider rows remain boundary evidence if added later, and diagnostics such as Exp8 remain explicitly labeled diagnostic.
 
-\subsection*{Full \texttt{statistical\_summary.csv}}
-\IfFileExists{../../artifact_results/statistical_summary_v1/statistical_summary.csv}{%
-{\scriptsize\VerbatimInput{../../artifact_results/statistical_summary_v1/statistical_summary.csv}}%
-}{\textbf{Missing file:} \texttt{../../artifact\_results/statistical\_summary\_v1/statistical\_summary.csv}}
+\begin{table*}[h]
+\caption{Machine-readable statistical appendix files shipped next to this appendix source.}
+\label{tab:statistical_summary_files}
+\small
+\begin{tabular}{@{}lllp{0.48\textwidth}@{}}
+\toprule
+File & Rows & Source artifact & Role \\
+\midrule
+\texttt{statistical\_summary.csv} & 405 & \texttt{statistical\_summary\_v1} & Bootstrap/statistical summaries over the existing evidence CSVs, including core mock results, P3 ablations and grid, vLLM sweep, CloudLab shared-state check, and throughput/latency summaries. \\
+\texttt{effect\_size\_summary.csv} & 202 & \texttt{statistical\_summary\_v1} & Pairwise deltas and confidence intervals for the core comparisons used in the main-paper claims and appendix interpretation. \\
+\bottomrule
+\end{tabular}
+\end{table*}
 
-\subsection*{Full \texttt{effect\_size\_summary.csv}}
-\IfFileExists{../../artifact_results/statistical_summary_v1/effect_size_summary.csv}{%
-{\scriptsize\VerbatimInput{../../artifact_results/statistical_summary_v1/effect_size_summary.csv}}%
-}{\textbf{Missing file:} \texttt{../../artifact\_results/statistical\_summary\_v1/effect\_size\_summary.csv}}
+\clearpage
 
 
 % ================================================================
