@@ -312,6 +312,39 @@ This evidence confirms live DeepSeek V4 Flash connectivity and tool-call
 execution through the real-LLM runner, but it should **not be over-claimed** as
 PlanGate outperforming every baseline in real-LLM experiments.
 
+## MCP-Bench Small Workflow-Shape Smoke Evidence
+
+Lightweight MCP-Bench workflow-shape smoke evidence is checked into:
+
+- [artifact_results/mcpbench_smoke_v1](artifact_results/mcpbench_smoke_v1)
+
+This bundle uses MCP-Bench task metadata (`single`, `multi_2server`,
+`multi_3server` runner-format JSONs) to derive workflow-shape complexity and
+run a controlled local smoke matrix:
+
+- selected tasks: `30` (within required `20-50` range)
+- repeats: `3`
+- gateways: `ng / static / pp / rajomon / plangate_relaxed`
+- summary rows: `15`, aggregate rows: `5`
+- backend mode: `mock_sterile_single_machine`
+
+Recorded checks in `validation.json`:
+
+- `selected_task_count_in_range = true`
+- `plangate_real_absent = true`
+- `all_client_rc_zero = true`
+- `all_client_timed_out_zero = true`
+- `all_error_empty_or_zero = true`
+- `exact_five_files_only = true`
+
+Boundary of interpretation:
+
+- This is MCP-Bench-derived **workflow-shape compatibility smoke** only.
+- It is **not** full MCP-Bench end-to-end server deployment evidence.
+- It is **not** model-accuracy/leaderboard evidence.
+- It is **not** production-readiness evidence.
+- It is **not** CloudLab/distributed-state evidence.
+
 ## Self-Hosted vLLM Stress Evidence
 
 Lightweight self-hosted vLLM stress evidence is checked into:
