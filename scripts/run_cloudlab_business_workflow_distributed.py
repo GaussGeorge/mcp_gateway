@@ -1668,15 +1668,20 @@ def ssh_run_quiet(args, host: str, command: str, timeout: int = 30) -> tuple[boo
         return False, str(e)
 
 
-def remote_start_bg(args, host: str, command: str, pid_file: str, log_file: str) -> bool:
-    """Start a background process on a remote node via nohup/setsid."""
+def remote_start_bg_no_check(args, host: str, command: str, log_file: str) -> None:
+    """Start a background process on a remote node. Does NOT verify success — caller must health-check."""
     full_cmd = (
-        f"nohup setsid {command} > {log_file} 2>&1 < /dev/null & "
-        f"PID=$!; echo $PID > {pid_file}; sleep 1; "
-        f"kill -0 $PID 2>/dev/null && echo 'OK pid='$PID || echo 'FAIL'"
+        f"nohup setsid {command} > {log_file} 2>&1 < /dev/null &"
     )
-    success, output = ssh_run_quiet(args, host, full_cmd, timeout=20)
-    return success and "OK pid=" in output
+    ssh_run(args, host, full_cmd, timeout=15)
+    # Give the process a moment to start binding
+    time.sleep(1.5)
+
+
+def remote_tail_log(args, host: str, log_file: str, lines: int = 80) -> str:
+    """Return the last N lines of a remote log file."""
+    ok, output = ssh_run_quiet(args, host, f"tail -{lines} {log_file} 2>/dev/null || echo '(log not found)'", timeout=10)
+    return output if ok else "(ssh failed)"
 
 
 def remote_kill(args, host: str, pattern: str) -> None:
@@ -1690,6 +1695,91 @@ def remote_kill_pidfile(args, host: str, pid_file: str) -> None:
             f"[ -f {pid_file} ] && kill $(cat {pid_file}) 2>/dev/null || true; "
             f"rm -f {pid_file}",
             timeout=10)
+
+
+# ── Health-check retry helpers ────────────────────────────────────────
+
+def _retry_health_check(check_fn, max_wait: float = 12.0, interval: float = 2.0) -> bool:
+    """Retry a health check function until it returns True or timeout."""
+    deadline = time.time() + max_wait
+    while time.time() < deadline:
+        if check_fn():
+            return True
+        time.sleep(interval)
+    return False
+
+
+def wait_http_health(args, host: str, url: str, log_file: str, label: str = "http-service") -> None:
+    """Wait for HTTP health endpoint to respond 200, raise on timeout."""
+    def check():
+        ok, body = ssh_run_quiet(args, host, f"curl -fsS -m 3 {url} 2>&1", timeout=8)
+        return ok
+
+    if _retry_health_check(check, max_wait=12.0, interval=2.0):
+        print(f"  [{label}] Health: OK ({url})")
+        return
+
+    tail = remote_tail_log(args, host, log_file)
+    raise RuntimeError(
+        f"{label} health check failed after 12s at {url}\n"
+        f"--- tail {log_file} ---\n{tail}\n--- end ---"
+    )
+
+
+def wait_mcp_health(args, host: str, url: str, log_file: str) -> None:
+    """Wait for MCP backend to respond to a JSON-RPC ping, raise on timeout."""
+    def check():
+        ok, body = ssh_run_quiet(args, host,
+            f"curl -fsS -m 3 -X POST {url} "
+            f"-H 'Content-Type: application/json' "
+            f"-d '{{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"ping\"}}' 2>&1",
+            timeout=8)
+        return ok and '"result"' in body
+
+    if _retry_health_check(check, max_wait=12.0, interval=2.0):
+        print(f"  [mcp-backend] Health: OK ({url})")
+        return
+
+    tail = remote_tail_log(args, host, log_file)
+    raise RuntimeError(
+        f"MCP backend health check failed after 12s at {url}\n"
+        f"--- tail {log_file} ---\n{tail}\n--- end ---"
+    )
+
+
+def wait_gateway_health(args, host: str, url: str, log_file: str, label: str = "gateway") -> None:
+    """Wait for a gateway to respond to HTTP GET, raise on timeout."""
+    def check():
+        ok, _ = ssh_run_quiet(args, host, f"curl -fsS -m 3 {url} 2>&1", timeout=8)
+        return ok
+
+    if _retry_health_check(check, max_wait=12.0, interval=2.0):
+        print(f"  [{label}] Health: OK ({url})")
+        return
+
+    tail = remote_tail_log(args, host, log_file)
+    raise RuntimeError(
+        f"{label} health check failed after 12s at {url}\n"
+        f"--- tail {log_file} ---\n{tail}\n--- end ---"
+    )
+
+
+def wait_redis_health(args, host: str, redis_ip: str, log_file: str = "/tmp/redis.log") -> None:
+    """Wait for Redis to respond to PING, raise on timeout."""
+    def check():
+        ok, body = ssh_run_quiet(args, host,
+            f"redis-cli -h {redis_ip} -p {CLOUDLAB_REDIS_PORT} PING 2>&1", timeout=8)
+        return ok and "PONG" in body
+
+    if _retry_health_check(check, max_wait=12.0, interval=2.0):
+        print(f"  [redis] Health: PONG ({redis_ip}:{CLOUDLAB_REDIS_PORT})")
+        return
+
+    tail = remote_tail_log(args, host, log_file)
+    raise RuntimeError(
+        f"Redis health check failed after 12s at {redis_ip}:{CLOUDLAB_REDIS_PORT}\n"
+        f"--- tail {log_file} ---\n{tail}\n--- end ---"
+    )
 
 
 # ── Experiment IP resolution ──────────────────────────────────────────
@@ -1904,9 +1994,14 @@ def remote_start_redis(args, ips: dict[str, str]) -> None:
         raise RuntimeError(f"No experiment IP for {args.redis_node}")
     host = args.redis_node
 
-    # Kill any existing redis first
+    # Aggressively kill any existing redis before starting
     remote_kill(args, host, "redis-server")
+    ssh_run(args, host,
+            f"redis-cli -h {redis_ip} -p {CLOUDLAB_REDIS_PORT} SHUTDOWN NOSAVE 2>/dev/null || true",
+            timeout=5)
+    time.sleep(1)
 
+    log_file = "/tmp/redis_cloudlab.log"
     cmd = (
         f"redis-server "
         f"--bind {redis_ip} "
@@ -1914,19 +2009,13 @@ def remote_start_redis(args, ips: dict[str, str]) -> None:
         f'--save "" '
         f"--appendonly no "
         f"--protected-mode no "
-        f"--daemonize yes"
+        f"--daemonize yes "
+        f"--logfile {log_file}"
     )
-    success, output = ssh_run_quiet(args, host, cmd, timeout=15)
-    print(f"  [redis] Started on {redis_ip}:{CLOUDLAB_REDIS_PORT}")
-    time.sleep(2)
+    ssh_run(args, host, cmd, timeout=15)
+    print(f"  [redis] Launched on {redis_ip}:{CLOUDLAB_REDIS_PORT}")
 
-    # Health check
-    ok, pong = ssh_run_quiet(args, host,
-                             f"redis-cli -h {redis_ip} -p {CLOUDLAB_REDIS_PORT} PING 2>&1",
-                             timeout=10)
-    if not ok or "PONG" not in pong:
-        raise RuntimeError(f"Redis health check failed: {pong}")
-    print(f"  [redis] Health: PONG")
+    wait_redis_health(args, host, redis_ip, log_file)
 
 
 def remote_start_http_service(args, ips: dict[str, str]) -> None:
@@ -1937,8 +2026,10 @@ def remote_start_http_service(args, ips: dict[str, str]) -> None:
     host = args.backend_node
     repo = args.repo_dir
 
-    remote_kill(args, host, "business_http_services.py")
+    # Kill any old service first (including manual instances)
+    remote_kill(args, host, "business_http_services")
 
+    log_file = "/tmp/http_service.log"
     cmd = (
         f"cd {repo} && "
         f"python3 mcp_server/business_http_services.py "
@@ -1946,19 +2037,11 @@ def remote_start_http_service(args, ips: dict[str, str]) -> None:
         f"--port {CLOUDLAB_HTTP_PORT} "
         f"--db-path /tmp/cloudlab_business_workflow_distributed.sqlite"
     )
-    started = remote_start_bg(args, host, cmd,
-                              "/tmp/http_service.pid",
-                              "/tmp/http_service.log")
-    if not started:
-        raise RuntimeError(f"HTTP service failed to start on {host}")
-    print(f"  [http-service] Started on {backend_ip}:{CLOUDLAB_HTTP_PORT}")
-    time.sleep(3)
+    remote_start_bg_no_check(args, host, cmd, log_file)
+    print(f"  [http-service] Launched, waiting for health...")
 
-    # Health check
-    ok, _ = ssh_run_quiet(args, host, f"curl -s http://{backend_ip}:{CLOUDLAB_HTTP_PORT}/ 2>&1", timeout=10)
-    if not ok:
-        raise RuntimeError(f"HTTP service health check failed on {host}")
-    print(f"  [http-service] Health: OK")
+    url = f"http://{backend_ip}:{CLOUDLAB_HTTP_PORT}/"
+    wait_http_health(args, host, url, log_file, label="http-service")
 
 
 def remote_start_mcp_backend(args, ips: dict[str, str]) -> None:
@@ -1969,8 +2052,10 @@ def remote_start_mcp_backend(args, ips: dict[str, str]) -> None:
     host = args.backend_node
     repo = args.repo_dir
 
-    remote_kill(args, host, "business_e2e_mcp_backend.py")
+    # Kill any old backend first (including manual instances)
+    remote_kill(args, host, "business_e2e_mcp_backend")
 
+    log_file = "/tmp/mcp_backend.log"
     cmd = (
         f"cd {repo} && "
         f"python3 mcp_server/business_e2e_mcp_backend.py "
@@ -1978,23 +2063,11 @@ def remote_start_mcp_backend(args, ips: dict[str, str]) -> None:
         f"--port {CLOUDLAB_MCP_PORT} "
         f"--http-service-url http://{backend_ip}:{CLOUDLAB_HTTP_PORT}"
     )
-    started = remote_start_bg(args, host, cmd,
-                              "/tmp/mcp_backend.pid",
-                              "/tmp/mcp_backend.log")
-    if not started:
-        raise RuntimeError(f"MCP backend failed to start on {host}")
-    print(f"  [mcp-backend] Started on {backend_ip}:{CLOUDLAB_MCP_PORT}")
-    time.sleep(3)
+    remote_start_bg_no_check(args, host, cmd, log_file)
+    print(f"  [mcp-backend] Launched, waiting for health...")
 
-    # Health check
-    ok, _ = ssh_run_quiet(args, host,
-                          f"curl -s -X POST http://{backend_ip}:{CLOUDLAB_MCP_PORT}/ "
-                          f"-H 'Content-Type: application/json' "
-                          f"-d '{{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"ping\"}}' 2>&1",
-                          timeout=10)
-    if not ok:
-        raise RuntimeError(f"MCP backend health check failed on {host}")
-    print(f"  [mcp-backend] Health: OK")
+    url = f"http://{backend_ip}:{CLOUDLAB_MCP_PORT}"
+    wait_mcp_health(args, host, url, log_file)
 
 
 def remote_build_gateway(args, ips: dict[str, str]) -> None:
@@ -2032,7 +2105,7 @@ def remote_start_gateways(args, ips: dict[str, str], store: str,
         # Kill any existing gateway on this node
         remote_kill(args, gw, "plangate_gateway")
 
-        # Build gateway command using the same flags as local smoke but with remote IPs
+        # Build gateway command
         cmd = (
             f"/tmp/plangate_gateway "
             f"--mode mcpdp "
@@ -2056,71 +2129,70 @@ def remote_start_gateways(args, ips: dict[str, str], store: str,
         if store == "redis":
             cmd += f"--recovery-ttl 300s --recovery-max-attempts 3 "
 
-        pid_file = f"/tmp/gateway_{gw}.pid"
         log_file = f"/tmp/gateway_{gw}.log"
-
-        started = remote_start_bg(args, gw, cmd, pid_file, log_file)
-        if not started:
-            raise RuntimeError(f"Gateway failed to start on {gw}")
+        remote_start_bg_no_check(args, gw, cmd, log_file)
 
         url = f"http://{gw_ip}:{port}"
         gateway_urls.append(url)
-        print(f"  [gateway] {gw} ({node_id}) started at {url} store={store_mode}")
+        print(f"  [gateway] {gw} ({node_id}) launched at {url} store={store_mode}")
 
-    time.sleep(4)
+    # Health check each gateway from its own host (curl to experiment IP)
+    for i, url in enumerate(gateway_urls):
+        gw = args.gateways[i]
+        log_file = f"/tmp/gateway_{gw}.log"
+        wait_gateway_health(args, gw, url, log_file, label=f"gateway-{gw}")
 
-    # Health check each gateway
-    for url in gateway_urls:
-        ok, _ = ssh_run_quiet(args, args.controller,
-                              f"curl -s -o /dev/null -w '%{{http_code}}' {url} 2>&1",
-                              timeout=10)
-        if not ok:
-            print(f"  [gateway] WARNING: health check failed for {url}")
-
-    print(f"  [gateway] All {len(gateway_urls)} gateways started")
+    print(f"  [gateway] All {len(gateway_urls)} gateways healthy")
     return gateway_urls
 
 
 # ── CloudLab cleanup ──────────────────────────────────────────────────
 
 def remote_cleanup_all(args, ips: dict[str, str]) -> None:
-    """Clean up all remote processes."""
+    """Clean up all remote processes — thorough kill of manual and scripted instances."""
     print("\n[cloudlab] === Cleanup ===")
 
-    # Stop gateways
+    # Stop gateways (both binary and Go process patterns)
     for gw in args.gateways:
         remote_kill(args, gw, "plangate_gateway")
+        remote_kill(args, gw, "gateway")
+        ssh_run(args, gw,
+                "rm -f /tmp/gateway_*.pid /tmp/gateway_*.log /tmp/plangate_gateway",
+                timeout=5)
         print(f"  [cleanup] Stopped gateway on {gw}")
 
-    # Stop backend services
-    remote_kill(args, args.backend_node, "business_http_services.py")
-    remote_kill(args, args.backend_node, "business_e2e_mcp_backend.py")
+    # Stop backend services (both .py and without extension patterns)
+    for pattern in ("business_http_services", "business_e2e_mcp_backend"):
+        remote_kill(args, args.backend_node, pattern)
+    ssh_run(args, args.backend_node,
+            "rm -f /tmp/http_service.pid /tmp/http_manual.pid "
+            "/tmp/http_service.log /tmp/http_manual.log "
+            "/tmp/mcp_backend.pid /tmp/mcp_backend.log",
+            timeout=5)
     print(f"  [cleanup] Stopped backend services on {args.backend_node}")
 
-    # Flush Redis
+    # Flush and stop Redis
     if ips.get(args.redis_node):
         redis_ip = ips[args.redis_node]
         ssh_run(args, args.redis_node,
                 f"redis-cli -h {redis_ip} -p {CLOUDLAB_REDIS_PORT} FLUSHALL 2>/dev/null || true",
                 timeout=10)
-    # Stop Redis
+        ssh_run(args, args.redis_node,
+                f"redis-cli -h {redis_ip} -p {CLOUDLAB_REDIS_PORT} SHUTDOWN NOSAVE 2>/dev/null || true",
+                timeout=5)
     remote_kill(args, args.redis_node, "redis-server")
+    ssh_run(args, args.redis_node, "rm -f /tmp/redis_cloudlab.log", timeout=5)
     print(f"  [cleanup] Stopped Redis on {args.redis_node}")
 
-    # Remove temp files
+    # Remove all temp / pid / log / DB files everywhere
     for host in args.gateways + [args.backend_node, args.redis_node]:
         ssh_run(args, host,
                 "rm -f /tmp/gateway_*.pid /tmp/gateway_*.log "
-                "/tmp/http_service.pid /tmp/http_service.log "
-                "/tmp/mcp_backend.pid /tmp/mcp_backend.log "
+                "/tmp/http_service.* /tmp/http_manual.* "
+                "/tmp/mcp_backend.* /tmp/redis_cloudlab.* "
                 "/tmp/plangate_gateway "
                 "/tmp/cloudlab_business_workflow_distributed.sqlite*",
                 timeout=10)
-
-    # Remove DB from backend node
-    ssh_run(args, args.backend_node,
-            "rm -f /tmp/cloudlab_business_workflow_distributed.sqlite*",
-            timeout=10)
 
     print(f"  [cleanup] Done")
 
@@ -2146,6 +2218,21 @@ def run_cloudlab(args) -> int:
 
     failures: list[str] = []
     preflight_errors: list[str] = []
+
+    # Step 0: Pre-cleanup — kill any leftover processes from prior runs
+    print("\n[cloudlab] === Pre-cleanup (killing leftover processes) ===")
+    all_nodes = args.gateways + [args.backend_node, args.redis_node]
+    for node in all_nodes:
+        for pattern in ("plangate_gateway", "business_http_services", "business_e2e_mcp_backend"):
+            remote_kill(args, node, pattern)
+        remote_kill(args, node, "redis-server")
+        ssh_run(args, node,
+                "rm -f /tmp/gateway_*.pid /tmp/gateway_*.log "
+                "/tmp/http_service.* /tmp/http_manual.* "
+                "/tmp/mcp_backend.* /tmp/redis_cloudlab.* "
+                "/tmp/plangate_gateway",
+                timeout=5)
+    print(f"  Pre-cleanup complete")
 
     # Step 1: Resolve experiment IPs
     ips = resolve_all_ips(args)
