@@ -1,0 +1,35 @@
+{
+  "_description": "CloudLab distributed business workflow smoke — node assignment example",
+  "_topology": "6 × m510 (or c220g/c220g5), Ubuntu 22.04 LTS 64-bit",
+
+  "controller": "node0",
+  "gateways": ["node1", "node2", "node3"],
+  "backend_node": "node4",
+  "redis_node": "node5",
+
+  "repo_dir": "~/mcp_gateway",
+
+  "experiment": {
+    "stores": ["redis", "memory"],
+    "sessions": 60,
+    "concurrency": 20,
+    "failure_rate": 0.1,
+    "repeats": 3,
+    "deterministic_recovery_probes_per_run": 3
+  },
+
+  "ports": {
+    "gateway_start": 19001,
+    "mcp_backend": 18080,
+    "http_service": 18081,
+    "redis": 6379
+  },
+
+  "_network_requirements": {
+    "bind_to_experiment_network": true,
+    "no_default_0_0_0_0": true,
+    "no_fqdn_for_experiment_traffic": true,
+    "use_experiment_network_ips": true,
+    "control_network_not_used_for_experiment_traffic": true
+  }
+}
