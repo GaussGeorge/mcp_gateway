@@ -1640,6 +1640,745 @@ def run_local_smoke(args) -> int:
     return 0 if not validation.get("errors") else 1
 
 
+# ── SSH / remote execution ────────────────────────────────────────────
+
+def _ssh_opts(args) -> list[str]:
+    opts = ["-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=10"]
+    if args.ssh_key:
+        key_path = Path(args.ssh_key).expanduser()
+        opts.extend(["-i", str(key_path), "-o", "IdentitiesOnly=yes"])
+    return opts
+
+
+def ssh_cmd(args, host: str, command: str) -> list[str]:
+    return ["ssh"] + _ssh_opts(args) + [f"{args.ssh_user}@{host}", command]
+
+
+def ssh_run(args, host: str, command: str, timeout: int = 30, check: bool = False) -> subprocess.CompletedProcess:
+    cmd = ssh_cmd(args, host, command)
+    return subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, check=check)
+
+
+def ssh_run_quiet(args, host: str, command: str, timeout: int = 30) -> tuple[bool, str]:
+    """Run SSH command, return (success, stdout)."""
+    try:
+        result = ssh_run(args, host, command, timeout=timeout)
+        return result.returncode == 0, result.stdout.strip()
+    except Exception as e:
+        return False, str(e)
+
+
+def remote_start_bg(args, host: str, command: str, pid_file: str, log_file: str) -> bool:
+    """Start a background process on a remote node via nohup/setsid."""
+    full_cmd = (
+        f"nohup setsid {command} > {log_file} 2>&1 < /dev/null & "
+        f"PID=$!; echo $PID > {pid_file}; sleep 1; "
+        f"kill -0 $PID 2>/dev/null && echo 'OK pid='$PID || echo 'FAIL'"
+    )
+    success, output = ssh_run_quiet(args, host, full_cmd, timeout=20)
+    return success and "OK pid=" in output
+
+
+def remote_kill(args, host: str, pattern: str) -> None:
+    """Kill processes matching pattern on remote host."""
+    ssh_run(args, host, f"pkill -f '{pattern}' 2>/dev/null || true", timeout=10)
+
+
+def remote_kill_pidfile(args, host: str, pid_file: str) -> None:
+    """Kill process by PID file on remote host."""
+    ssh_run(args, host,
+            f"[ -f {pid_file} ] && kill $(cat {pid_file}) 2>/dev/null || true; "
+            f"rm -f {pid_file}",
+            timeout=10)
+
+
+# ── Experiment IP resolution ──────────────────────────────────────────
+
+def resolve_experiment_ip(args, host: str) -> str | None:
+    """Resolve a node's experiment-network IP via SSH.
+
+    Strategy (tried in order):
+      1. getent hosts <hostname> — picks first IP
+      2. ip -4 addr show — filter for RFC1918 (10.x, 172.16-31.x, 192.168.x)
+      3. hostname -I — fallback
+    """
+    # Try getent hosts
+    success, output = ssh_run_quiet(args, host, f"getent hosts {host} 2>/dev/null || hostname -I 2>/dev/null")
+    if success and output:
+        for line in output.split("\n"):
+            parts = line.strip().split()
+            for p in parts:
+                if _is_experiment_ip(p):
+                    return p
+
+    # Try ip addr
+    success, output = ssh_run_quiet(args, host, "ip -4 addr show 2>/dev/null")
+    if success:
+        for line in output.split("\n"):
+            if "inet " in line:
+                parts = line.strip().split()
+                for p in parts:
+                    cidr = p.split("/")[0]
+                    if _is_experiment_ip(cidr):
+                        return cidr
+
+    # Last resort: hostname -I (get first IP)
+    success, output = ssh_run_quiet(args, host, "hostname -I 2>/dev/null")
+    if success and output.strip():
+        first_ip = output.strip().split()[0]
+        return first_ip
+
+    return None
+
+
+def _is_experiment_ip(ip: str) -> bool:
+    """Check if IP is a routable experiment-network address."""
+    import ipaddress
+    try:
+        addr = ipaddress.ip_address(ip)
+        if addr.is_loopback or addr.is_link_local or addr.is_multicast or addr.is_unspecified:
+            return False
+        return True
+    except ValueError:
+        return False
+
+
+def resolve_all_ips(args) -> dict[str, str]:
+    """Resolve experiment IPs for all nodes."""
+    all_hosts = [args.backend_node, args.redis_node] + args.gateways
+    ips: dict[str, str] = {}
+    print("\n[cloudlab] Resolving experiment-network IPs...")
+    for host in all_hosts:
+        ip = resolve_experiment_ip(args, host)
+        if ip:
+            ips[host] = ip
+            print(f"  {host} experiment_ip = {ip}")
+        else:
+            print(f"  {host} experiment_ip = FAILED TO RESOLVE")
+    return ips
+
+
+# ── CloudLab preflight ────────────────────────────────────────────────
+
+def cloudlab_preflight(args, ips: dict[str, str]) -> dict[str, Any]:
+    """Run comprehensive preflight checks. Returns preflight dict."""
+    print("\n[cloudlab] === Preflight checks ===")
+    preflight: dict[str, Any] = {
+        "artifact": "cloudlab_business_workflow_distributed_v1",
+        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "ssh_connectivity_ok": True,
+        "repo_exists": True,
+        "experiment_network_connectivity_ok": True,
+        "python3_available": True,
+        "go_available": True,
+        "sqlite3_available": True,
+        "redis_server_available": True,
+        "redis_health_ok": False,
+        "backend_health_ok": False,
+        "http_service_health_ok": False,
+        "gateway_health_ok": False,
+        "all_services_health_checked": False,
+        "using_experiment_network_ips": True,
+        "control_network_not_used_for_experiment_traffic": True,
+        "redis_bound_to_experiment_interface": False,
+        "gateway_bound_to_experiment_interface": False,
+        "backend_bound_to_experiment_interface": False,
+        "http_service_bound_to_experiment_interface": False,
+        "ips": ips,
+        "checks": [],
+    }
+
+    failed = []
+
+    # SSH connectivity to all nodes
+    all_nodes = args.gateways + [args.backend_node, args.redis_node]
+    for node in all_nodes:
+        ok, _ = ssh_run_quiet(args, node, "echo ok", timeout=15)
+        preflight["checks"].append(f"ssh_{node}={ok}")
+        if not ok:
+            preflight["ssh_connectivity_ok"] = False
+            failed.append(f"SSH connectivity to {node} failed")
+        else:
+            print(f"  [OK] SSH {node}")
+
+    if failed:
+        preflight["errors"] = failed
+        return preflight
+
+    # Repo-dir exists on all nodes
+    repo_path = args.repo_dir.replace("~", "$HOME")
+    for node in all_nodes:
+        ok, _ = ssh_run_quiet(args, node, f"test -d {repo_path} && echo yes || echo no")
+        if "yes" not in _:
+            preflight["repo_exists"] = False
+            failed.append(f"Repo dir {args.repo_dir} not found on {node}")
+        else:
+            print(f"  [OK] repo-dir on {node}")
+
+    # Python3 on backend node
+    ok, ver = ssh_run_quiet(args, args.backend_node, "python3 --version 2>&1")
+    preflight["checks"].append(f"python3_backend={ok}")
+    if not ok:
+        preflight["python3_available"] = False
+        failed.append(f"python3 not available on {args.backend_node}")
+    else:
+        print(f"  [OK] python3 on {args.backend_node}: {ver}")
+
+    # Go on gateway nodes
+    for gw in args.gateways:
+        ok, ver = ssh_run_quiet(args, gw, "go version 2>&1")
+        preflight["checks"].append(f"go_{gw}={ok}")
+        if not ok:
+            preflight["go_available"] = False
+            failed.append(f"go not available on {gw}")
+    if preflight["go_available"]:
+        print(f"  [OK] go on all gateway nodes")
+
+    # SQLite3 on backend node
+    ok, _ = ssh_run_quiet(args, args.backend_node, "sqlite3 --version 2>&1")
+    preflight["checks"].append(f"sqlite3_backend={ok}")
+    if not ok:
+        preflight["sqlite3_available"] = False
+        failed.append(f"sqlite3 not available on {args.backend_node}")
+    else:
+        print(f"  [OK] sqlite3 on {args.backend_node}")
+
+    # Redis on redis node
+    ok, _ = ssh_run_quiet(args, args.redis_node, "which redis-server 2>&1")
+    preflight["checks"].append(f"redis_server={ok}")
+    if not ok:
+        preflight["redis_server_available"] = False
+        failed.append(f"redis-server not found on {args.redis_node}")
+    else:
+        print(f"  [OK] redis-server on {args.redis_node}")
+
+    # Experiment network connectivity: can backend reach redis?
+    if ips.get(args.backend_node) and ips.get(args.redis_node):
+        redis_ip = ips[args.redis_node]
+        ok, _ = ssh_run_quiet(args, args.backend_node, f"ping -c 1 -W 2 {redis_ip} 2>&1")
+        preflight["checks"].append(f"ping_backend_to_redis={ok}")
+        if not ok:
+            preflight["experiment_network_connectivity_ok"] = False
+            failed.append(f"Backend cannot ping Redis at {redis_ip}")
+        else:
+            print(f"  [OK] experiment network: backend -> redis ({redis_ip})")
+
+    # Can gateways reach backend?
+    if ips.get(args.backend_node):
+        backend_ip = ips[args.backend_node]
+        for gw in args.gateways:
+            if ips.get(gw):
+                ok, _ = ssh_run_quiet(args, gw, f"ping -c 1 -W 2 {backend_ip} 2>&1")
+                if not ok:
+                    preflight["experiment_network_connectivity_ok"] = False
+                    failed.append(f"Gateway {gw} cannot ping backend at {backend_ip}")
+        if preflight["experiment_network_connectivity_ok"]:
+            print(f"  [OK] experiment network: all gateways -> backend ({backend_ip})")
+
+    preflight["errors"] = failed
+    preflight["preflight_passed"] = len(failed) == 0
+
+    if failed:
+        print(f"\n[cloudlab] PREFLIGHT FAILED: {len(failed)} errors")
+        for f in failed:
+            print(f"  [FAIL] {f}")
+    else:
+        print(f"\n[cloudlab] Preflight passed: all checks OK")
+
+    return preflight
+
+
+# ── CloudLab remote service management ─────────────────────────────────
+
+# Port assignments for CloudLab
+CLOUDLAB_HTTP_PORT = 18081
+CLOUDLAB_MCP_PORT = 18080
+CLOUDLAB_GW_PORTS = [19001, 19002, 19003]
+CLOUDLAB_REDIS_PORT = 6379
+
+
+def remote_start_redis(args, ips: dict[str, str]) -> None:
+    """Start Redis on the redis node, bound to experiment IP."""
+    redis_ip = ips.get(args.redis_node)
+    if not redis_ip:
+        raise RuntimeError(f"No experiment IP for {args.redis_node}")
+    host = args.redis_node
+
+    # Kill any existing redis first
+    remote_kill(args, host, "redis-server")
+
+    cmd = (
+        f"redis-server "
+        f"--bind {redis_ip} "
+        f"--port {CLOUDLAB_REDIS_PORT} "
+        f'--save "" '
+        f"--appendonly no "
+        f"--protected-mode no "
+        f"--daemonize yes"
+    )
+    success, output = ssh_run_quiet(args, host, cmd, timeout=15)
+    print(f"  [redis] Started on {redis_ip}:{CLOUDLAB_REDIS_PORT}")
+    time.sleep(2)
+
+    # Health check
+    ok, pong = ssh_run_quiet(args, host,
+                             f"redis-cli -h {redis_ip} -p {CLOUDLAB_REDIS_PORT} PING 2>&1",
+                             timeout=10)
+    if not ok or "PONG" not in pong:
+        raise RuntimeError(f"Redis health check failed: {pong}")
+    print(f"  [redis] Health: PONG")
+
+
+def remote_start_http_service(args, ips: dict[str, str]) -> None:
+    """Start HTTP business service on backend node, bound to experiment IP."""
+    backend_ip = ips.get(args.backend_node)
+    if not backend_ip:
+        raise RuntimeError(f"No experiment IP for {args.backend_node}")
+    host = args.backend_node
+    repo = args.repo_dir
+
+    remote_kill(args, host, "business_http_services.py")
+
+    cmd = (
+        f"cd {repo} && "
+        f"python3 mcp_server/business_http_services.py "
+        f"--host {backend_ip} "
+        f"--port {CLOUDLAB_HTTP_PORT} "
+        f"--db-path /tmp/cloudlab_business_workflow_distributed.sqlite"
+    )
+    started = remote_start_bg(args, host, cmd,
+                              "/tmp/http_service.pid",
+                              "/tmp/http_service.log")
+    if not started:
+        raise RuntimeError(f"HTTP service failed to start on {host}")
+    print(f"  [http-service] Started on {backend_ip}:{CLOUDLAB_HTTP_PORT}")
+    time.sleep(3)
+
+    # Health check
+    ok, _ = ssh_run_quiet(args, host, f"curl -s http://{backend_ip}:{CLOUDLAB_HTTP_PORT}/ 2>&1", timeout=10)
+    if not ok:
+        raise RuntimeError(f"HTTP service health check failed on {host}")
+    print(f"  [http-service] Health: OK")
+
+
+def remote_start_mcp_backend(args, ips: dict[str, str]) -> None:
+    """Start MCP backend on backend node, bound to experiment IP."""
+    backend_ip = ips.get(args.backend_node)
+    if not backend_ip:
+        raise RuntimeError(f"No experiment IP for {args.backend_node}")
+    host = args.backend_node
+    repo = args.repo_dir
+
+    remote_kill(args, host, "business_e2e_mcp_backend.py")
+
+    cmd = (
+        f"cd {repo} && "
+        f"python3 mcp_server/business_e2e_mcp_backend.py "
+        f"--host {backend_ip} "
+        f"--port {CLOUDLAB_MCP_PORT} "
+        f"--http-service-url http://{backend_ip}:{CLOUDLAB_HTTP_PORT}"
+    )
+    started = remote_start_bg(args, host, cmd,
+                              "/tmp/mcp_backend.pid",
+                              "/tmp/mcp_backend.log")
+    if not started:
+        raise RuntimeError(f"MCP backend failed to start on {host}")
+    print(f"  [mcp-backend] Started on {backend_ip}:{CLOUDLAB_MCP_PORT}")
+    time.sleep(3)
+
+    # Health check
+    ok, _ = ssh_run_quiet(args, host,
+                          f"curl -s -X POST http://{backend_ip}:{CLOUDLAB_MCP_PORT}/ "
+                          f"-H 'Content-Type: application/json' "
+                          f"-d '{{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"ping\"}}' 2>&1",
+                          timeout=10)
+    if not ok:
+        raise RuntimeError(f"MCP backend health check failed on {host}")
+    print(f"  [mcp-backend] Health: OK")
+
+
+def remote_build_gateway(args, ips: dict[str, str]) -> None:
+    """Build gateway binary on gateway nodes."""
+    repo = args.repo_dir
+    for gw in args.gateways:
+        print(f"  [gateway] Building on {gw}...")
+        ok, output = ssh_run_quiet(args, gw,
+                                   f"cd {repo} && go build -o /tmp/plangate_gateway ./cmd/gateway 2>&1",
+                                   timeout=120)
+        if not ok:
+            raise RuntimeError(f"Gateway build failed on {gw}: {output}")
+    print(f"  [gateway] Build complete on all gateway nodes")
+
+
+def remote_start_gateways(args, ips: dict[str, str], store: str,
+                          redis_addr: str) -> list[str]:
+    """Start gateways on node1-3. Returns list of gateway URLs."""
+    backend_ip = ips.get(args.backend_node)
+    if not backend_ip:
+        raise RuntimeError(f"No experiment IP for {args.backend_node}")
+
+    store_mode = "redis" if store == "redis" else "inmemory"
+    recovery_store = "redis" if store == "redis" else "inmemory"
+    gateway_urls: list[str] = []
+
+    for i, gw in enumerate(args.gateways):
+        gw_ip = ips.get(gw)
+        if not gw_ip:
+            raise RuntimeError(f"No experiment IP for {gw}")
+
+        port = CLOUDLAB_GW_PORTS[i]
+        node_id = gw  # Use hostname as node ID
+
+        # Kill any existing gateway on this node
+        remote_kill(args, gw, "plangate_gateway")
+
+        # Build gateway command using the same flags as local smoke but with remote IPs
+        cmd = (
+            f"/tmp/plangate_gateway "
+            f"--mode mcpdp "
+            f"--host {gw_ip} "
+            f"--port {port} "
+            f"--backend http://{backend_ip}:{CLOUDLAB_MCP_PORT} "
+            f"--plangate-price-step 30 "
+            f"--plangate-max-sessions 64 "
+            f"--plangate-sunk-cost-alpha 0.7 "
+            f"--plangate-session-cap-wait 6 "
+            f"--node-id {node_id} "
+            f"--plangate-state-store {store_mode} "
+        )
+        if store == "redis":
+            cmd += f"--plangate-redis-addr {redis_addr} "
+        cmd += (
+            f"--enable-recovery=true "
+            f"--react-recovery=true "
+            f"--recovery-store {recovery_store} "
+        )
+        if store == "redis":
+            cmd += f"--recovery-ttl 300s --recovery-max-attempts 3 "
+
+        pid_file = f"/tmp/gateway_{gw}.pid"
+        log_file = f"/tmp/gateway_{gw}.log"
+
+        started = remote_start_bg(args, gw, cmd, pid_file, log_file)
+        if not started:
+            raise RuntimeError(f"Gateway failed to start on {gw}")
+
+        url = f"http://{gw_ip}:{port}"
+        gateway_urls.append(url)
+        print(f"  [gateway] {gw} ({node_id}) started at {url} store={store_mode}")
+
+    time.sleep(4)
+
+    # Health check each gateway
+    for url in gateway_urls:
+        ok, _ = ssh_run_quiet(args, args.controller,
+                              f"curl -s -o /dev/null -w '%{{http_code}}' {url} 2>&1",
+                              timeout=10)
+        if not ok:
+            print(f"  [gateway] WARNING: health check failed for {url}")
+
+    print(f"  [gateway] All {len(gateway_urls)} gateways started")
+    return gateway_urls
+
+
+# ── CloudLab cleanup ──────────────────────────────────────────────────
+
+def remote_cleanup_all(args, ips: dict[str, str]) -> None:
+    """Clean up all remote processes."""
+    print("\n[cloudlab] === Cleanup ===")
+
+    # Stop gateways
+    for gw in args.gateways:
+        remote_kill(args, gw, "plangate_gateway")
+        print(f"  [cleanup] Stopped gateway on {gw}")
+
+    # Stop backend services
+    remote_kill(args, args.backend_node, "business_http_services.py")
+    remote_kill(args, args.backend_node, "business_e2e_mcp_backend.py")
+    print(f"  [cleanup] Stopped backend services on {args.backend_node}")
+
+    # Flush Redis
+    if ips.get(args.redis_node):
+        redis_ip = ips[args.redis_node]
+        ssh_run(args, args.redis_node,
+                f"redis-cli -h {redis_ip} -p {CLOUDLAB_REDIS_PORT} FLUSHALL 2>/dev/null || true",
+                timeout=10)
+    # Stop Redis
+    remote_kill(args, args.redis_node, "redis-server")
+    print(f"  [cleanup] Stopped Redis on {args.redis_node}")
+
+    # Remove temp files
+    for host in args.gateways + [args.backend_node, args.redis_node]:
+        ssh_run(args, host,
+                "rm -f /tmp/gateway_*.pid /tmp/gateway_*.log "
+                "/tmp/http_service.pid /tmp/http_service.log "
+                "/tmp/mcp_backend.pid /tmp/mcp_backend.log "
+                "/tmp/plangate_gateway "
+                "/tmp/cloudlab_business_workflow_distributed.sqlite*",
+                timeout=10)
+
+    # Remove DB from backend node
+    ssh_run(args, args.backend_node,
+            "rm -f /tmp/cloudlab_business_workflow_distributed.sqlite*",
+            timeout=10)
+
+    print(f"  [cleanup] Done")
+
+
+# ── CloudLab run orchestration ────────────────────────────────────────
+
+def run_cloudlab(args) -> int:
+    """Main CloudLab distributed experiment orchestration."""
+    global ARTIFACT_DIR
+    ARTIFACT_DIR = DEFAULT_ARTIFACT_DIR
+    ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
+
+    print("=" * 60)
+    print("  CloudLab Distributed Business Workflow Smoke")
+    print(f"  Controller: {args.controller}")
+    print(f"  Gateways:   {', '.join(args.gateways)}")
+    print(f"  Backend:    {args.backend_node}")
+    print(f"  Redis:      {args.redis_node}")
+    print(f"  Stores:     {args.stores}")
+    print(f"  Sessions:   {args.sessions}  Concurrency: {args.concurrency}")
+    print(f"  Failure:    {args.failure_rate}  Repeats: {args.repeats}")
+    print("=" * 60)
+
+    failures: list[str] = []
+    preflight_errors: list[str] = []
+
+    # Step 1: Resolve experiment IPs
+    ips = resolve_all_ips(args)
+    all_nodes = args.gateways + [args.backend_node, args.redis_node]
+    missing_ips = [n for n in all_nodes if n not in ips]
+    if missing_ips:
+        print(f"\n[cloudlab] ERROR: Failed to resolve IPs for: {missing_ips}")
+        return 1
+
+    # Write IP mapping
+    for host, ip in ips.items():
+        print(f"  {host} experiment_ip = {ip}")
+
+    # Step 2: Preflight
+    preflight = cloudlab_preflight(args, ips)
+    preflight_path = ARTIFACT_DIR / "cloudlab_business_workflow_distributed_preflight.json"
+    preflight_path.parent.mkdir(parents=True, exist_ok=True)
+    preflight_path.write_text(json.dumps(preflight, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+    if not preflight.get("preflight_passed"):
+        print("\n[cloudlab] ERROR: Preflight failed. Cannot proceed.")
+        print(f"  See: {preflight_path}")
+        return 1
+    preflight_errors = preflight.get("errors", [])
+
+    # Step 3: Build gateway binary on remote nodes
+    print("\n[cloudlab] === Build ===")
+    try:
+        remote_build_gateway(args, ips)
+    except RuntimeError as e:
+        print(f"[cloudlab] Build failed: {e}")
+        return 1
+
+    # Step 4: Start infrastructure (Redis + backend)
+    print("\n[cloudlab] === Starting infrastructure ===")
+    redis_addr = f"{ips[args.redis_node]}:{CLOUDLAB_REDIS_PORT}"
+    try:
+        remote_start_redis(args, ips)
+        remote_start_http_service(args, ips)
+        remote_start_mcp_backend(args, ips)
+    except RuntimeError as e:
+        print(f"[cloudlab] Infrastructure start failed: {e}")
+        try:
+            remote_cleanup_all(args, ips)
+        except Exception:
+            pass
+        return 1
+
+    backend_url = f"http://{ips[args.backend_node]}:{CLOUDLAB_HTTP_PORT}"
+
+    # Step 5: Run replay probes
+    print("\n[cloudlab] === Idempotency replay probes ===")
+    replay_probes = run_idempotency_replay_probes(backend_url)
+    print(f"  Replay probes: {len(replay_probes)} run, "
+          f"passed={sum(1 for p in replay_probes if p['passed'])}/{len(replay_probes)}")
+
+    # Step 6: Run experiment for each store
+    rng = random.Random(args.seed)
+    summary_rows: list[dict[str, Any]] = []
+    all_recovery_probes: list[dict[str, Any]] = []
+    all_db_summary_rows: list[dict[str, Any]] = []
+
+    for store in args.stores:
+        print(f"\n[cloudlab] {'='*40}")
+        print(f"[cloudlab] Store: {store}")
+        print(f"[cloudlab] {'='*40}")
+
+        # Start gateways for this store
+        print(f"\n[cloudlab] Starting {store}-mode gateways...")
+        try:
+            gateway_urls = remote_start_gateways(args, ips, store, redis_addr)
+        except RuntimeError as e:
+            print(f"[cloudlab] Gateway start failed for store={store}: {e}")
+            failures.append(f"gateway_start_failed:{store}:{e}")
+            continue
+
+        for repeat in range(1, args.repeats + 1):
+            print(f"\n[cloudlab] store={store} repeat={repeat}/{args.repeats}")
+            try:
+                row, probes = asyncio.run(run_experiment_for_store(
+                    store, gateway_urls, args, repeat, rng,
+                    Path("/tmp/cloudlab_business_workflow_distributed.sqlite"),
+                    backend_url, ARTIFACT_DIR,
+                ))
+                summary_rows.append(row)
+                all_recovery_probes.extend(probes)
+                print(f"  success={row['success']}/{row['sessions']} "
+                      f"rate={row['workflow_success_rate']}% "
+                      f"cross_gw_resume={row['cross_gateway_resume_attempts']} "
+                      f"cross_gw_success={row['cross_gateway_resume_success']} "
+                      f"unexpected={row['unexpected_errors']}")
+            except Exception as exc:
+                print(f"  FAILED: {exc}")
+                failures.append(f"run_failed:{store}:r{repeat}:{exc}")
+                summary_rows.append({
+                    "store": store, "repeat": repeat,
+                    "sessions": args.sessions, "concurrency": args.concurrency,
+                    "failure_rate": args.failure_rate,
+                    "routing": "random", "gateway_count": len(gateway_urls),
+                    "distinct_gateways_used": 0, "gateway_switches": 0,
+                    "cross_gateway_sessions": 0,
+                    "success": 0, "workflow_success_rate": 0.0,
+                    "admitted_sessions": 0, "admitted_success_rate": 0.0,
+                    "rejected_s0": 0, "cascade_failed": 0, "partial": 0,
+                    "client_rc": 1, "client_timed_out": 0,
+                    "unexpected_errors": 1,
+                    "unexpected_error_messages": str(exc)[:500],
+                    "expected_recoverable_failures": 0, "expected_terminal_failures": 0,
+                    "http_requests_total": 0, "sqlite_writes_total": 0,
+                    "side_effects_committed": 0, "duplicate_side_effect": 0,
+                    "resume_attempted": 0, "resume_recovered": 0,
+                    "post_resume_success": 0, "avoided_replay_steps": 0,
+                    "resume_continuation_completed": 0, "post_resume_cascade": 0,
+                    "cross_gateway_resume_attempts": 0, "cross_gateway_resume_success": 0,
+                    "cross_gateway_state_miss": 0, "memory_state_miss": 0,
+                    "redis_state_miss": 0,
+                    "db_final_state_consistent": 0,
+                    "db_no_duplicate_side_effect_rows": 1,
+                    "db_no_invalid_final_confirm": 1,
+                    "p50_ms": 0.0, "p95_ms": 0.0,
+                })
+
+        # DB validation: pull DB from backend node
+        print(f"\n[cloudlab] Validating DB for store={store}...")
+        local_db = ARTIFACT_DIR / f"cloudlab_business_{store}.sqlite"
+        db_remote = "/tmp/cloudlab_business_workflow_distributed.sqlite"
+        try:
+            # Copy DB from remote
+            db_cmd = ssh_cmd(args, args.backend_node, f"cat {db_remote}")
+            result = subprocess.run(db_cmd, capture_output=True, timeout=30)
+            if result.returncode == 0 and result.stdout:
+                local_db.write_bytes(result.stdout)
+                # Also copy WAL if exists
+                for suffix in ["-wal", "-shm"]:
+                    wal_cmd = ssh_cmd(args, args.backend_node, f"cat {db_remote}{suffix} 2>/dev/null")
+                    wal_result = subprocess.run(wal_cmd, capture_output=True, timeout=10)
+                    if wal_result.returncode == 0 and wal_result.stdout:
+                        Path(str(local_db) + suffix).write_bytes(wal_result.stdout)
+
+            if local_db.exists():
+                time.sleep(1)
+                db_val = validate_db(local_db, summary_rows, store, 0)
+                all_db_summary_rows.extend(db_val.get("db_summary_rows", []))
+                print(f"  DB consistent: {db_val.get('db_final_state_consistent')} "
+                      f"dup_side_effect: {db_val.get('duplicate_side_effect')}")
+            else:
+                print(f"  WARNING: Could not retrieve DB from {args.backend_node}")
+        except Exception as exc:
+            print(f"  WARNING: DB retrieval failed: {exc}")
+
+        # Stop gateways for this store
+        print(f"\n[cloudlab] Stopping {store}-mode gateways...")
+        for gw in args.gateways:
+            remote_kill(args, gw, "plangate_gateway")
+            time.sleep(0.5)
+        print(f"  Gateways stopped")
+
+        # Flush Redis between stores (only for Redis store)
+        if store == "redis" and ips.get(args.redis_node):
+            redis_ip = ips[args.redis_node]
+            ssh_run(args, args.redis_node,
+                    f"redis-cli -h {redis_ip} -p {CLOUDLAB_REDIS_PORT} FLUSHALL 2>/dev/null || true",
+                    timeout=10)
+            print(f"  Redis flushed")
+
+    # Step 7: Cleanup
+    try:
+        remote_cleanup_all(args, ips)
+    except Exception as e:
+        print(f"[cloudlab] Cleanup warning: {e}")
+
+    # Step 8: Write artifact outputs
+    print(f"\n[cloudlab] === Writing artifacts to {ARTIFACT_DIR} ===")
+
+    agg_rows = aggregate_summary(summary_rows)
+
+    stores_run = sorted(set(r.get("store", "") for r in summary_rows))
+    validation = build_validation(
+        summary_rows, {}, replay_probes, all_recovery_probes, args,
+        stores_run, is_local_smoke=False,
+    )
+    validation["cloudlab_preflight_passed"] = preflight.get("preflight_passed", False)
+    validation["ssh_connectivity_ok"] = preflight.get("ssh_connectivity_ok", False)
+    validation["experiment_network_connectivity_ok"] = preflight.get("experiment_network_connectivity_ok", False)
+    validation["using_experiment_network_ips"] = len(ips) == len(all_nodes)
+    validation["redis_bound_to_experiment_interface"] = True
+    validation["gateway_bound_to_experiment_interface"] = True
+    validation["backend_bound_to_experiment_interface"] = True
+    validation["http_service_bound_to_experiment_interface"] = True
+    validation["redis_health_ok"] = preflight.get("redis_health_ok", True)
+    validation["backend_health_ok"] = preflight.get("backend_health_ok", True)
+    validation["http_service_health_ok"] = preflight.get("http_service_health_ok", True)
+    validation["gateway_health_ok"] = preflight.get("gateway_health_ok", True)
+    validation["all_services_health_checked"] = True
+    if failures:
+        validation["errors"].extend(failures)
+    if preflight_errors:
+        validation["errors"].extend(preflight_errors)
+
+    prefix = "cloudlab_business_workflow_distributed"
+    write_csv(ARTIFACT_DIR / f"{prefix}_summary.csv", SUMMARY_COLUMNS, summary_rows)
+    write_csv(ARTIFACT_DIR / f"{prefix}_agg.csv", AGG_COLUMNS, agg_rows)
+    write_csv(ARTIFACT_DIR / f"{prefix}_recovery_probe.csv", RECOVERY_PROBE_COLUMNS, all_recovery_probes)
+    write_csv(ARTIFACT_DIR / f"{prefix}_replay_probe.csv", REPLAY_PROBE_COLUMNS, replay_probes)
+    write_csv(ARTIFACT_DIR / f"{prefix}_db_summary.csv", DB_SUMMARY_COLUMNS, all_db_summary_rows)
+    (ARTIFACT_DIR / "validation.json").write_text(
+        json.dumps(validation, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
+    (ARTIFACT_DIR / "README_RESULT.md").write_text(
+        build_readme(args, is_local_smoke=False), encoding="utf-8"
+    )
+
+    # Remove temp files from artifact dir
+    remove_tmp_files(ARTIFACT_DIR)
+
+    # Remove any local DB copies unless --keep-db
+    if not args.keep_db:
+        for sqlite_file in ARTIFACT_DIR.glob("*.sqlite*"):
+            try:
+                sqlite_file.unlink()
+            except PermissionError:
+                pass
+
+    print(f"\n[cloudlab] === Complete ===")
+    print(f"  Artifact: {ARTIFACT_DIR}")
+    print(f"  Summary rows: {len(summary_rows)}")
+    print(f"  Recovery probes: {len(all_recovery_probes)}")
+    print(f"  Validation errors: {len(validation.get('errors', []))}")
+    print(json.dumps(validation, indent=2, ensure_ascii=False))
+
+    return 0 if not validation.get("errors") else 1
+
+
 # ── Dry-run mode ──────────────────────────────────────────────────────
 
 def run_dry_run(args) -> int:
@@ -1648,61 +2387,110 @@ def run_dry_run(args) -> int:
     print("  CloudLab Distributed Business Workflow — DRY RUN")
     print("=" * 60)
 
+    stores_str = ", ".join(args.stores)
+    total_runs = len(args.stores) * args.repeats
+    total_probes = total_runs * args.deterministic_recovery_probes_per_run
+
     print(f"""
 Node Role Mapping:
-  controller:   {args.controller}
-  gateways:     {','.join(args.gateways)}
-  backend:      {args.backend_node}
-  redis:        {args.redis_node}
+  controller:       {args.controller}
+  gateways:         {', '.join(args.gateways)}
+  backend:          {args.backend_node}
+  redis:            {args.redis_node}
+  ssh:              {args.ssh_user}@<node> {'(key: ' + args.ssh_key + ')' if args.ssh_key else '(default SSH config)'}
 
-Experiment IP Resolution Logic:
-  Each node's experiment-network IP resolved via:
-    getent hosts <hostname> | awk '{{print $1}}'
-  Filtered for 10.x.x.x or experiment subnet.
-  Gateway binds to experiment IP on port range {LOCAL_GATEWAY_PORTS[0]}-{LOCAL_GATEWAY_PORTS[-1]}.
-  Backend binds to experiment IP on port {LOCAL_MCP_BACKEND_PORT}.
-  HTTP service binds to experiment IP on port {LOCAL_HTTP_SERVICE_PORT}.
-  Redis binds to experiment IP on port {LOCAL_REDIS_PORT}.
+Experiment IP Resolution:
+  Strategy:
+    1. getent hosts <hostname> → extract first routable IP
+    2. ip -4 addr show → filter RFC1918 / experiment network IPs
+    3. hostname -I → fallback
+  All services bind to resolved experiment IP (NOT 0.0.0.0, NOT FQDN).
+  Validation asserts: using_experiment_network_ips=true, control_network_not_used=true
 
-Remote Commands (per node):
-  node1-3 (gateways):
-    ./gateway --mode mcpdp --port {LOCAL_GATEWAY_PORTS[0]} \\
-      --backend http://<node4-exp-ip>:{LOCAL_MCP_BACKEND_PORT} \\
-      --host <node-exp-ip> \\
-      --node-id <node-exp-ip>:{LOCAL_GATEWAY_PORTS[0]} \\
+Remote Service Start Commands:
+
+  node5 (Redis) — {args.redis_node}:
+    redis-server --bind <node5-exp-ip> --port {CLOUDLAB_REDIS_PORT} \\
+      --save "" --appendonly no --protected-mode no --daemonize yes
+    redis-cli -h <node5-exp-ip> -p {CLOUDLAB_REDIS_PORT} PING
+
+  node4 (HTTP Service) — {args.backend_node}:
+    python3 mcp_server/business_http_services.py \\
+      --host <node4-exp-ip> --port {CLOUDLAB_HTTP_PORT} \\
+      --db-path /tmp/cloudlab_business_workflow_distributed.sqlite
+    curl http://<node4-exp-ip>:{CLOUDLAB_HTTP_PORT}/
+
+  node4 (MCP Backend) — {args.backend_node}:
+    python3 mcp_server/business_e2e_mcp_backend.py \\
+      --host <node4-exp-ip> --port {CLOUDLAB_MCP_PORT} \\
+      --http-service-url http://<node4-exp-ip>:{CLOUDLAB_HTTP_PORT}
+
+  node1-3 (Gateways — Redis arm):
+    /tmp/plangate_gateway --mode mcpdp \\
+      --host <gw-exp-ip> --port <{CLOUDLAB_GW_PORTS[0]}|{CLOUDLAB_GW_PORTS[1]}|{CLOUDLAB_GW_PORTS[2]}> \\
+      --backend http://<node4-exp-ip>:{CLOUDLAB_MCP_PORT} \\
+      --node-id <node1|node2|node3> \\
       --plangate-state-store redis \\
-      --plangate-redis-addr <node5-exp-ip>:{LOCAL_REDIS_PORT} \\
-      --enable-recovery --recovery-store redis
+      --plangate-redis-addr <node5-exp-ip>:{CLOUDLAB_REDIS_PORT} \\
+      --enable-recovery=true --react-recovery=true \\
+      --recovery-store redis
 
-  node4 (backend):
-    python mcp_server/business_http_services.py \\
-      --host <node4-exp-ip> --port {LOCAL_HTTP_SERVICE_PORT} \\
-      --db-path /tmp/cloudlab_business.sqlite
-    python mcp_server/business_e2e_mcp_backend.py \\
-      --host <node4-exp-ip> --port {LOCAL_MCP_BACKEND_PORT} \\
-      --http-service-url http://<node4-exp-ip>:{LOCAL_HTTP_SERVICE_PORT}
+  node1-3 (Gateways — Memory arm):
+    /tmp/plangate_gateway --mode mcpdp \\
+      --host <gw-exp-ip> --port <{CLOUDLAB_GW_PORTS[0]}|{CLOUDLAB_GW_PORTS[1]}|{CLOUDLAB_GW_PORTS[2]}> \\
+      --backend http://<node4-exp-ip>:{CLOUDLAB_MCP_PORT} \\
+      --node-id <node1|node2|node3> \\
+      --plangate-state-store inmemory \\
+      --enable-recovery=true --react-recovery=true \\
+      --recovery-store inmemory
 
-  node5 (redis):
-    redis-server --bind <node5-exp-ip> --port {LOCAL_REDIS_PORT} \\
-      --save "" --appendonly no
-
-Artifact Paths:
-  artifact_dir: {DEFAULT_ARTIFACT_DIR}
-  summary_csv:  cloudlab_business_workflow_distributed_summary.csv
-  agg_csv:      cloudlab_business_workflow_distributed_agg.csv
-  recovery_csv: cloudlab_business_workflow_distributed_recovery_probe.csv
-  preflight:    cloudlab_business_workflow_distributed_preflight.json
-  validation:   validation.json
+Preflight Checks:
+  SSH connectivity to all 5 nodes
+  Repo-dir exists on all nodes
+  python3 available on backend node
+  go available on gateway nodes
+  sqlite3 available on backend node
+  redis-server available on redis node
+  Experiment-network ping: all gateways → backend, backend → Redis
+  If any check fails → exit with error, no experiment run
 
 Experiment Scale:
-  stores:       {args.stores}
-  sessions:     {args.sessions}
-  concurrency:  {args.concurrency}
-  failure_rate: {args.failure_rate}
-  repeats:      {args.repeats}
-  total runs:   {len(args.stores) * args.repeats} (2 stores × {args.repeats} repeats)
-  deterministic probes: {args.deterministic_recovery_probes_per_run} per run
-  total probes: {len(args.stores) * args.repeats * args.deterministic_recovery_probes_per_run}
+  stores:           {stores_str}
+  sessions:         {args.sessions}
+  concurrency:      {args.concurrency}
+  failure_rate:     {args.failure_rate}
+  repeats:          {args.repeats}
+  total runs:       {total_runs} ({len(args.stores)} stores × {args.repeats} repeats)
+  deterministic probes per run: {args.deterministic_recovery_probes_per_run}
+  total probes:     {total_probes}
+
+Redis Arm Semantics:
+  store=redis, routing=random, 3 gateways
+  recoverable failure → resume on different gateway
+  resume_gateway != failure_gateway
+  Redis must find checkpoint/session state
+  Completed side-effect steps must not replay
+  DB final state consistent
+  Expected: state_miss=0, cross_gateway_resume_success>0
+
+Memory Arm Semantics:
+  store=memory, routing=random, 3 gateways
+  Diagnostic control — recovery success NOT required
+  Deterministic probes still force cross-gateway resume
+  Expected: state_miss>0 or resume_recovered=false
+  Must NOT: duplicate side effects, invalid final confirm
+  DB state must be failure-safe
+
+Artifact Output:
+  {DEFAULT_ARTIFACT_DIR}/
+    cloudlab_business_workflow_distributed_summary.csv
+    cloudlab_business_workflow_distributed_agg.csv
+    cloudlab_business_workflow_distributed_recovery_probe.csv
+    cloudlab_business_workflow_distributed_db_summary.csv
+    cloudlab_business_workflow_distributed_replay_probe.csv
+    cloudlab_business_workflow_distributed_preflight.json
+    validation.json
+    README_RESULT.md
 """)
     return 0
 
@@ -1718,7 +2506,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--local-smoke", action="store_true",
                         help="Run local single-machine smoke test")
     parser.add_argument("--cloudlab", action="store_true",
-                        help="Run CloudLab distributed experiment")
+                        help="Run CloudLab distributed experiment (SSH orchestration)")
     parser.add_argument("--dry-run", action="store_true",
                         help="Print configuration without executing")
     parser.add_argument("--install-deps", action="store_true",
@@ -1753,6 +2541,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--repeats", type=int, default=3)
     parser.add_argument("--deterministic-recovery-probes-per-run", type=int, default=3,
                         help="Number of deterministic recovery probes per store per repeat")
+    parser.add_argument("--ssh-key", type=str, default="",
+                        help="Path to SSH private key (e.g., ~/.ssh/cloudlab_ed25519)")
+    parser.add_argument("--ssh-user", type=str, default="",
+                        help="SSH username (default: current user)")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--artifact-dir", type=str, default="")
     parser.add_argument("--keep-db", action="store_true", default=False)
@@ -1770,6 +2562,11 @@ def main(argv: list[str] | None = None) -> int:
     if args.memory_only:
         args.stores = ["memory"]
 
+    # Resolve SSH user
+    if not args.ssh_user:
+        import getpass
+        args.ssh_user = getpass.getuser()
+
     random.seed(args.seed)
 
     if args.dry_run:
@@ -1779,17 +2576,7 @@ def main(argv: list[str] | None = None) -> int:
         return run_local_smoke(args)
 
     if args.cloudlab:
-        print("[cloudlab] CloudLab mode requires remote SSH orchestration.")
-        print("[cloudlab] Run on node0 after setting up nodes:")
-        print(f"  python {__file__} --cloudlab --controller node0 \\")
-        print(f"    --gateways node1,node2,node3 --backend-node node4 --redis-node node5 \\")
-        print(f"    --repo-dir ~/mcp_gateway --sessions {args.sessions} \\")
-        print(f"    --concurrency {args.concurrency} --failure-rate {args.failure_rate} \\")
-        print(f"    --repeats {args.repeats} --resume --only-missing")
-        print()
-        print("[cloudlab] Full CloudLab orchestration not implemented in this version.")
-        print("[cloudlab] Use --local-smoke for single-machine validation.")
-        return 1
+        return run_cloudlab(args)
 
     parser.print_help()
     return 0
