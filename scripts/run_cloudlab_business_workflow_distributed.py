@@ -1751,10 +1751,14 @@ def wait_mcp_health(args, host: str, url: str, log_file: str) -> None:
 
 
 def wait_gateway_health(args, host: str, url: str, log_file: str, label: str = "gateway") -> None:
-    """Wait for a gateway to respond to HTTP GET, raise on timeout."""
+    """Wait for a gateway to respond to JSON-RPC ping, raise on timeout."""
     def check():
-        ok, _ = ssh_run_quiet(args, host, f"curl -fsS -m 3 {url} 2>&1", timeout=8)
-        return ok
+        ok, body = ssh_run_quiet(args, host,
+            f"curl -fsS -m 3 -X POST {url} "
+            f"-H 'Content-Type: application/json' "
+            f"-d '{{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"ping\"}}' 2>&1",
+            timeout=8)
+        return ok and '"result"' in body
 
     if _retry_health_check(check, max_wait=12.0, interval=2.0):
         print(f"  [{label}] Health: OK ({url})")
