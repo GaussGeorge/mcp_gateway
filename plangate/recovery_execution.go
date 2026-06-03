@@ -64,6 +64,17 @@ type PSRecoveryResult struct {
 	Mode              string `json:"mode"`                // "ps_recovery" or "ps_already_complete"
 }
 
+type ReActRecoveryResult struct {
+	SessionID                  string `json:"session_id"`
+	Recovered                  bool   `json:"recovered"`
+	Mode                       string `json:"mode"`
+	CurrentStep                int    `json:"current_step"`
+	CompletedSteps             int    `json:"completed_steps"`
+	ConversationTraceLen       int    `json:"conversation_trace_len,omitempty"`
+	ObservationDigest          string `json:"observation_digest,omitempty"`
+	RequiresClientContinuation bool   `json:"requires_client_continuation"`
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Metrics
 // ─────────────────────────────────────────────────────────────────────────────
@@ -163,12 +174,14 @@ func (s *MCPDPServer) handleRecoveryResumeWithWriter(
 			map[string]interface{}{"session_id": sessionID, "status": string(cp.Status)})
 	}
 
-	// 4. Only P&S semantic recovery is implemented.
-	// ReAct recovery requires full LLM message-trace injection (Phase 5 client cooperation).
+	if cp.Mode == AgentModeReAct {
+		return s.handleReActRecoveryResumeWithWriter(ctx, w, r, req, cp)
+	}
+
+	// 4. Only P&S semantic replay executes remaining DAG steps.
 	if cp.Mode != AgentModePlanSolve {
 		return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeInvalidRequest,
-			"ReAct semantic recovery is not implemented; gateway preserves transport-level"+
-				" checkpoints for ReAct but cannot resume without client-side context injection",
+			"unsupported recovery mode",
 			map[string]interface{}{"session_id": sessionID, "mode": string(cp.Mode)})
 	}
 
@@ -550,6 +563,126 @@ func (s *MCPDPServer) handleRecoveryResumeWithWriter(
 		TotalSteps:        totalSteps,
 		SavedComputeSteps: skippedSteps,
 		Mode:              "ps_recovery",
+	})
+}
+
+func (s *MCPDPServer) handleReActRecoveryResumeWithWriter(
+	ctx context.Context,
+	_ http.ResponseWriter,
+	_ *http.Request,
+	req *mcpgov.JSONRPCRequest,
+	cp *SessionCheckpoint,
+) *mcpgov.JSONRPCResponse {
+	if !s.recoveryConfig.Enabled || s.checkpointStore == nil {
+		return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeInvalidRequest,
+			"recovery not enabled on this gateway", nil)
+	}
+	if !s.reactRecoveryEnabled {
+		return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeInvalidRequest,
+			"react recovery is disabled on this gateway", nil)
+	}
+	if cp == nil {
+		return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeInvalidRequest,
+			"invalid react checkpoint", nil)
+	}
+	switch cp.Status {
+	case StatusCheckpointed, StatusRecoveryQueued:
+		// allowed
+	case StatusActiveCheckpoint, StatusRunning:
+		return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeInvalidRequest,
+			"session is still live; react recovery resume rejected",
+			map[string]interface{}{"session_id": cp.SessionID, "status": string(cp.Status)})
+	case StatusRecovering:
+		return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeInvalidRequest,
+			"react recovery already in progress",
+			map[string]interface{}{"session_id": cp.SessionID, "status": string(cp.Status)})
+	default:
+		return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeInvalidRequest,
+			"react checkpoint is in terminal status",
+			map[string]interface{}{"session_id": cp.SessionID, "status": string(cp.Status)})
+	}
+	if cp.NonRecoverable {
+		atomic.AddInt64(&s.reactRecoveryRejectedNonRecoverable, 1)
+		return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeInvalidRequest,
+			"react checkpoint is non-recoverable (side-effect without idempotency key)",
+			map[string]interface{}{"session_id": cp.SessionID})
+	}
+	if !cp.ExpiresAt.IsZero() && timeNow().After(cp.ExpiresAt) {
+		return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeInvalidRequest,
+			"react checkpoint expired", map[string]interface{}{"session_id": cp.SessionID})
+	}
+
+	var capRelease func()
+	_, sessionAlreadyTracked := s.reactSessions.Get(cp.SessionID)
+	if !sessionAlreadyTracked && s.sessionCap != nil && !s.disableCapacityStep0 {
+		state := AdmissionGreen
+		wait := s.sessionCapWait
+		if s.adaptiveAdmission.Enabled {
+			state = s.admissionState()
+			s.recordAdmissionState(state)
+			wait = s.adaptiveStep0Wait(AgentModeReAct, state)
+		}
+		if wait == 0 {
+			wait = 5 * time.Millisecond
+		}
+		select {
+		case s.sessionCap <- struct{}{}:
+			ch := s.sessionCap
+			capRelease = func() { <-ch }
+		case <-time.After(wait):
+			atomic.AddInt64(&s.step0RejectCapacity, 1)
+			if s.adaptiveAdmission.Enabled && state == AdmissionRed {
+				atomic.AddInt64(&s.step0RejectAdaptiveRed, 1)
+			}
+			return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeOverloaded,
+				"react recovery session cap full",
+				map[string]interface{}{
+					"session_id":     cp.SessionID,
+					"rejected_at":    "step_0_capacity",
+					"adaptive_state": state,
+					"wait_ms":        wait.Milliseconds(),
+				})
+		case <-ctx.Done():
+			return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeInternalError,
+				"context cancelled while restoring react session", nil)
+		}
+	}
+
+	_, releaseConsumed := s.reactSessions.Restore(cp.SessionID, cp.CurrentStep, capRelease)
+	if capRelease != nil && !releaseConsumed {
+		// Another in-flight path already tracks this session and owns releaseFn.
+		// Release the temporary slot acquired for this resume attempt.
+		capRelease()
+	}
+	atomic.AddInt64(&s.reactRecoveryAttempts, 1)
+	atomic.AddInt64(&s.reactRecoveredSuccess, 1)
+	atomic.AddInt64(&s.avoidedReplaySteps, int64(cp.CurrentStep))
+
+	if err := s.checkpointStore.Update(ctx, cp.SessionID, func(c *SessionCheckpoint) (*SessionCheckpoint, error) {
+		c.Status = StatusRecovering
+		c.RecoveryAttempts++
+		c.UpdatedAt = timeNow()
+		return c, nil
+	}); err != nil {
+		return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeInternalError,
+			"failed to transition react checkpoint to RECOVERING",
+			map[string]interface{}{"session_id": cp.SessionID, "error": err.Error()})
+	}
+
+	obsDigest := ""
+	if n := len(cp.ObservationHistory); n > 0 {
+		obsDigest = cp.ObservationHistory[n-1]
+	}
+
+	return mcpgov.NewSuccessResponse(req.ID, ReActRecoveryResult{
+		SessionID:                  cp.SessionID,
+		Recovered:                  true,
+		Mode:                       "react_client_cooperative",
+		CurrentStep:                cp.CurrentStep,
+		CompletedSteps:             len(cp.CompletedSteps),
+		ConversationTraceLen:       len(cp.ConversationTrace),
+		ObservationDigest:          obsDigest,
+		RequiresClientContinuation: true,
 	})
 }
 

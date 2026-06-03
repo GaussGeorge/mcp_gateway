@@ -132,6 +132,29 @@ type MCPDPServer struct {
 	// response headers and queryable via /debug/multigateway endpoint.
 	stateMissCount          int64
 	duplicateAdmissionCount int64
+
+	// Adaptive Step-0 admission controls.
+	adaptiveAdmission    AdaptiveAdmissionConfig
+	disableCapacityStep0 bool
+
+	// Step-0 and adaptive counters for experiments/ablation.
+	step0RejectBudget           int64
+	step0RejectCapacity         int64
+	step0RejectSecurity         int64
+	step0RejectDuplicate        int64
+	step0RejectAdaptiveRed      int64
+	adaptiveGreenCount          int64
+	adaptiveYellowCount         int64
+	adaptiveRedCount            int64
+	adaptiveQueueWaitTotalNanos int64
+
+	// ReAct recovery counters.
+	reactRecoveryAttempts               int64
+	reactRecoveredSuccess               int64
+	reactRecoveryRejectedNonRecoverable int64
+	avoidedReplaySteps                  int64
+	duplicateSideEffectCount            int64
+	reactRecoveryEnabled                bool
 }
 
 // getGovernanceIntensity 获取当前治理强度
@@ -171,11 +194,13 @@ func NewMCPDPServer(name string, gov *mcpgov.MCPGovernor, reservationTTL time.Du
 		reactStep0Limit:            step0Limit,
 		reputationMgr:              NewReputationManager(DefaultReputationConfig()),
 		recoveryConfig:             DefaultRecoveryConfig(),
+		adaptiveAdmission:          DefaultAdaptiveAdmissionConfig(),
 		commitmentTokens:           mustNewDefaultCommitmentTokenManager(reservationTTL),
 		amendmentMode:              AmendmentModeRecoveryOnly,
 		amendmentMaxCount:          3,
 		amendmentMaxBudgetDelta:    0,
 		amendmentRequireCommitment: true,
+		reactRecoveryEnabled:       true,
 	}
 }
 
@@ -207,11 +232,13 @@ func NewMCPDPServerNoLock(name string, gov *mcpgov.MCPGovernor, reservationTTL t
 		reactStep0Limit:            step0Limit,
 		reputationMgr:              NewReputationManager(DefaultReputationConfig()),
 		recoveryConfig:             DefaultRecoveryConfig(),
+		adaptiveAdmission:          DefaultAdaptiveAdmissionConfig(),
 		commitmentTokens:           mustNewDefaultCommitmentTokenManager(reservationTTL),
 		amendmentMode:              AmendmentModeRecoveryOnly,
 		amendmentMaxCount:          3,
 		amendmentMaxBudgetDelta:    0,
 		amendmentRequireCommitment: true,
+		reactRecoveryEnabled:       true,
 	}
 }
 
@@ -280,11 +307,13 @@ func NewMCPDPServerWithExternalSignals(
 		reputationMgr:              NewReputationManager(DefaultReputationConfig()),
 		protectCommittedSessions:   true, // 真实 LLM 模式默认启用准入承诺保障
 		recoveryConfig:             DefaultRecoveryConfig(),
+		adaptiveAdmission:          DefaultAdaptiveAdmissionConfig(),
 		commitmentTokens:           mustNewDefaultCommitmentTokenManager(reservationTTL),
 		amendmentMode:              AmendmentModeRecoveryOnly,
 		amendmentMaxCount:          3,
 		amendmentMaxBudgetDelta:    0,
 		amendmentRequireCommitment: true,
+		reactRecoveryEnabled:       true,
 	}
 }
 
@@ -391,6 +420,42 @@ func (s *MCPDPServer) SetNodeID(nodeID string) {
 // Pass nil to restore local-only behaviour (default).
 func (s *MCPDPServer) SetSharedStateStore(store SessionStateStore) {
 	s.sharedStateStore = store
+}
+
+// EnableAdaptiveAdmission toggles adaptive capacity admission for Step-0 paths.
+func (s *MCPDPServer) EnableAdaptiveAdmission(enabled bool) {
+	s.adaptiveAdmission.Enabled = enabled
+}
+
+// SetAdaptiveAdmissionConfig overrides adaptive Step-0 thresholds and waits.
+func (s *MCPDPServer) SetAdaptiveAdmissionConfig(cfg AdaptiveAdmissionConfig) {
+	s.adaptiveAdmission = cfg
+}
+
+// GetAdaptiveAdmissionConfig returns current adaptive Step-0 configuration.
+func (s *MCPDPServer) GetAdaptiveAdmissionConfig() AdaptiveAdmissionConfig {
+	return s.adaptiveAdmission
+}
+
+// SetReActRecoveryEnabled toggles ReAct client-cooperative recovery.
+func (s *MCPDPServer) SetReActRecoveryEnabled(enabled bool) {
+	s.reactRecoveryEnabled = enabled
+}
+
+// SetDisableCapacityStep0 disables capacity/overload Step-0 rejections while
+// keeping semantic/security/duplicate hard rejects unchanged.
+func (s *MCPDPServer) SetDisableCapacityStep0(disable bool) {
+	s.disableCapacityStep0 = disable
+}
+
+// IsAdaptiveAdmissionEnabled reports whether adaptive Step-0 policy is active.
+func (s *MCPDPServer) IsAdaptiveAdmissionEnabled() bool {
+	return s.adaptiveAdmission.Enabled
+}
+
+// IsCapacityStep0Disabled reports whether capacity/overload Step-0 reject is disabled.
+func (s *MCPDPServer) IsCapacityStep0Disabled() bool {
+	return s.disableCapacityStep0
 }
 
 // GetStateMissCount returns the number of P&S continuation steps that arrived

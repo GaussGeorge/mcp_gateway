@@ -181,6 +181,15 @@ func NewReactSessionManager(ttl time.Duration) *ReactSessionManager {
 
 // Create 为新 ReAct 会话创建跟踪条目
 func (m *ReactSessionManager) Create(sessionID string, releaseFn func()) *ReactSessionState {
+	if existing, ok := m.Get(sessionID); ok {
+		existing.mu.Lock()
+		if releaseFn != nil && existing.releaseFn == nil {
+			existing.releaseFn = releaseFn
+		}
+		existing.ExpiresAt = time.Now().Add(m.maxDuration)
+		existing.mu.Unlock()
+		return existing
+	}
 	s := &ReactSessionState{
 		SessionID:   sessionID,
 		CurrentStep: 0,
@@ -191,6 +200,40 @@ func (m *ReactSessionManager) Create(sessionID string, releaseFn func()) *ReactS
 	m.sessions.Store(sessionID, s)
 	atomic.AddInt64(&m.activeCount, 1)
 	return s
+}
+
+// Restore restores or rehydrates a ReAct session from checkpointed progress.
+// If session already exists, CurrentStep becomes max(existing, currentStep).
+// The returned bool reports whether releaseFn was consumed and attached to the
+// restored state. Callers can use this to safely release temporary capacity
+// slots when restoring into an already-tracked session that already has a
+// release function.
+func (m *ReactSessionManager) Restore(sessionID string, currentStep int, releaseFn func()) (*ReactSessionState, bool) {
+	if existing, ok := m.Get(sessionID); ok {
+		releaseConsumed := false
+		existing.mu.Lock()
+		if currentStep > existing.CurrentStep {
+			existing.CurrentStep = currentStep
+		}
+		if releaseFn != nil && existing.releaseFn == nil {
+			existing.releaseFn = releaseFn
+			releaseConsumed = true
+		}
+		existing.ExpiresAt = time.Now().Add(m.maxDuration)
+		existing.mu.Unlock()
+		return existing, releaseConsumed
+	}
+
+	s := &ReactSessionState{
+		SessionID:   sessionID,
+		CurrentStep: currentStep,
+		CreatedAt:   time.Now(),
+		ExpiresAt:   time.Now().Add(m.maxDuration),
+		releaseFn:   releaseFn,
+	}
+	m.sessions.Store(sessionID, s)
+	atomic.AddInt64(&m.activeCount, 1)
+	return s, releaseFn != nil
 }
 
 // Get 获取 ReAct 会话状态（检查过期）

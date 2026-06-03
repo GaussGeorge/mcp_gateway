@@ -22,6 +22,7 @@ import csv
 import json
 import os
 import random
+import shlex
 import socket
 import sqlite3
 import subprocess
@@ -1669,9 +1670,11 @@ def ssh_run_quiet(args, host: str, command: str, timeout: int = 30) -> tuple[boo
 
 
 def remote_start_bg_no_check(args, host: str, command: str, log_file: str) -> None:
-    """Start a background process on a remote node. Does NOT verify success — caller must health-check."""
+    """Start a background process on a remote node. Caller must health-check."""
+    wrapped = f"set -e; {command}"
     full_cmd = (
-        f"nohup setsid {command} > {log_file} 2>&1 < /dev/null &"
+        f"nohup setsid bash -lc {shlex.quote(wrapped)} "
+        f"> {shlex.quote(log_file)} 2>&1 < /dev/null &"
     )
     ssh_run(args, host, full_cmd, timeout=15)
     # Give the process a moment to start binding

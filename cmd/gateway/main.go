@@ -1,8 +1,8 @@
 // cmd/gateway/main.go
-// MCP 网关统一入口 — 支持 NG/SRL/DP/PlanGate 及 Envoy/Kong 近似基线
-// 网关接收发压机请求 → 应用治理逻辑 → 代理到 Python MCP 后端
+// MCP 缃戝叧缁熶竴鍏ュ彛 锟?鏀寔 NG/SRL/DP/PlanGate 锟?Envoy/Kong 杩戜技鍩虹嚎
+// 缃戝叧鎺ユ敹鍙戝帇鏈鸿锟?锟?搴旂敤娌荤悊閫昏緫 锟?浠ｇ悊锟?Python MCP 鍚庣
 //
-// 用法:
+// 鐢ㄦ硶:
 //
 //	go run ./cmd/gateway --mode dp          --port 9003 --backend http://127.0.0.1:8080
 //	go run ./cmd/gateway --mode dp-noregime --port 9004 --backend http://127.0.0.1:8080
@@ -30,18 +30,14 @@ import (
 	"mcp-governance/plangate"
 )
 
-// proxyOverloadDetector 代理级过载检测器
-// 在反向代理架构中，Go runtime 调度器延迟不反映实际负载，
-// 因此用并发请求计数来驱动 DP 价格机制。
-// 检测器参数（priceStep/decayStep/maxConc）从 MCPGovernor 的当前档位动态读取，
-// 实现自适应过载检测：不同负载模式下使用不同的检测灵敏度。
+// proxyOverloadDetector tracks in-flight proxy calls and updates ownPrice.
 type proxyOverloadDetector struct {
 	gov          *mcpgov.MCPGovernor
-	activeCount  int64 // atomic: 当前活跃的并发请求数
+	activeCount  int64 // atomic: 褰撳墠娲昏穬鐨勫苟鍙戣姹傛暟
 	interval     time.Duration
-	currentPrice int64   // 当前价格 (detector 内部跟踪)
-	smoothActive float64 // 指数平滑后的并发数（提供"记忆"，用于定价）
-	regimeSignal float64 // 对称轻度平滑并发数（用于 regime 检测）
+	currentPrice int64   // 褰撳墠浠锋牸 (detector 鍐呴儴璺熻釜)
+	smoothActive float64 // 鎸囨暟骞虫粦鍚庣殑骞跺彂鏁帮紙鎻愪緵"璁板繂"锛岀敤浜庡畾浠凤級
+	regimeSignal float64 // 瀵圭О杞诲害骞虫粦骞跺彂鏁帮紙鐢ㄤ簬 regime 妫€娴嬶級
 }
 
 func (d *proxyOverloadDetector) onRequestStart() {
@@ -56,20 +52,20 @@ func (d *proxyOverloadDetector) run() {
 	for range time.Tick(d.interval) {
 		active := float64(atomic.LoadInt64(&d.activeCount))
 
-		// 非对称指数平滑：快速响应过载，缓慢松弛恢复（用于定价）
+		// Asymmetric smoothing: react quickly to spikes, recover slowly.
 		if active > d.smoothActive {
-			d.smoothActive = 0.7*d.smoothActive + 0.3*active // 快速升
+			d.smoothActive = 0.7*d.smoothActive + 0.3*active
 		} else {
-			d.smoothActive = 0.99*d.smoothActive + 0.01*active // 缓慢降
+			d.smoothActive = 0.99*d.smoothActive + 0.01*active
 		}
 
-		// 对称轻度平滑（用于 regime 检测）：双向 alpha=0.2，保留负载变化信号
+		// Symmetric smoothing for regime-detection signal.
 		d.regimeSignal = 0.8*d.regimeSignal + 0.2*active
 
-		// 注入 regime 信号触发自适应档位检测
+		// Feed regime signal into adaptive profile selection.
 		d.gov.ApplyAdaptiveProfileSignal(d.regimeSignal)
 
-		// 从当前活跃档位动态读取检测器参数
+		// 浠庡綋鍓嶆椿璺冩。浣嶅姩鎬佽鍙栨娴嬪櫒鍙傛暟
 		priceStep, decayStep, maxConc := d.gov.GetDetectorParams()
 
 		diff := int64(d.smoothActive) - maxConc
@@ -88,67 +84,83 @@ func (d *proxyOverloadDetector) run() {
 }
 
 func main() {
-	mode := flag.String("mode", "dp", "网关模式: ng | srl | dp | dp-noregime | envoy-approx | kong-approx")
-	port := flag.Int("port", 9003, "网关监听端口")
-	backendURL := flag.String("backend", "http://127.0.0.1:8080", "Python MCP 后端地址")
-	host := flag.String("host", "127.0.0.1", "网关绑定地址")
+	mode := flag.String("mode", "dp", "缃戝叧妯″紡: ng | srl | dp | dp-noregime | envoy-approx | kong-approx")
+	port := flag.Int("port", 9003, "缃戝叧鐩戝惉绔彛")
+	backendURL := flag.String("backend", "http://127.0.0.1:8080", "Python MCP 鍚庣鍦板潃")
+	host := flag.String("host", "127.0.0.1", "缃戝叧缁戝畾鍦板潃")
 
 	// Multi-gateway experiment flags
-	nodeID := flag.String("node-id", "", "网关节点 ID，用于 X-Gateway-Node header（默认: host:port）")
+	nodeID := flag.String("node-id", "", "Gateway node ID for X-Gateway-Node header (default host:port)")
 	stateStore := flag.String("plangate-state-store", "inmemory",
-		"PlanGate 会话状态存储后端 (inmemory|redis); 默认 inmemory 保持旧行为")
+		"PlanGate session state store backend (inmemory|redis)")
 	redisAddr := flag.String("plangate-redis-addr", "127.0.0.1:6379",
-		"Redis 地址 (仅在 --plangate-state-store=redis 时使用)")
+		"Redis address used when --plangate-state-store=redis")
 
-	// SRL 参数
-	srlQPS := flag.Float64("srl-qps", 50, "SRL: 令牌桶速率 (req/s)")
-	srlBurst := flag.Int64("srl-burst", 100, "SRL: 令牌桶最大容量")
-	srlMaxConc := flag.Int64("srl-max-conc", 20, "SRL: 最大并发连接数")
+	// SRL 鍙傛暟
+	srlQPS := flag.Float64("srl-qps", 50, "SRL: 浠ょ墝妗堕€熺巼 (req/s)")
+	srlBurst := flag.Int64("srl-burst", 100, "SRL: token-bucket burst")
+	srlMaxConc := flag.Int64("srl-max-conc", 20, "SRL: 鏈€澶у苟鍙戣繛鎺ユ暟")
 
-	// Proxy approximation 参数（Envoy/Kong）
-	proxyGlobalQPS := flag.Float64("proxy-global-qps", 65, "ProxyApprox: 全局 QPS")
-	proxyGlobalBurst := flag.Int64("proxy-global-burst", 400, "ProxyApprox: 全局 burst")
-	proxyMaxConc := flag.Int64("proxy-max-conc", 55, "ProxyApprox: 全局最大并发")
-	proxyRouteQPS := flag.Float64("proxy-route-qps", 35, "EnvoyApprox: route 级 QPS")
-	proxyRouteBurst := flag.Int64("proxy-route-burst", 100, "EnvoyApprox: route 级 burst")
-	proxyRouteMaxConc := flag.Int64("proxy-route-max-conc", 20, "EnvoyApprox: route 级最大并发")
+	// Proxy approximation parameters (Envoy/Kong style).
+	proxyGlobalQPS := flag.Float64("proxy-global-qps", 65, "ProxyApprox: global QPS")
+	proxyGlobalBurst := flag.Int64("proxy-global-burst", 400, "ProxyApprox: 鍏ㄥ眬 burst")
+	proxyMaxConc := flag.Int64("proxy-max-conc", 55, "ProxyApprox: global max concurrency")
+	proxyRouteQPS := flag.Float64("proxy-route-qps", 35, "EnvoyApprox: route 锟?QPS")
+	proxyRouteBurst := flag.Int64("proxy-route-burst", 100, "EnvoyApprox: route 锟?burst")
+	proxyRouteMaxConc := flag.Int64("proxy-route-max-conc", 20, "EnvoyApprox: route max concurrency")
 	kongSessionQPS := flag.Float64("kong-session-qps", 2, "KongApprox: per-consumer/session QPS")
 	kongSessionBurst := flag.Int64("kong-session-burst", 5, "KongApprox: per-consumer/session burst")
-	kongSessionTTL := flag.Int("kong-session-ttl", 300, "KongApprox: per-consumer key TTL (秒)")
+	kongSessionTTL := flag.Int("kong-session-ttl", 300, "KongApprox: per-consumer key TTL (锟?")
 
-	// Rajomon 参数
-	rajomonPriceStep := flag.Int64("rajomon-price-step", 100, "Rajomon: 过载涨价步长")
+	// Rajomon 鍙傛暟
+	rajomonPriceStep := flag.Int64("rajomon-price-step", 100, "Rajomon: 杩囪浇娑ㄤ环姝ラ暱")
 
-	// Rajomon+SB 参数
-	rajomonSBPriceStep := flag.Int64("rajomon-sb-price-step", 100, "Rajomon+SB: 过载涨价步长")
+	// Rajomon+SB 鍙傛暟
+	rajomonSBPriceStep := flag.Int64("rajomon-sb-price-step", 100, "Rajomon+SB: 杩囪浇娑ㄤ环姝ラ暱")
 
-	// DAGOR 参数
-	dagorRTTThreshold := flag.Float64("dagor-rtt-threshold", 200.0, "DAGOR: RTT 过载检测阈值 (ms)")
-	dagorPriceStep := flag.Int64("dagor-price-step", 50, "DAGOR: 过载时优先级门槛每轮增量")
+	// DAGOR 鍙傛暟
+	dagorRTTThreshold := flag.Float64("dagor-rtt-threshold", 200.0, "DAGOR: RTT 杩囪浇妫€娴嬮槇锟?(ms)")
+	dagorPriceStep := flag.Int64("dagor-price-step", 50, "DAGOR: 杩囪浇鏃朵紭鍏堢骇闂ㄦ姣忚疆澧為噺")
 
-	// SBAC 参数
-	sbacMaxSessions := flag.Int64("sbac-max-sessions", 50, "SBAC: 最大并发会话数")
+	// SBAC 鍙傛暟
+	sbacMaxSessions := flag.Int64("sbac-max-sessions", 50, "SBAC: 鏈€澶у苟鍙戜細璇濇暟")
 
-	// PP (Progress-Priority) 参数
-	ppMaxSessions := flag.Int64("pp-max-sessions", 50, "PP: 最大并发会话数")
+	// PP (Progress-Priority) 鍙傛暟
+	ppMaxSessions := flag.Int64("pp-max-sessions", 50, "PP: 鏈€澶у苟鍙戜細璇濇暟")
 
-	// PlanGate (MCPDP) 参数
+	// PlanGate (MCPDP) 鍙傛暟
 	plangateMaxSessions := flag.Int("plangate-max-sessions", 30,
-		"PlanGate (Full): 并发会话上限（<=0 表示不限制）")
+		"PlanGate (Full): 骞跺彂浼氳瘽涓婇檺锟?=0 琛ㄧず涓嶉檺鍒讹級")
 	plangatePriceStep := flag.Int64("plangate-price-step", 40,
-		"PlanGate: 过载涨价步长")
+		"PlanGate: 杩囪浇娑ㄤ环姝ラ暱")
 	plangateSunkCostAlpha := flag.Float64("plangate-sunk-cost-alpha", 0.5,
-		"PlanGate: ReAct 沉没成本系数 (0=禁用)")
+		"PlanGate: ReAct 娌夋病鎴愭湰绯绘暟 (0=绂佺敤)")
 	plangateSunkBetaDefault := 1.0
 	if envBeta := os.Getenv("SUNK_BETA"); envBeta != "" {
 		if v, err := fmt.Sscanf(envBeta, "%f", &plangateSunkBetaDefault); v != 1 || err != nil {
-			log.Fatalf("SUNK_BETA 环境变量格式错误: %s", envBeta)
+			log.Fatalf("SUNK_BETA 鐜鍙橀噺鏍煎紡閿欒: %s", envBeta)
 		}
 	}
 	plangateSunkBeta := flag.Float64("plangate-sunk-beta", plangateSunkBetaDefault,
-		"PlanGate: ReAct continuation pricing 调制系数 beta (1.0=默认, 等价旧公式 2-I(t)); 也可用 SUNK_BETA 环境变量")
+		"PlanGate: ReAct continuation pricing 璋冨埗绯绘暟 beta (1.0=榛樿, 绛変环鏃у叕锟?2-I(t)); 涔熷彲锟?SUNK_BETA 鐜鍙橀噺")
 	plangateSessionCapWait := flag.Int("plangate-session-cap-wait", 0,
-		"PlanGate: Session Cap 排队等待超时 (秒), 0=立即拒绝")
+		"PlanGate: Session Cap 鎺掗槦绛夊緟瓒呮椂 (锟?, 0=绔嬪嵆鎷掔粷")
+	plangateAdaptiveAdmission := flag.Bool("plangate-adaptive-admission", true,
+		"PlanGate: enable adaptive capacity Step-0 admission (legacy alias)")
+	adaptiveAdmission := flag.Bool("adaptive-admission", true,
+		"PlanGate: enable adaptive capacity Step-0 admission")
+	adaptiveGreenWaitMs := flag.Int("adaptive-green-wait-ms", 200,
+		"PlanGate adaptive admission green-state session-cap wait in milliseconds")
+	adaptiveYellowWaitMs := flag.Int("adaptive-yellow-wait-ms", 50,
+		"PlanGate adaptive admission yellow-state session-cap wait in milliseconds")
+	adaptiveRedWaitMs := flag.Int("adaptive-red-wait-ms", 0,
+		"PlanGate adaptive admission red-state session-cap wait in milliseconds")
+	adaptiveGreenIntensity := flag.Float64("adaptive-green-intensity", 0.20,
+		"PlanGate adaptive admission green threshold for governance intensity")
+	adaptiveRedIntensity := flag.Float64("adaptive-red-intensity", 0.65,
+		"PlanGate adaptive admission red threshold for governance intensity")
+	plangateDisableCapacityStep0 := flag.Bool("plangate-disable-capacity-step0", false,
+		"PlanGate: 绂佺敤 capacity/overload Step-0 reject锛堜繚鐣欓锟?DAG/瀹夊叏/閲嶅纭嫆缁濓級")
 	commitmentTokenMode := flag.String("commitment-token-mode", "optional",
 		"PlanGate Commitment Token mode: off|optional|strict")
 	commitmentTokenSecret := flag.String("commitment-token-secret", "",
@@ -164,24 +176,41 @@ func main() {
 	planAmendmentRequireCommitment := flag.Bool("plan-amendment-require-commitment", true,
 		"PlanGate delta-plan amendment requires a valid commitment token")
 	plangateDiscountFunc := flag.String("plangate-discount-func", "quadratic",
-		"PlanGate: 沉没成本折扣函数 (quadratic|linear|exponential|logarithmic)")
+		"PlanGate: 娌夋病鎴愭湰鎶樻墸鍑芥暟 (quadratic|linear|exponential|logarithmic)")
 
 	// PlanGate-R recovery flags (Phase 3, default disabled)
 	// All gateway modes behave identically to pre-Phase-3 when --enable-recovery is not set.
 	enableRecovery := flag.Bool("enable-recovery", false,
-		"PlanGate-R: 启用 checkpoint recovery (默认 false; Phase 3 实验性功能)")
+		"PlanGate-R: 鍚敤 checkpoint recovery (榛樿 false; Phase 3 瀹為獙鎬у姛锟?")
 	recoveryTTL := flag.Duration("recovery-ttl", 300*time.Second,
-		"PlanGate-R: checkpoint 过期时间 (默认 300s)")
+		"PlanGate-R: checkpoint 杩囨湡鏃堕棿 (榛樿 300s)")
 	recoveryMaxAttempts := flag.Int("recovery-max-attempts", 3,
-		"PlanGate-R: 最大恢复尝试次数 (默认 3)")
+		"PlanGate-R: 鏈€澶ф仮澶嶅皾璇曟锟?(榛樿 3)")
 	recoveryStore := flag.String("recovery-store", "inmemory",
-		"PlanGate-R: checkpoint 存储后端 (Phase 3 仅支持 inmemory)")
+		"PlanGate-R: checkpoint 瀛樺偍鍚庣 (Phase 3 浠呮敮锟?inmemory)")
+	reactRecovery := flag.Bool("react-recovery", true,
+		"PlanGate-R: enable ReAct client-cooperative recovery when --enable-recovery=true")
 	realRateLimitMax := flag.Float64("real-ratelimit-max", 200,
-		"PlanGate-Real: API 配额上限 (GLM-4-Flash=200)")
+		"PlanGate-Real: API 閰嶉涓婇檺 (GLM-4-Flash=200)")
 	realLatencyThreshold := flag.Float64("real-latency-threshold", 5000,
-		"PlanGate-Real: P95 延迟阈值 (ms), 达到此值时延迟压力=1.0")
+		"PlanGate-Real: P95 寤惰繜闃堬拷?(ms), 杈惧埌姝ゅ€兼椂寤惰繜鍘嬪姏=1.0")
 
 	flag.Parse()
+
+	adaptiveEnabled := *adaptiveAdmission && *plangateAdaptiveAdmission
+	adaptiveCfg := plangate.DefaultAdaptiveAdmissionConfig()
+	adaptiveCfg.Enabled = adaptiveEnabled
+	adaptiveCfg.GreenIntensityMax = *adaptiveGreenIntensity
+	adaptiveCfg.RedIntensityMin = *adaptiveRedIntensity
+	if *adaptiveGreenWaitMs >= 0 {
+		adaptiveCfg.GreenWait = time.Duration(*adaptiveGreenWaitMs) * time.Millisecond
+	}
+	if *adaptiveYellowWaitMs >= 0 {
+		adaptiveCfg.YellowWait = time.Duration(*adaptiveYellowWaitMs) * time.Millisecond
+	}
+	if *adaptiveRedWaitMs >= 0 {
+		adaptiveCfg.RedWait = time.Duration(*adaptiveRedWaitMs) * time.Millisecond
+	}
 
 	effectiveCommitmentSecret := *commitmentTokenSecret
 	if effectiveCommitmentSecret == "" {
@@ -216,9 +245,9 @@ func main() {
 	}
 	tools, err := fetchBackendTools(*backendURL)
 	if err != nil {
-		log.Fatalf("无法连接后端 %s: %v", *backendURL, err)
+		log.Fatalf("鏃犳硶杩炴帴鍚庣 %s: %v", *backendURL, err)
 	}
-	log.Printf("从后端获取到 %d 个工具", len(tools))
+	log.Printf("fetched %d tools from backend", len(tools))
 
 	var handler http.Handler
 
@@ -245,6 +274,10 @@ func main() {
 			name: "plangate-full", priceStep: *plangatePriceStep,
 			maxConcurrentSessions: *plangateMaxSessions,
 			disableBudgetLock:     false,
+			adaptiveAdmission:     adaptiveEnabled,
+			adaptiveAdmissionCfg:  adaptiveCfg,
+			disableCapacityStep0:  *plangateDisableCapacityStep0,
+			reactRecoveryEnabled:  *reactRecovery,
 			sunkCostAlpha:         *plangateSunkCostAlpha,
 			sunkCostBeta:          *plangateSunkBeta,
 			discountFunc:          *plangateDiscountFunc,
@@ -260,6 +293,10 @@ func main() {
 			name: "plangate-wo-budgetlock", priceStep: *plangatePriceStep,
 			maxConcurrentSessions: *plangateMaxSessions,
 			disableBudgetLock:     true,
+			adaptiveAdmission:     adaptiveEnabled,
+			adaptiveAdmissionCfg:  adaptiveCfg,
+			disableCapacityStep0:  *plangateDisableCapacityStep0,
+			reactRecoveryEnabled:  *reactRecovery,
 			sunkCostAlpha:         *plangateSunkCostAlpha,
 			sunkCostBeta:          *plangateSunkBeta,
 			discountFunc:          *plangateDiscountFunc,
@@ -275,6 +312,48 @@ func main() {
 			name: "plangate-wo-sessioncap", priceStep: *plangatePriceStep,
 			maxConcurrentSessions: 0,
 			disableBudgetLock:     false,
+			adaptiveAdmission:     adaptiveEnabled,
+			adaptiveAdmissionCfg:  adaptiveCfg,
+			disableCapacityStep0:  *plangateDisableCapacityStep0,
+			reactRecoveryEnabled:  *reactRecovery,
+			sunkCostAlpha:         *plangateSunkCostAlpha,
+			sunkCostBeta:          *plangateSunkBeta,
+			discountFunc:          *plangateDiscountFunc,
+			recoveryConfig:        buildRecoveryConfig(*enableRecovery, *recoveryTTL, *recoveryMaxAttempts, *recoveryStore),
+			commitmentTokenConfig: commitmentCfg,
+			amendmentPolicy:       amendmentPolicy,
+			nodeID:                resolveNodeID(*nodeID, *host, *port),
+			stateStoreType:        *stateStore,
+			redisAddr:             *redisAddr,
+		})
+	case "mcpdp-adaptive":
+		handler = setupMCPDPVariant(tools, *backendURL, mcpdpVariant{
+			name: "plangate-adaptive", priceStep: *plangatePriceStep,
+			maxConcurrentSessions: *plangateMaxSessions,
+			disableBudgetLock:     false,
+			adaptiveAdmission:     true,
+			adaptiveAdmissionCfg:  adaptiveCfg,
+			disableCapacityStep0:  false,
+			reactRecoveryEnabled:  *reactRecovery,
+			sunkCostAlpha:         *plangateSunkCostAlpha,
+			sunkCostBeta:          *plangateSunkBeta,
+			discountFunc:          *plangateDiscountFunc,
+			recoveryConfig:        buildRecoveryConfig(*enableRecovery, *recoveryTTL, *recoveryMaxAttempts, *recoveryStore),
+			commitmentTokenConfig: commitmentCfg,
+			amendmentPolicy:       amendmentPolicy,
+			nodeID:                resolveNodeID(*nodeID, *host, *port),
+			stateStoreType:        *stateStore,
+			redisAddr:             *redisAddr,
+		})
+	case "mcpdp-no-capacity-step0":
+		handler = setupMCPDPVariant(tools, *backendURL, mcpdpVariant{
+			name: "plangate-no-capacity-step0", priceStep: *plangatePriceStep,
+			maxConcurrentSessions: *plangateMaxSessions,
+			disableBudgetLock:     false,
+			adaptiveAdmission:     false,
+			adaptiveAdmissionCfg:  adaptiveCfg,
+			disableCapacityStep0:  true,
+			reactRecoveryEnabled:  *reactRecovery,
 			sunkCostAlpha:         *plangateSunkCostAlpha,
 			sunkCostBeta:          *plangateSunkBeta,
 			discountFunc:          *plangateDiscountFunc,
@@ -290,6 +369,10 @@ func main() {
 			name: "plangate-real", priceStep: *plangatePriceStep,
 			maxConcurrentSessions: *plangateMaxSessions,
 			sunkCostAlpha:         *plangateSunkCostAlpha,
+			adaptiveAdmission:     adaptiveEnabled,
+			adaptiveAdmissionCfg:  adaptiveCfg,
+			disableCapacityStep0:  *plangateDisableCapacityStep0,
+			reactRecoveryEnabled:  *reactRecovery,
 			sunkCostBeta:          *plangateSunkBeta,
 			sessionCapWait:        time.Duration(*plangateSessionCapWait) * time.Second,
 			discountFunc:          *plangateDiscountFunc,
@@ -305,6 +388,10 @@ func main() {
 			name: "plangate-real-wo-sessioncap", priceStep: *plangatePriceStep,
 			maxConcurrentSessions: 0,
 			sunkCostAlpha:         *plangateSunkCostAlpha,
+			adaptiveAdmission:     adaptiveEnabled,
+			adaptiveAdmissionCfg:  adaptiveCfg,
+			disableCapacityStep0:  *plangateDisableCapacityStep0,
+			reactRecoveryEnabled:  *reactRecovery,
 			sunkCostBeta:          *plangateSunkBeta,
 			sessionCapWait:        time.Duration(*plangateSessionCapWait) * time.Second,
 			discountFunc:          *plangateDiscountFunc,
@@ -326,14 +413,14 @@ func main() {
 	case "pp":
 		handler = setupPP(tools, *backendURL, *ppMaxSessions)
 	default:
-		log.Fatalf("未知模式: %s (可选: ng, srl, envoy-approx, kong-approx, dp, dp-noregime, mcpdp, mcpdp-no-budgetlock, mcpdp-no-sessioncap, mcpdp-real, mcpdp-real-no-sessioncap, rajomon, rajomon-session, dagor, sbac, pp)", *mode)
+		log.Fatalf("鏈煡妯″紡: %s (鍙拷? ng, srl, envoy-approx, kong-approx, dp, dp-noregime, mcpdp, mcpdp-adaptive, mcpdp-no-capacity-step0, mcpdp-no-budgetlock, mcpdp-no-sessioncap, mcpdp-real, mcpdp-real-no-sessioncap, rajomon, rajomon-session, dagor, sbac, pp)", *mode)
 	}
 
 	addr := fmt.Sprintf("%s:%d", *host, *port)
 	log.Printf("========================================")
-	log.Printf("  MCP Gateway [%s] 启动", *mode)
-	log.Printf("  监听: http://%s", addr)
-	log.Printf("  后端: %s", *backendURL)
+	log.Printf("  MCP Gateway [%s] 鍚姩", *mode)
+	log.Printf("  鐩戝惉: http://%s", addr)
+	log.Printf("  鍚庣: %s", *backendURL)
 	log.Printf("========================================")
 
 	server := &http.Server{
@@ -344,11 +431,11 @@ func main() {
 	}
 
 	if err := server.ListenAndServe(); err != nil {
-		log.Fatalf("服务启动失败: %v", err)
+		log.Fatalf("鏈嶅姟鍚姩澶辫触: %v", err)
 	}
 }
 
-// fetchBackendTools 从 Python MCP 后端获取已注册的工具列表
+// fetchBackendTools 锟?Python MCP 鍚庣鑾峰彇宸叉敞鍐岀殑宸ュ叿鍒楄〃
 func fetchBackendTools(backendURL string) ([]mcpgov.MCPTool, error) {
 	reqBody := mcpgov.JSONRPCRequest{
 		JSONRPC: "2.0",
@@ -359,7 +446,7 @@ func fetchBackendTools(backendURL string) ([]mcpgov.MCPTool, error) {
 
 	resp, err := http.Post(backendURL, "application/json", bytes.NewReader(body))
 	if err != nil {
-		return nil, fmt.Errorf("连接后端失败: %w", err)
+		return nil, fmt.Errorf("杩炴帴鍚庣澶辫触: %w", err)
 	}
 	defer resp.Body.Close()
 
@@ -376,10 +463,10 @@ func fetchBackendTools(backendURL string) ([]mcpgov.MCPTool, error) {
 		Error *mcpgov.RPCError `json:"error"`
 	}
 	if err := json.Unmarshal(data, &rpcResp); err != nil {
-		return nil, fmt.Errorf("解析后端响应失败: %w", err)
+		return nil, fmt.Errorf("瑙ｆ瀽鍚庣鍝嶅簲澶辫触: %w", err)
 	}
 	if rpcResp.Error != nil {
-		return nil, fmt.Errorf("后端返回错误: %s", rpcResp.Error.Message)
+		return nil, fmt.Errorf("鍚庣杩斿洖閿欒: %s", rpcResp.Error.Message)
 	}
 
 	tools := make([]mcpgov.MCPTool, len(rpcResp.Result.Tools))
@@ -393,17 +480,22 @@ func fetchBackendTools(backendURL string) ([]mcpgov.MCPTool, error) {
 	return tools, nil
 }
 
-// makeProxyHandler 创建一个将工具调用代理到后端的处理函数
-// detector 可选：如果非 nil，则在请求前后追踪并发计数
+// makeProxyHandler creates a tool handler that proxies requests to the backend.
 func makeProxyHandler(backendURL string, toolName string, detector *proxyOverloadDetector) mcpgov.ToolCallHandler {
-	client := &http.Client{Timeout: 120 * time.Second}
+	proxyTransport := &http.Transport{
+		MaxIdleConns:        256,
+		MaxIdleConnsPerHost: 128,
+		MaxConnsPerHost:     0, // unlimited
+		IdleConnTimeout:     90 * time.Second,
+	}
+	client := &http.Client{Timeout: 120 * time.Second, Transport: proxyTransport}
 
 	return func(ctx context.Context, params mcpgov.MCPToolCallParams) (*mcpgov.MCPToolCallResult, error) {
 		if detector != nil {
 			detector.onRequestStart()
 			defer detector.onRequestEnd()
 		}
-		// 构建发往后端的 JSON-RPC 请求
+		// 鏋勫缓鍙戝線鍚庣锟?JSON-RPC 璇锋眰
 		rpcReq := mcpgov.JSONRPCRequest{
 			JSONRPC: "2.0",
 			ID:      fmt.Sprintf("proxy-%s-%d", toolName, time.Now().UnixNano()),
@@ -419,13 +511,13 @@ func makeProxyHandler(backendURL string, toolName string, detector *proxyOverloa
 
 		req, err := http.NewRequestWithContext(ctx, http.MethodPost, backendURL, bytes.NewReader(body))
 		if err != nil {
-			return nil, fmt.Errorf("创建后端请求失败: %w", err)
+			return nil, fmt.Errorf("鍒涘缓鍚庣璇锋眰澶辫触: %w", err)
 		}
 		req.Header.Set("Content-Type", "application/json")
 
 		resp, err := client.Do(req)
 		if err != nil {
-			return nil, fmt.Errorf("后端调用失败: %w", err)
+			return nil, fmt.Errorf("鍚庣璋冪敤澶辫触: %w", err)
 		}
 		defer resp.Body.Close()
 
@@ -443,13 +535,13 @@ func makeProxyHandler(backendURL string, toolName string, detector *proxyOverloa
 			Error *mcpgov.RPCError `json:"error"`
 		}
 		if err := json.Unmarshal(data, &rpcResp); err != nil {
-			return nil, fmt.Errorf("解析后端响应失败: %w", err)
+			return nil, fmt.Errorf("瑙ｆ瀽鍚庣鍝嶅簲澶辫触: %w", err)
 		}
 		if rpcResp.Error != nil {
-			return nil, fmt.Errorf("后端工具执行错误: %s", rpcResp.Error.Message)
+			return nil, fmt.Errorf("鍚庣宸ュ叿鎵ц閿欒: %s", rpcResp.Error.Message)
 		}
 		if rpcResp.Result == nil {
-			return nil, fmt.Errorf("后端返回空结果")
+			return nil, fmt.Errorf("backend returned empty result")
 		}
 
 		return &mcpgov.MCPToolCallResult{
@@ -458,13 +550,13 @@ func makeProxyHandler(backendURL string, toolName string, detector *proxyOverloa
 	}
 }
 
-// === 网关初始化 ===
+// === 缃戝叧鍒濆锟?===
 
 func setupNG(tools []mcpgov.MCPTool, backendURL string) http.Handler {
 	gw := baseline.NewNGGateway("ng-gateway")
 	for _, tool := range tools {
 		gw.RegisterTool(tool, makeProxyHandler(backendURL, tool.Name, nil))
-		log.Printf("  [NG] 注册工具: %s", tool.Name)
+		log.Printf("  [NG] 娉ㄥ唽宸ュ叿: %s", tool.Name)
 	}
 	return gw
 }
@@ -477,7 +569,7 @@ func setupSRL(tools []mcpgov.MCPTool, backendURL string, qps float64, burst, max
 	})
 	for _, tool := range tools {
 		gw.RegisterTool(tool, makeProxyHandler(backendURL, tool.Name, nil))
-		log.Printf("  [SRL] 注册工具: %s", tool.Name)
+		log.Printf("  [SRL] 娉ㄥ唽宸ュ叿: %s", tool.Name)
 	}
 	return gw
 }
@@ -497,7 +589,7 @@ func setupEnvoyApprox(tools []mcpgov.MCPTool, backendURL string,
 
 	for _, tool := range tools {
 		gw.RegisterTool(tool, makeProxyHandler(backendURL, tool.Name, nil))
-		log.Printf("  [EnvoyApprox] 注册工具: %s", tool.Name)
+		log.Printf("  [EnvoyApprox] 娉ㄥ唽宸ュ叿: %s", tool.Name)
 	}
 	return gw
 }
@@ -516,13 +608,13 @@ func setupKongApprox(tools []mcpgov.MCPTool, backendURL string,
 
 	for _, tool := range tools {
 		gw.RegisterTool(tool, makeProxyHandler(backendURL, tool.Name, nil))
-		log.Printf("  [KongApprox] 注册工具: %s", tool.Name)
+		log.Printf("  [KongApprox] 娉ㄥ唽宸ュ叿: %s", tool.Name)
 	}
 	return gw
 }
 
 func setupDP(tools []mcpgov.MCPTool, backendURL string) http.Handler {
-	// 构建 callMap: 每个工具无下游依赖
+	// Build callMap where each tool has no downstream dependencies.
 	callMap := make(map[string][]string)
 	for _, tool := range tools {
 		callMap[tool.Name] = []string{}
@@ -532,7 +624,7 @@ func setupDP(tools []mcpgov.MCPTool, backendURL string) http.Handler {
 		"initprice":             int64(0),
 		"rateLimiting":          false,
 		"loadShedding":          true,
-		"pinpointQueuing":       false, // 反向代理架构中 Go scheduler delay 无效
+		"pinpointQueuing":       false, // 鍙嶅悜浠ｇ悊鏋舵瀯锟?Go scheduler delay 鏃犳晥
 		"latencyThreshold":      500 * time.Microsecond,
 		"priceStep":             int64(180),
 		"priceStrategy":         "expdecay",
@@ -547,21 +639,30 @@ func setupDP(tools []mcpgov.MCPTool, backendURL string) http.Handler {
 		"tokenRefillDist":       "fixed",
 		"priceAggregation":      "maximal",
 		"enableAdaptiveProfile": true,
-		// Regime Detection 参数（标定为并发度信号，对称轻度平滑）
+		// Regime-detection parameters.
 		"regimeWindow":          100,
 		"regimeVarianceLow":     1.0,
 		"regimeVarianceHigh":    4.0,
 		"regimeSpikeThreshold":  2.0,
 		"profileSwitchCooldown": 500 * time.Millisecond,
-		"toolWeights": map[string]int64{
-			"mock_heavy": 5, // 重量工具权重乘数 (800ms vs ~100ms ≈ 8:1)
+			"burstyProfile": map[string]interface{}{
+				"DetectorMaxConc": int64(200),
+			},
+			"periodicProfile": map[string]interface{}{
+				"DetectorMaxConc": int64(200),
+			},
+			"steadyProfile": map[string]interface{}{
+				"DetectorMaxConc": int64(200),
+			},
+			"toolWeights": map[string]int64{
+			"mock_heavy": 5, // 閲嶉噺宸ュ叿鏉冮噸涔樻暟 (800ms vs ~100ms 锟?8:1)
 		},
 	}
 
 	gov := mcpgov.NewMCPGovernor("dp-gateway", callMap, opts)
 	server := mcpgov.NewMCPServer("dp-gateway", gov)
 
-	// 创建代理级过载检测器（参数从 governor 当前档位动态读取）
+	// 鍒涘缓浠ｇ悊绾ц繃杞芥娴嬪櫒锛堝弬鏁颁粠 governor 褰撳墠妗ｄ綅鍔ㄦ€佽鍙栵級
 	detector := &proxyOverloadDetector{
 		gov:      gov,
 		interval: 10 * time.Millisecond,
@@ -570,7 +671,7 @@ func setupDP(tools []mcpgov.MCPTool, backendURL string) http.Handler {
 
 	for _, tool := range tools {
 		server.RegisterTool(tool, makeProxyHandler(backendURL, tool.Name, detector))
-		log.Printf("  [DP] 注册工具: %s", tool.Name)
+		log.Printf("  [DP] 娉ㄥ唽宸ュ叿: %s", tool.Name)
 	}
 	return server
 }
@@ -581,12 +682,12 @@ func setupDPNoRegime(tools []mcpgov.MCPTool, backendURL string) http.Handler {
 		callMap[tool.Name] = []string{}
 	}
 
-	// 与 DP-Full 相同参数，但禁用自适应档位检测
+	// Same as DP-Full but with adaptive profile switching disabled.
 	opts := map[string]interface{}{
 		"initprice":             int64(0),
 		"rateLimiting":          false,
 		"loadShedding":          true,
-		"pinpointQueuing":       false, // 反向代理架构中 Go scheduler delay 无效
+		"pinpointQueuing":       false, // 鍙嶅悜浠ｇ悊鏋舵瀯锟?Go scheduler delay 鏃犳晥
 		"latencyThreshold":      500 * time.Microsecond,
 		"priceStep":             int64(180),
 		"priceStrategy":         "expdecay",
@@ -600,14 +701,23 @@ func setupDPNoRegime(tools []mcpgov.MCPTool, backendURL string) http.Handler {
 		"tokenUpdateStep":       int64(1),
 		"tokenRefillDist":       "fixed",
 		"priceAggregation":      "maximal",
-		"enableAdaptiveProfile": false, // 关键差异：禁用自适应档位
-		// 与 DP-Full 相同的 Regime 参数（保证对比公平性）
+		"enableAdaptiveProfile": false, // 鍏抽敭宸紓锛氱鐢ㄨ嚜閫傚簲妗ｄ綅
+		// 锟?DP-Full 鐩稿悓锟?Regime 鍙傛暟锛堜繚璇佸姣斿叕骞虫€э級
 		"regimeWindow":          100,
 		"regimeVarianceLow":     1.0,
 		"regimeVarianceHigh":    4.0,
 		"regimeSpikeThreshold":  2.0,
 		"profileSwitchCooldown": 500 * time.Millisecond,
-		"toolWeights": map[string]int64{
+			"burstyProfile": map[string]interface{}{
+				"DetectorMaxConc": int64(200),
+			},
+			"periodicProfile": map[string]interface{}{
+				"DetectorMaxConc": int64(200),
+			},
+			"steadyProfile": map[string]interface{}{
+				"DetectorMaxConc": int64(200),
+			},
+			"toolWeights": map[string]int64{
 			"mock_heavy": 5,
 		},
 	}
@@ -615,7 +725,7 @@ func setupDPNoRegime(tools []mcpgov.MCPTool, backendURL string) http.Handler {
 	gov := mcpgov.NewMCPGovernor("dp-noregime-gateway", callMap, opts)
 	server := mcpgov.NewMCPServer("dp-noregime-gateway", gov)
 
-	// 与 DP-Full 相同的过载检测器（但参数永远锁死在 Steady 档位）
+	// Same overload detector shape as DP-Full, but profile is fixed.
 	detector := &proxyOverloadDetector{
 		gov:      gov,
 		interval: 10 * time.Millisecond,
@@ -624,28 +734,32 @@ func setupDPNoRegime(tools []mcpgov.MCPTool, backendURL string) http.Handler {
 
 	for _, tool := range tools {
 		server.RegisterTool(tool, makeProxyHandler(backendURL, tool.Name, detector))
-		log.Printf("  [DP-NoRegime] 注册工具: %s", tool.Name)
+		log.Printf("  [DP-NoRegime] 娉ㄥ唽宸ュ叿: %s", tool.Name)
 	}
 	return server
 }
 
-// mcpdpVariant 配置 PlanGate 网关变体（用于严格单变量消融实验）
+// mcpdpVariant configures PlanGate gateway variants used by experiments.
 type mcpdpVariant struct {
 	name                  string
 	priceStep             int64
-	maxConcurrentSessions int                     // 有效并发会话上限 (0=不限制)
-	disableBudgetLock     bool                    // 是否禁用预算锁
-	sunkCostAlpha         float64                 // ReAct 沉没成本系数 (0=禁用)
-	sunkCostBeta          float64                 // ReAct continuation pricing 调制系数 (1.0=默认)
-	sessionCapWait        time.Duration           // Session Cap 排队等待超时 (0=立即拒绝)
-	discountFunc          string                  // 折扣函数名称 (quadratic|linear|exponential|logarithmic)
-	recoveryConfig        plangate.RecoveryConfig // PlanGate-R, default disabled
+	maxConcurrentSessions int
+	disableBudgetLock     bool
+	adaptiveAdmission     bool
+	adaptiveAdmissionCfg  plangate.AdaptiveAdmissionConfig
+	disableCapacityStep0  bool
+	reactRecoveryEnabled  bool
+	sunkCostAlpha         float64
+	sunkCostBeta          float64
+	sessionCapWait        time.Duration
+	discountFunc          string
+	recoveryConfig        plangate.RecoveryConfig
 	commitmentTokenConfig plangate.CommitmentTokenConfig
 	amendmentPolicy       plangate.AmendmentPolicy
 	// Multi-gateway experiment fields
-	nodeID         string // X-Gateway-Node header value; "" = use host:port
-	stateStoreType string // "inmemory" (default, unchanged) | "redis"
-	redisAddr      string // Redis address for stateStoreType="redis"
+	nodeID         string
+	stateStoreType string
+	redisAddr      string
 }
 
 // resolveNodeID returns nodeID if non-empty, otherwise "host:port".
@@ -667,7 +781,7 @@ func setupMCPDPVariant(tools []mcpgov.MCPTool, backendURL string, v mcpdpVariant
 		"rateLimiting":          false,
 		"loadShedding":          true,
 		"pinpointQueuing":       false,
-		"latencyThreshold":      10 * time.Second, // proxy 模式: latencyCheck 不应由后端步骤延迟触发
+		"latencyThreshold":      10 * time.Second,
 		"priceStep":             v.priceStep,
 		"priceStrategy":         "expdecay",
 		"priceDecayStep":        int64(1),
@@ -686,7 +800,16 @@ func setupMCPDPVariant(tools []mcpgov.MCPTool, backendURL string, v mcpdpVariant
 		"regimeVarianceHigh":    4.0,
 		"regimeSpikeThreshold":  2.0,
 		"profileSwitchCooldown": 500 * time.Millisecond,
-		"toolWeights": map[string]int64{
+			"burstyProfile": map[string]interface{}{
+				"DetectorMaxConc": int64(200),
+			},
+			"periodicProfile": map[string]interface{}{
+				"DetectorMaxConc": int64(200),
+			},
+			"steadyProfile": map[string]interface{}{
+				"DetectorMaxConc": int64(200),
+			},
+			"toolWeights": map[string]int64{
 			"mock_heavy": 5,
 		},
 	}
@@ -699,6 +822,12 @@ func setupMCPDPVariant(tools []mcpgov.MCPTool, backendURL string, v mcpdpVariant
 	} else {
 		server = plangate.NewMCPDPServer(v.name, gov, 60*time.Second, v.maxConcurrentSessions, v.sunkCostAlpha)
 	}
+	cfg := v.adaptiveAdmissionCfg
+	cfg.Enabled = v.adaptiveAdmission
+	server.SetAdaptiveAdmissionConfig(cfg)
+	server.EnableAdaptiveAdmission(v.adaptiveAdmission)
+	server.SetDisableCapacityStep0(v.disableCapacityStep0)
+	server.SetReActRecoveryEnabled(v.reactRecoveryEnabled)
 	if err := server.SetCommitmentTokenConfig(v.commitmentTokenConfig); err != nil {
 		log.Fatalf("[%s] commitment token config error: %v", v.name, err)
 	}
@@ -712,16 +841,16 @@ func setupMCPDPVariant(tools []mcpgov.MCPTool, backendURL string, v mcpdpVariant
 	}
 	go detector.run()
 
-	// 设置折扣函数（消融实验支持）
+	// 璁剧疆鎶樻墸鍑芥暟锛堟秷铻嶅疄楠屾敮鎸侊級
 	if v.discountFunc != "" {
 		server.SetDiscountFunc(plangate.DiscountFuncName(v.discountFunc))
-		log.Printf("  [%s] 折扣函数: %s", v.name, v.discountFunc)
+		log.Printf("  [%s] 鎶樻墸鍑芥暟: %s", v.name, v.discountFunc)
 	}
 
-	// 设置 sunk-cost beta（如果显式指定或非默认则输出日志）
+	// Set sunk-cost beta.
 	beta := v.sunkCostBeta
 	if beta == 0 {
-		beta = 1.0 // 不传则保持默认
+		beta = 1.0
 	}
 	server.SetSunkCostBeta(beta)
 	log.Printf("  [%s] sunk-cost alpha=%.2f beta=%.2f", v.name, v.sunkCostAlpha, beta)
@@ -752,7 +881,7 @@ func setupMCPDPVariant(tools []mcpgov.MCPTool, backendURL string, v mcpdpVariant
 
 	for _, tool := range tools {
 		server.RegisterTool(tool, makeProxyHandler(backendURL, tool.Name, detector))
-		log.Printf("  [%s] 注册工具: %s", v.name, tool.Name)
+		log.Printf("  [%s] 娉ㄥ唽宸ュ叿: %s", v.name, tool.Name)
 	}
 	return server
 }
@@ -768,7 +897,7 @@ func setupRajomon(tools []mcpgov.MCPTool, backendURL string, priceStep int64) ht
 	})
 	for _, tool := range tools {
 		gw.RegisterTool(tool, makeProxyHandler(backendURL, tool.Name, nil))
-		log.Printf("  [Rajomon] 注册工具: %s (priceStep=%d)", tool.Name, priceStep)
+		log.Printf("  [Rajomon] 娉ㄥ唽宸ュ叿: %s (priceStep=%d)", tool.Name, priceStep)
 	}
 	return gw
 }
@@ -781,7 +910,7 @@ func setupRajomonSession(tools []mcpgov.MCPTool, backendURL string, priceStep in
 	})
 	for _, tool := range tools {
 		gw.RegisterTool(tool, makeProxyHandler(backendURL, tool.Name, nil))
-		log.Printf("  [Rajomon+SB] 注册工具: %s (priceStep=%d)", tool.Name, priceStep)
+		log.Printf("  [Rajomon+SB] 娉ㄥ唽宸ュ叿: %s (priceStep=%d)", tool.Name, priceStep)
 	}
 	return gw
 }
@@ -793,7 +922,7 @@ func setupDagor(tools []mcpgov.MCPTool, backendURL string, rttThresholdMs float6
 	})
 	for _, tool := range tools {
 		gw.RegisterTool(tool, makeProxyHandler(backendURL, tool.Name, nil))
-		log.Printf("  [DAGOR] 注册工具: %s (rttThreshold=%.0fms, priceStep=%d)", tool.Name, rttThresholdMs, priceStep)
+		log.Printf("  [DAGOR] 娉ㄥ唽宸ュ叿: %s (rttThreshold=%.0fms, priceStep=%d)", tool.Name, rttThresholdMs, priceStep)
 	}
 	return gw
 }
@@ -804,7 +933,7 @@ func setupSBAC(tools []mcpgov.MCPTool, backendURL string, maxSessions int64) htt
 	})
 	for _, tool := range tools {
 		gw.RegisterTool(tool, makeProxyHandler(backendURL, tool.Name, nil))
-		log.Printf("  [SBAC] 注册工具: %s (maxSessions=%d)", tool.Name, maxSessions)
+		log.Printf("  [SBAC] 娉ㄥ唽宸ュ叿: %s (maxSessions=%d)", tool.Name, maxSessions)
 	}
 	return gw
 }
@@ -815,13 +944,12 @@ func setupPP(tools []mcpgov.MCPTool, backendURL string, maxSessions int64) http.
 	})
 	for _, tool := range tools {
 		gw.RegisterTool(tool, makeProxyHandler(backendURL, tool.Name, nil))
-		log.Printf("  [PP] 注册工具: %s (maxSessions=%d)", tool.Name, maxSessions)
+		log.Printf("  [PP] 娉ㄥ唽宸ュ叿: %s (maxSessions=%d)", tool.Name, maxSessions)
 	}
 	return gw
 }
 
-// setupMCPDPReal 创建使用外部信号治理的 PlanGate 网关（真实 LLM 模式）
-// 三维信号: 429 频率 + 延迟 P95 EMA + RateLimit-Remaining EMA
+// setupMCPDPReal 鍒涘缓浣跨敤澶栭儴淇″彿娌荤悊锟?PlanGate 缃戝叧锛堢湡锟?LLM 妯″紡锟?// 涓夌淮淇″彿: 429 棰戠巼 + 寤惰繜 P95 EMA + RateLimit-Remaining EMA
 func setupMCPDPReal(tools []mcpgov.MCPTool, backendURL string, v mcpdpVariant,
 	rateLimitMax float64, latencyThresholdMs float64) http.Handler {
 
@@ -854,15 +982,24 @@ func setupMCPDPReal(tools []mcpgov.MCPTool, backendURL string, v mcpdpVariant,
 		"regimeVarianceHigh":    4.0,
 		"regimeSpikeThreshold":  2.0,
 		"profileSwitchCooldown": 500 * time.Millisecond,
-		"toolWeights": map[string]int64{
-			"deepseek_llm":    5, // 重量级 LLM 工具
-			"real_web_search": 2, // 中量级搜索工具
+			"burstyProfile": map[string]interface{}{
+				"DetectorMaxConc": int64(200),
+			},
+			"periodicProfile": map[string]interface{}{
+				"DetectorMaxConc": int64(200),
+			},
+			"steadyProfile": map[string]interface{}{
+				"DetectorMaxConc": int64(200),
+			},
+			"toolWeights": map[string]int64{
+			"deepseek_llm":    5, // heavy LLM tool
+			"real_web_search": 2, // medium search tool
 		},
 	}
 
 	gov := mcpgov.NewMCPGovernor(v.name, callMap, opts)
 
-	// 创建外部信号跟踪器
+	// Create external signal tracker.
 	signalTracker := plangate.NewExternalSignalTracker(rateLimitMax, latencyThresholdMs)
 
 	server := plangate.NewMCPDPServerWithExternalSignals(
@@ -870,6 +1007,12 @@ func setupMCPDPReal(tools []mcpgov.MCPTool, backendURL string, v mcpdpVariant,
 		v.maxConcurrentSessions, v.sunkCostAlpha, signalTracker,
 		v.sessionCapWait, float64(v.priceStep),
 	)
+	cfg := v.adaptiveAdmissionCfg
+	cfg.Enabled = v.adaptiveAdmission
+	server.SetAdaptiveAdmissionConfig(cfg)
+	server.EnableAdaptiveAdmission(v.adaptiveAdmission)
+	server.SetDisableCapacityStep0(v.disableCapacityStep0)
+	server.SetReActRecoveryEnabled(v.reactRecoveryEnabled)
 	if err := server.SetCommitmentTokenConfig(v.commitmentTokenConfig); err != nil {
 		log.Fatalf("[%s] commitment token config error: %v", v.name, err)
 	}
@@ -877,20 +1020,20 @@ func setupMCPDPReal(tools []mcpgov.MCPTool, backendURL string, v mcpdpVariant,
 		log.Fatalf("[%s] plan amendment policy error: %v", v.name, err)
 	}
 
-	// 代理级过载检测器（仍需要：驱动 ownPrice 用于沉没成本定价）
+	// Proxy overload detector still drives ownPrice for sunk-cost pricing.
 	detector := &proxyOverloadDetector{
 		gov:      gov,
 		interval: 10 * time.Millisecond,
 	}
 	go detector.run()
 
-	// 设置折扣函数（消融实验支持）
+	// 璁剧疆鎶樻墸鍑芥暟锛堟秷铻嶅疄楠屾敮鎸侊級
 	if v.discountFunc != "" {
 		server.SetDiscountFunc(plangate.DiscountFuncName(v.discountFunc))
-		log.Printf("  [%s] 折扣函数: %s", v.name, v.discountFunc)
+		log.Printf("  [%s] 鎶樻墸鍑芥暟: %s", v.name, v.discountFunc)
 	}
 
-	// 设置 sunk-cost beta
+	// 璁剧疆 sunk-cost beta
 	beta := v.sunkCostBeta
 	if beta == 0 {
 		beta = 1.0
@@ -915,13 +1058,12 @@ func setupMCPDPReal(tools []mcpgov.MCPTool, backendURL string, v mcpdpVariant,
 		server.RegisterTool(tool, makeProxyHandlerWithSignals(
 			backendURL, tool.Name, detector, signalTracker,
 		))
-		log.Printf("  [%s] 注册工具: %s (外部信号治理)", v.name, tool.Name)
+		log.Printf("  [%s] 娉ㄥ唽宸ュ叿: %s (澶栭儴淇″彿娌荤悊)", v.name, tool.Name)
 	}
 	return server
 }
 
-// buildRecoveryConfig 将 CLI 标志转换为 plangate.RecoveryConfig。
-// 当 enabled=false 时返回 DefaultRecoveryConfig()，不修改任何字段。
+// buildRecoveryConfig converts CLI flags into plangate.RecoveryConfig.
 func buildRecoveryConfig(enabled bool, ttl time.Duration, maxAttempts int, store string) plangate.RecoveryConfig {
 	if !enabled {
 		return plangate.DefaultRecoveryConfig()
@@ -957,14 +1099,19 @@ func buildRecoveryCheckpointStore(cfg plangate.RecoveryConfig, redisAddr string)
 	}
 }
 
-// makeProxyHandlerWithSignals 创建信号感知的代理处理函数
-// 在标准代理基础上，解析后端 _meta 中的外部 API 信号并报告给 ExternalSignalTracker
+// makeProxyHandlerWithSignals 鍒涘缓淇″彿鎰熺煡鐨勪唬鐞嗗鐞嗗嚱锟?// 鍦ㄦ爣鍑嗕唬鐞嗗熀纭€涓婏紝瑙ｆ瀽鍚庣 _meta 涓殑澶栭儴 API 淇″彿骞舵姤鍛婄粰 ExternalSignalTracker
 func makeProxyHandlerWithSignals(
 	backendURL string, toolName string,
 	detector *proxyOverloadDetector,
 	signalTracker *plangate.ExternalSignalTracker,
 ) mcpgov.ToolCallHandler {
-	client := &http.Client{Timeout: 120 * time.Second}
+	proxyTransport := &http.Transport{
+		MaxIdleConns:        256,
+		MaxIdleConnsPerHost: 128,
+		MaxConnsPerHost:     0,
+		IdleConnTimeout:     90 * time.Second,
+	}
+	client := &http.Client{Timeout: 120 * time.Second, Transport: proxyTransport}
 
 	return func(ctx context.Context, params mcpgov.MCPToolCallParams) (*mcpgov.MCPToolCallResult, error) {
 		if detector != nil {
@@ -974,7 +1121,7 @@ func makeProxyHandlerWithSignals(
 
 		start := time.Now()
 
-		// 构建发往后端的 JSON-RPC 请求
+		// 鏋勫缓鍙戝線鍚庣锟?JSON-RPC 璇锋眰
 		rpcReq := mcpgov.JSONRPCRequest{
 			JSONRPC: "2.0",
 			ID:      fmt.Sprintf("proxy-%s-%d", toolName, time.Now().UnixNano()),
@@ -990,18 +1137,18 @@ func makeProxyHandlerWithSignals(
 
 		req, err := http.NewRequestWithContext(ctx, http.MethodPost, backendURL, bytes.NewReader(body))
 		if err != nil {
-			return nil, fmt.Errorf("创建后端请求失败: %w", err)
+			return nil, fmt.Errorf("鍒涘缓鍚庣璇锋眰澶辫触: %w", err)
 		}
 		req.Header.Set("Content-Type", "application/json")
 
 		resp, err := client.Do(req)
 		if err != nil {
-			// 网络错误 → 报告为高延迟信号
+			// 缃戠粶閿欒 锟?鎶ュ憡涓洪珮寤惰繜淇″彿
 			elapsed := time.Since(start).Seconds() * 1000
 			if signalTracker != nil {
 				signalTracker.ReportResponse(false, elapsed, -1)
 			}
-			return nil, fmt.Errorf("后端调用失败: %w", err)
+			return nil, fmt.Errorf("鍚庣璋冪敤澶辫触: %w", err)
 		}
 		defer resp.Body.Close()
 
@@ -1027,32 +1174,32 @@ func makeProxyHandlerWithSignals(
 			if signalTracker != nil {
 				signalTracker.ReportResponse(false, elapsed, -1)
 			}
-			return nil, fmt.Errorf("解析后端响应失败: %w", err)
+			return nil, fmt.Errorf("瑙ｆ瀽鍚庣鍝嶅簲澶辫触: %w", err)
 		}
 
-		// 报告外部 API 信号给跟踪器
+		// 鎶ュ憡澶栭儴 API 淇″彿缁欒窡韪櫒
 		if signalTracker != nil && rpcResp.Result != nil && rpcResp.Result.Meta != nil {
 			meta := rpcResp.Result.Meta
 			apiLatency := meta.ApiLatencyMs
 			if apiLatency <= 0 {
-				apiLatency = elapsed // 回退到端到端延迟
+				apiLatency = elapsed // 鍥為€€鍒扮鍒扮寤惰繜
 			}
 			signalTracker.ReportResponse(meta.Is429, apiLatency, meta.RateLimitRemaining)
 		} else if signalTracker != nil {
-			// 无 _meta → 使用端到端延迟
+			// Without backend meta, use end-to-end latency as fallback.
 			signalTracker.ReportResponse(false, elapsed, -1)
 		}
 
 		if rpcResp.Error != nil {
-			// 后端返回错误 → 检查是否为过载 (429/503)
+			// 鍚庣杩斿洖閿欒 锟?妫€鏌ユ槸鍚︿负杩囪浇 (429/503)
 			is429 := resp.StatusCode == 429
 			if signalTracker != nil && is429 {
 				signalTracker.ReportResponse(true, elapsed, -1)
 			}
-			return nil, fmt.Errorf("后端工具执行错误: %s", rpcResp.Error.Message)
+			return nil, fmt.Errorf("鍚庣宸ュ叿鎵ц閿欒: %s", rpcResp.Error.Message)
 		}
 		if rpcResp.Result == nil {
-			return nil, fmt.Errorf("后端返回空结果")
+			return nil, fmt.Errorf("backend returned empty result")
 		}
 
 		return &mcpgov.MCPToolCallResult{

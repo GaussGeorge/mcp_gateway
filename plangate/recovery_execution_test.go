@@ -200,29 +200,87 @@ func TestRecoveryResumeRejectsActiveCheckpoint(t *testing.T) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Test 4: ReAct mode → semantic recovery not implemented
+// Test 4: ReAct mode → client-cooperative recovery resume
 // ─────────────────────────────────────────────────────────────────────────────
 
-func TestRecoveryResumeRejectsReActSemanticRecovery(t *testing.T) {
+func TestRecoveryResumeSupportsReActClientCooperative(t *testing.T) {
+	s := recoveryServer()
+	store := s.checkpointStore
+	ctx := context.Background()
+	toolCalls := 0
+	s.RegisterTool(mcpgov.MCPTool{Name: "tool_a", Description: "noop"}, func(ctx context.Context, params mcpgov.MCPToolCallParams) (*mcpgov.MCPToolCallResult, error) {
+		toolCalls++
+		return &mcpgov.MCPToolCallResult{Content: []mcpgov.ContentBlock{{Type: "text", Text: "ok"}}}, nil
+	})
+
+	_ = store.Save(ctx, &SessionCheckpoint{
+		SessionID:   "sess-react",
+		AgentID:     "agent",
+		Mode:        AgentModeReAct,
+		Status:      StatusCheckpointed,
+		CurrentStep: 3,
+		CompletedSteps: []StepRecord{
+			{StepIndex: 0, ToolName: "tool_a"},
+			{StepIndex: 1, ToolName: "tool_b"},
+			{StepIndex: 2, ToolName: "tool_c"},
+		},
+		ObservationHistory: []string{"sha256:abc"},
+		CreatedAt:          time.Now(),
+	})
+
+	r := makeRecoveryResumeRequest("sess-react")
+	resp := s.handleRecoveryResume(ctx, r, makeRPCRequest())
+	if resp.Error != nil {
+		t.Fatalf("expected ReAct recovery success, got error: %s", resp.Error.Message)
+	}
+
+	if _, ok := s.reactSessions.Get("sess-react"); !ok {
+		t.Fatal("react session should be restored into react session manager")
+	}
+
+	b, err := json.Marshal(resp.Result)
+	if err != nil {
+		t.Fatalf("marshal result: %v", err)
+	}
+	var got ReActRecoveryResult
+	if err := json.Unmarshal(b, &got); err != nil {
+		t.Fatalf("unmarshal result: %v", err)
+	}
+	if !got.RequiresClientContinuation {
+		t.Fatal("expected RequiresClientContinuation=true")
+	}
+	if got.CurrentStep != 3 {
+		t.Fatalf("expected current_step=3, got %d", got.CurrentStep)
+	}
+	if got.CompletedSteps != 3 {
+		t.Fatalf("expected completed_steps=3, got %d", got.CompletedSteps)
+	}
+	if toolCalls != 0 {
+		t.Fatalf("react recovery resume must not execute tools, got calls=%d", toolCalls)
+	}
+}
+
+func TestRecoveryResumeRejectsReActNonRecoverable(t *testing.T) {
 	s := recoveryServer()
 	store := s.checkpointStore
 	ctx := context.Background()
 
 	_ = store.Save(ctx, &SessionCheckpoint{
-		SessionID: "sess-react",
-		AgentID:   "agent",
-		Mode:      AgentModeReAct,          // wrong mode
-		Status:    StatusCheckpointed,
-		CreatedAt: time.Now(),
+		SessionID:      "sess-react-nr",
+		AgentID:        "agent",
+		Mode:           AgentModeReAct,
+		Status:         StatusCheckpointed,
+		NonRecoverable: true,
+		CreatedAt:      time.Now(),
 	})
 
-	r := makeRecoveryResumeRequest("sess-react")
+	r := makeRecoveryResumeRequest("sess-react-nr")
 	resp := s.handleRecoveryResume(ctx, r, makeRPCRequest())
 	if resp.Error == nil {
-		t.Fatal("expected error for ReAct session, got success")
+		t.Fatal("expected error for non-recoverable ReAct checkpoint")
 	}
 	if resp.Error.Code != mcpgov.CodeInvalidRequest {
-		t.Errorf("expected CodeInvalidRequest, got %d", resp.Error.Code)
+		t.Fatalf("expected invalid request, got %d", resp.Error.Code)
 	}
 }
 
@@ -553,10 +611,10 @@ func TestControlledE2E_5StepSessionRecovery(t *testing.T) {
 		{StepID: "s4", ToolName: "t4"},
 	})
 	err := store.Save(ctx, &SessionCheckpoint{
-		SessionID: "e2e-sess",
-		AgentID:   "e2e-agent",
-		Mode:      AgentModePlanSolve,
-		Status:    StatusActiveCheckpoint, // was in-flight
+		SessionID:   "e2e-sess",
+		AgentID:     "e2e-agent",
+		Mode:        AgentModePlanSolve,
+		Status:      StatusActiveCheckpoint, // was in-flight
 		CurrentStep: 2,
 		CompletedSteps: []StepRecord{
 			{StepID: "s0", StepIndex: 0, ToolName: "t0"},

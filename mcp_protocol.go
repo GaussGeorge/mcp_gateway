@@ -148,9 +148,13 @@ type MCPToolCallParams struct {
 // 核心思想：客户端在每次工具调用时携带"令牌"(tokens)作为预算，
 // 服务端根据当前负载动态定价，当 tokens < price 时拒绝请求。
 type GovernanceMeta struct {
-	Tokens int64  `json:"tokens,omitempty"` // 请求携带的令牌数 (预算)
-	Method string `json:"method,omitempty"` // 工具/方法标识 (用于价格路由)
-	Name   string `json:"name,omitempty"`   // 发起方节点名称
+	Tokens            int64  `json:"tokens,omitempty"`             // 请求携带的令牌数 (预算)
+	Method            string `json:"method,omitempty"`             // 工具/方法标识 (用于价格路由)
+	Name              string `json:"name,omitempty"`               // 发起方节点名称
+	TraceSummary      string `json:"trace_summary,omitempty"`      // ReAct 客户端摘要（非原始内容）
+	ObservationDigest string `json:"observation_digest,omitempty"` // ReAct 观测摘要哈希
+	IdempotencyKey    string `json:"idempotency_key,omitempty"`    // 幂等键（side-effect 恢复必需）
+	SideEffecting     bool   `json:"side_effecting,omitempty"`     // 当前调用是否有副作用
 }
 
 // MCPToolCallResult tools/call 响应结果

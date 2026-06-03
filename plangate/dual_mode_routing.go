@@ -50,6 +50,7 @@ func (s *MCPDPServer) handlePlanAndSolveFirstStep(
 	}
 	if plan.Budget <= 0 {
 		// 预算为零或负数时立即拒绝，无法执行任何工具调用
+		atomic.AddInt64(&s.step0RejectBudget, 1)
 		return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeInvalidParams, "budget 必须大于 0", nil)
 	}
 
@@ -61,6 +62,7 @@ func (s *MCPDPServer) handlePlanAndSolveFirstStep(
 
 		// 封禁检查：信誉分 < banThreshold(0.3) 时返回 HTTP 403 等效拒绝
 		if s.reputationMgr.IsBanned(agentID) {
+			atomic.AddInt64(&s.step0RejectSecurity, 1)
 			log.Printf("[PlanGate Security] session=%s BANNED (reputation=%.3f)",
 				plan.SessionID, s.reputationMgr.GetScore(agentID))
 			return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeOverloaded,
@@ -71,6 +73,7 @@ func (s *MCPDPServer) handlePlanAndSolveFirstStep(
 		// DAG 结构限制：服务端独立校验步数上限(maxDAGSteps=20) + 预算上限(maxBudgetPerReq=10000)
 		// 防止 Agent 提交 steps=1000、budget=999999 的巨型假 DAG 抢占全部并发槽位
 		if err := s.reputationMgr.ValidateDAGLimits(&plan); err != nil {
+			atomic.AddInt64(&s.step0RejectSecurity, 1)
 			s.reputationMgr.RecordDAGViolation(agentID) // 结构违规 → 快速扣分
 			log.Printf("[PlanGate Security] session=%s DAG VIOLATION: %v", plan.SessionID, err)
 			return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeInvalidParams, err.Error(),
@@ -98,6 +101,7 @@ func (s *MCPDPServer) handlePlanAndSolveFirstStep(
 		plan.SessionID, plan.Budget, totalCost, len(plan.Steps))
 
 	if plan.Budget < totalCost {
+		atomic.AddInt64(&s.step0RejectBudget, 1)
 		// >>> Eq.(1) 准入判定: B < C_total → step-0 原子拒绝
 		// 「原子性」的含义：要么全部准入，要么在 step-0 整体拒绝，绝不在 step K>0 拒绝
 		// 这是消除「级联计算浪费」的核心机制：相比 Per-Request 定价的 E[W]=O(N²)，
@@ -128,6 +132,12 @@ func (s *MCPDPServer) handlePlanAndSolveFirstStep(
 			"failed to hash P&S plan", err.Error())
 	}
 
+	state := AdmissionGreen
+	if s.adaptiveAdmission.Enabled {
+		state = s.admissionState()
+		s.recordAdmissionState(state)
+	}
+
 	if s.sharedStateStore != nil {
 		maxSlots := 0
 		if s.sessionCap != nil {
@@ -140,6 +150,7 @@ func (s *MCPDPServer) handlePlanAndSolveFirstStep(
 		} else {
 			switch result {
 			case AdmitDuplicate:
+				atomic.AddInt64(&s.step0RejectDuplicate, 1)
 				atomic.AddInt64(&s.duplicateAdmissionCount, 1)
 				log.Printf("[PlanGate Pre-flight] session=%s DUPLICATE admission (shared store)", plan.SessionID)
 				return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeOverloaded,
@@ -151,13 +162,21 @@ func (s *MCPDPServer) handlePlanAndSolveFirstStep(
 						"duplicate_admission": true,
 					})
 			case AdmitCapFull:
+				if s.disableCapacityStep0 {
+					break
+				}
+				atomic.AddInt64(&s.step0RejectCapacity, 1)
+				if s.adaptiveAdmission.Enabled && state == AdmissionRed {
+					atomic.AddInt64(&s.step0RejectAdaptiveRed, 1)
+				}
 				log.Printf("[PlanGate Pre-flight] session=%s REJECTED (global session cap, shared store)", plan.SessionID)
 				return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeOverloaded,
 					"Pre-flight rejected: global concurrent session cap reached",
 					map[string]interface{}{
-						"session_id":  plan.SessionID,
-						"mode":        "plan_and_solve",
-						"rejected_at": "step_0",
+						"session_id":     plan.SessionID,
+						"mode":           "plan_and_solve",
+						"rejected_at":    "step_0_capacity",
+						"adaptive_state": state,
 					})
 			default: // AdmitNew — proceed
 			}
@@ -165,19 +184,40 @@ func (s *MCPDPServer) handlePlanAndSolveFirstStep(
 		}
 	}
 	if s.sessionCap != nil {
+		if s.disableCapacityStep0 {
+			goto sharedAdmitDone
+		}
+		wait := s.sessionCapWait
+		if s.adaptiveAdmission.Enabled {
+			wait = s.adaptiveStep0Wait(AgentModePlanSolve, state)
+		}
+		startWait := time.Now()
 		select {
 		case s.sessionCap <- struct{}{}:
+			if s.adaptiveAdmission.Enabled {
+				atomic.AddInt64(&s.adaptiveQueueWaitTotalNanos, int64(time.Since(startWait)))
+			}
 			// 获取到槽位，继续准入；会话结束时通过 releaseFn 归还（见下方 Reserve 调用）
-		case <-time.After(s.sessionCapWait):
+		case <-time.After(wait):
 			// 所有槽位已被占用且在 sessionCapWait 时间内无槽位释放 → 拒绝排队超时
 			// sessionCapWait=0 时等效「立即拒绝」（最严格），>0 时允许短暂排队等候
-			log.Printf("[PlanGate Pre-flight] session=%s REJECTED (session cap full after %v wait)", plan.SessionID, s.sessionCapWait)
+			atomic.AddInt64(&s.step0RejectCapacity, 1)
+			if s.adaptiveAdmission.Enabled && state == AdmissionRed {
+				atomic.AddInt64(&s.step0RejectAdaptiveRed, 1)
+			}
+			log.Printf("[PlanGate Pre-flight] session=%s REJECTED (session cap full after %v wait, state=%s)", plan.SessionID, wait, state)
+			reason := "Pre-flight rejected: concurrent session cap reached"
+			if s.adaptiveAdmission.Enabled && state != AdmissionRed {
+				reason = "Pre-flight rejected: adaptive queue wait exceeded"
+			}
 			return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeOverloaded,
-				fmt.Sprintf("Pre-flight rejected: concurrent session cap reached"),
+				reason,
 				map[string]interface{}{
-					"session_id":  plan.SessionID,
-					"mode":        "plan_and_solve",
-					"rejected_at": "step_0",
+					"session_id":     plan.SessionID,
+					"mode":           "plan_and_solve",
+					"rejected_at":    "step_0_capacity",
+					"adaptive_state": state,
+					"wait_ms":        wait.Milliseconds(),
 				})
 		case <-ctx.Done():
 			// HTTP 请求已被客户端取消（超时/断连）
@@ -372,7 +412,6 @@ func (s *MCPDPServer) handleReActMode(ctx context.Context, req *mcpgov.JSONRPCRe
 func (s *MCPDPServer) handleReActFirstStep(
 	ctx context.Context, req *mcpgov.JSONRPCRequest, sessionID string,
 ) *mcpgov.JSONRPCResponse {
-	// 1. 解析参数
 	var params mcpgov.MCPToolCallParams
 	if err := json.Unmarshal(req.Params, &params); err != nil {
 		return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeInvalidParams, "无效的工具调用参数", err.Error())
@@ -383,137 +422,149 @@ func (s *MCPDPServer) handleReActFirstStep(
 			fmt.Sprintf("工具 '%s' 未注册", params.Name), nil)
 	}
 
-	// 1b. 会话容量门控 — 与 P&S 共享同一 sessionCap 容量池
-	// 方案 B: 带超时排队，agent 到达时如果 cap 满，等待一段时间而非立即拒绝
-	if s.sessionCap != nil {
+	metaTokens := int64(0)
+	traceSummary := ""
+	observationDigest := ""
+	idempotencyKey := ""
+	sideEffecting := false
+	if params.Meta != nil {
+		metaTokens = params.Meta.Tokens
+		traceSummary = params.Meta.TraceSummary
+		observationDigest = params.Meta.ObservationDigest
+		idempotencyKey = params.Meta.IdempotencyKey
+		sideEffecting = params.Meta.SideEffecting
+	}
+	state := AdmissionGreen
+	if s.adaptiveAdmission.Enabled {
+		state = s.admissionState()
+		s.recordAdmissionState(state)
+	}
+
+	var capRelease func()
+	if s.sessionCap != nil && !s.disableCapacityStep0 {
+		wait := s.sessionCapWait
+		if s.adaptiveAdmission.Enabled {
+			wait = s.adaptiveStep0Wait(AgentModeReAct, state)
+		}
+		startWait := time.Now()
 		select {
 		case s.sessionCap <- struct{}{}:
-			// 获取到槽位
-		case <-time.After(s.sessionCapWait):
-			// 排队超时 → 拒绝
-			log.Printf("[PlanGate ReAct Step0] session=%s REJECTED (session cap full after %v wait)", sessionID, s.sessionCapWait)
+			if s.adaptiveAdmission.Enabled {
+				atomic.AddInt64(&s.adaptiveQueueWaitTotalNanos, int64(time.Since(startWait)))
+			}
+			cap := s.sessionCap
+			capRelease = func() { <-cap }
+		case <-time.After(wait):
+			atomic.AddInt64(&s.step0RejectCapacity, 1)
+			if s.adaptiveAdmission.Enabled && state == AdmissionRed {
+				atomic.AddInt64(&s.step0RejectAdaptiveRed, 1)
+			}
 			return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeOverloaded,
 				"ReAct session cap full",
 				map[string]interface{}{
-					"session_id":  sessionID,
-					"rejected_at": "step_0",
+					"session_id":     sessionID,
+					"rejected_at":    "step_0_capacity",
+					"adaptive_state": state,
+					"wait_ms":        wait.Milliseconds(),
 				})
 		case <-ctx.Done():
 			return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeInternalError, "context cancelled while waiting for session cap", nil)
 		}
 	}
 
-	// 构造释放函数（幂等，用于会话结束/超时/失败时归还槽位）
-	var capRelease func()
-	if s.sessionCap != nil {
-		cap := s.sessionCap
-		capRelease = func() { <-cap }
-	}
+	ownPrice := s.governor.GetOwnPrice()
+	intensity := s.getGovernanceIntensity()
+	current := atomic.AddInt64(&s.reactStep0Inflight, 1)
+	defer atomic.AddInt64(&s.reactStep0Inflight, -1)
 
-	// 2. Step-0 并发限流：使用原子计数器 reactStep0Inflight 防止 step-0 洪峰
-	// 动机：ReAct 新会话到达时，同一时刻可能有大量 step-0 请求并发，需要限流防止雪崩
-	ownPrice := s.governor.GetOwnPrice()                 // 后台 Eq.(6) 实时更新的市场价格
-	intensity := s.getGovernanceIntensity()              // 后台 §3.5 实时更新的治理强度 I(t)
-	current := atomic.AddInt64(&s.reactStep0Inflight, 1) // 原子递增，记录当前并发 step-0 数
-
-	if current > s.reactStep0Limit {
-		// 超过 step-0 并发软上限 → 降级为 MCPGovernor 标准准入（更严格的负载削减）
-		// 这是一种「背压」机制：轻压时用宽松的 Eq.(3) 准入，重压时退化为全量定价检查
-		log.Printf("[PlanGate ReAct Step0] session=%s GATED (inflight=%d > limit=%d, intensity=%.3f, ownPrice=%d)",
-			sessionID, current, s.reactStep0Limit, intensity, ownPrice)
-		resp := s.governor.HandleToolCall(ctx, req, handler)
-		atomic.AddInt64(&s.reactStep0Inflight, -1) // 无论成败都释放计数
-		if resp.Error == nil {
-			// 标准准入通过 → 仍需在 reactSessions 中建立状态跟踪，供后续 K≥1 步使用
-			s.reactSessions.Create(sessionID, capRelease)
-			s.reactSessions.Advance(sessionID) // step 0 完成 → CurrentStep = 1
-			// PlanGate-R: 保存 ReAct step-0 checkpoint（gated 路径，默认 no-op）
-			s.saveCheckpointAfterStep(ctx, &SessionCheckpoint{
-				SessionID:      sessionID,
-				Mode:           AgentModeReAct,
-				CurrentStep:    1,
-				CompletedSteps: []StepRecord{{StepIndex: 0, ToolName: params.Name, CompletedAt: time.Now()}},
-			})
-		} else if capRelease != nil {
-			capRelease() // 被标准准入拒绝 → 归还 sessionCap 槽位，不能泄漏
-		}
-		return resp
-	}
-
-	// 2b. §3.4 Intensity × GatewayLoad 联合 Step-0 经济准入
-	// >>> Eq.(3): P_step0 = P_base × I(t) × L(t)
-	//   P_base = intensityPriceBase（配置项，参考市场情绪基价）
-	//   I(t)   = intensity（[0,1]，来自 §3.5 强度跟踪器，反映后端 API 压力）
-	//   L(t)   = N_active / M（[0,1]，网关当前活跃会话数 / 最大并发数，反映网关自身压力）
-	//
-	// 「3D 定价曲面」的含义：只有在 I(t) > 0（后端有压力）AND L(t) > 0（网关接近满载）时，
-	// step-0 价格才显著升高。单一维度压力不会过度惩罚新会话。
-	if s.intensityPriceBase > 0 && intensity > 0.01 {
-		// intensity ≤ 0.01 说明滞回门控未激活，系统处于零负载状态 → 跳过所有经济检查
-		activeCount := s.reactSessions.ActiveCount()                     // N_active：当前活跃的 ReAct 会话数
-		gatewayLoad := float64(activeCount) / float64(s.reactStep0Limit) // L(t) = N/M
-		if gatewayLoad > 1.0 {
-			gatewayLoad = 1.0 // 饱和剪裁：负载比不超过 1.0
-		}
-		// 计算 step-0 准入门槛价格
-		step0Price := int64(s.intensityPriceBase * intensity * gatewayLoad) // Eq.(3)
-		step0Tokens := int64(0)
-		if params.Meta != nil {
-			step0Tokens = params.Meta.Tokens // Agent 在 _meta.tokens 中携带的预算余额
-		}
-		if step0Tokens < step0Price {
-			// step-0 经济拒绝：tokens 不足以支付当前门槛价格
-			// 此时「浪费=0」，因为 step-0 尚未消耗任何后端算力
-			atomic.AddInt64(&s.reactStep0Inflight, -1)
+	if s.adaptiveAdmission.Enabled {
+		if state == AdmissionRed && current > s.reactStep0Limit {
+			atomic.AddInt64(&s.step0RejectCapacity, 1)
+			atomic.AddInt64(&s.step0RejectAdaptiveRed, 1)
 			if capRelease != nil {
-				capRelease() // 归还 sessionCap 槽位
+				capRelease()
 			}
-			log.Printf("[PlanGate ReAct Step0] session=%s INTENSITY REJECT (tokens=%d < price=%d, intensity=%.3f, active=%d, load=%.2f)",
-				sessionID, step0Tokens, step0Price, intensity, activeCount, gatewayLoad)
 			return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeOverloaded,
-				fmt.Sprintf("Step-0 intensity reject: tokens %d < price %d (intensity %.2f)", step0Tokens, step0Price, intensity),
+				"ReAct Step-0 rejected under red overload",
 				map[string]interface{}{
-					"session_id":  sessionID,
-					"rejected_at": "step_0_intensity",
+					"session_id":     sessionID,
+					"rejected_at":    "step_0_adaptive_red",
+					"adaptive_state": state,
 				})
 		}
+
+		if state == AdmissionYellow || state == AdmissionRed {
+			gatewayLoad := s.currentReActStep0Load()
+			if gatewayLoad > 1.0 {
+				gatewayLoad = 1.0
+			}
+			step0Price := int64(s.intensityPriceBase * intensity * gatewayLoad)
+			if step0Price > 0 && metaTokens < step0Price {
+				atomic.AddInt64(&s.step0RejectCapacity, 1)
+				if state == AdmissionRed {
+					atomic.AddInt64(&s.step0RejectAdaptiveRed, 1)
+				}
+				if capRelease != nil {
+					capRelease()
+				}
+				return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeOverloaded,
+					fmt.Sprintf("Step-0 intensity reject: tokens %d < price %d", metaTokens, step0Price),
+					map[string]interface{}{
+						"session_id":     sessionID,
+						"rejected_at":    "step_0_intensity",
+						"adaptive_state": state,
+					})
+			}
+		}
+	} else {
+		if current > s.reactStep0Limit {
+			resp := s.governor.HandleToolCall(ctx, req, handler)
+			if resp.Error == nil {
+				s.reactSessions.Create(sessionID, capRelease)
+				s.reactSessions.Advance(sessionID)
+				s.saveCheckpointAfterStep(ctx, s.buildReActCheckpoint(sessionID, 0, params.Name, intensity, metaTokens, traceSummary, observationDigest, idempotencyKey, sideEffecting))
+			} else if capRelease != nil {
+				capRelease()
+			}
+			return resp
+		}
+		if s.intensityPriceBase > 0 && intensity > 0.01 {
+			activeCount := s.reactSessions.ActiveCount()
+			gatewayLoad := float64(activeCount) / float64(s.reactStep0Limit)
+			if gatewayLoad > 1.0 {
+				gatewayLoad = 1.0
+			}
+			step0Price := int64(s.intensityPriceBase * intensity * gatewayLoad)
+			if metaTokens < step0Price {
+				if capRelease != nil {
+					capRelease()
+				}
+				return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeOverloaded,
+					fmt.Sprintf("Step-0 intensity reject: tokens %d < price %d (intensity %.2f)", metaTokens, step0Price, intensity),
+					map[string]interface{}{"session_id": sessionID, "rejected_at": "step_0_intensity"})
+			}
+		}
 	}
 
-	// 并发限制内 + 经济准入通过（或负载为零）→ 零负载免通行
-	// intensity < 0.01 时完全绕过价格检查（等效 §3.4 「零负载免通行」优化）
-	log.Printf("[PlanGate ReAct Step0] session=%s FREE PASS (inflight=%d, intensity=%.3f, ownPrice=%d)",
-		sessionID, current, intensity, ownPrice)
-
-	// 3. 执行首步工具调用（绕过 MCPGovernor LoadShedding，因为 step-0 已做轻量级经济检查）
 	result, err := handler(ctx, params)
-	atomic.AddInt64(&s.reactStep0Inflight, -1) // 无论成败都释放飞行中计数
 	if err != nil {
 		if capRelease != nil {
-			capRelease() // 工具执行失败（如后端 timeout）→ 归还 sessionCap 槽位
+			capRelease()
 		}
 		return mcpgov.NewErrorResponse(req.ID, mcpgov.CodeInternalError, err.Error(), nil)
 	}
 
-	// 4. step-0 执行成功 → 在 reactSessions 中创建状态跟踪
-	// 后续 K≥1 步到达时，handleToolsCall 会查找此状态并路由到 handleReActSunkCostStep
-	s.reactSessions.Create(sessionID, capRelease) // 挂载 capRelease，会话结束时自动归还槽位
-	s.reactSessions.Advance(sessionID)            // step 0 完成 → CurrentStep 从 0 推进到 1
-	// PlanGate-R: 保存 ReAct step-0 checkpoint（free-pass 路径，默认 no-op）
-	s.saveCheckpointAfterStep(ctx, &SessionCheckpoint{
-		SessionID:      sessionID,
-		Mode:           AgentModeReAct,
-		CurrentStep:    1,
-		CompletedSteps: []StepRecord{{StepIndex: 0, ToolName: params.Name, CompletedAt: time.Now()}},
-	})
+	s.reactSessions.Create(sessionID, capRelease)
+	s.reactSessions.Advance(sessionID)
+	s.saveCheckpointAfterStep(ctx, s.buildReActCheckpoint(sessionID, 0, params.Name, intensity, metaTokens, traceSummary, observationDigest, idempotencyKey, sideEffecting))
 
-	// 5. 在响应 meta 中附加网关标识和当前市场价格（供 Agent 感知负载状态）
 	if result.Meta == nil {
 		result.Meta = &mcpgov.ResponseMeta{}
 	}
 	result.Meta.Name = s.serverInfo.Name
-	result.Meta.Price = strconv.FormatInt(ownPrice, 10) // 告知 Agent 当前 step-0 时刻的市场价格
+	result.Meta.Price = strconv.FormatInt(ownPrice, 10)
 
-	log.Printf("[PlanGate ReAct Step0] session=%s ADMITTED, tracking started", sessionID)
+	log.Printf("[PlanGate ReAct Step0] session=%s ADMITTED state=%s inflight=%d intensity=%.3f", sessionID, state, current, intensity)
 	return mcpgov.NewSuccessResponse(req.ID, result)
 }
 
@@ -552,8 +603,16 @@ func (s *MCPDPServer) handleReActSunkCostStep(
 	}
 
 	tokens := int64(0)
+	traceSummary := ""
+	observationDigest := ""
+	idempotencyKey := ""
+	sideEffecting := false
 	if params.Meta != nil {
 		tokens = params.Meta.Tokens
+		traceSummary = params.Meta.TraceSummary
+		observationDigest = params.Meta.ObservationDigest
+		idempotencyKey = params.Meta.IdempotencyKey
+		sideEffecting = params.Meta.SideEffecting
 	}
 
 	K := rState.CurrentStep
@@ -591,12 +650,7 @@ func (s *MCPDPServer) handleReActSunkCostStep(
 
 		s.reactSessions.Advance(rState.SessionID) // 推进 CurrentStep，为下一步准备
 		// PlanGate-R: 保存 ReAct step-K checkpoint（committed 路径，默认 no-op）
-		s.saveCheckpointAfterStep(ctx, &SessionCheckpoint{
-			SessionID:      rState.SessionID,
-			Mode:           AgentModeReAct,
-			CurrentStep:    K + 1,
-			CompletedSteps: []StepRecord{{StepIndex: K, ToolName: params.Name, CompletedAt: time.Now()}},
-		})
+		s.saveCheckpointAfterStep(ctx, s.buildReActCheckpoint(rState.SessionID, K, params.Name, intensity, tokens, traceSummary, observationDigest, idempotencyKey, sideEffecting))
 
 		if result.Meta == nil {
 			result.Meta = &mcpgov.ResponseMeta{}
@@ -695,12 +749,7 @@ func (s *MCPDPServer) handleReActSunkCostStep(
 
 	// 5. 工具调用成功 → CurrentStep + 1，为下一步 Eq.(4) 计算的 K 值更新
 	s.reactSessions.Advance(rState.SessionID) // PlanGate-R: 保存 ReAct step-K checkpoint（正常路径，默认 no-op）
-	s.saveCheckpointAfterStep(ctx, &SessionCheckpoint{
-		SessionID:      rState.SessionID,
-		Mode:           AgentModeReAct,
-		CurrentStep:    K + 1,
-		CompletedSteps: []StepRecord{{StepIndex: K, ToolName: params.Name, CompletedAt: time.Now()}},
-	})
+	s.saveCheckpointAfterStep(ctx, s.buildReActCheckpoint(rState.SessionID, K, params.Name, intensity, tokens, traceSummary, observationDigest, idempotencyKey, sideEffecting))
 	// 6. 在响应中附加网关标识和当前市场价格（供 Agent 决策：是否继续下一步）
 	if result.Meta == nil {
 		result.Meta = &mcpgov.ResponseMeta{}
@@ -905,4 +954,41 @@ func (s *MCPDPServer) snapshotDAGPrices(plan *HTTPDAGPlan) (int64, map[string]in
 func (s *MCPDPServer) calculateDAGTotalCost(plan *HTTPDAGPlan) int64 {
 	total, _ := s.snapshotDAGPrices(plan)
 	return total
+}
+
+func (s *MCPDPServer) buildReActCheckpoint(
+	sessionID string,
+	stepIndex int,
+	toolName string,
+	intensity float64,
+	tokens int64,
+	traceSummary string,
+	observationDigest string,
+	idempotencyKey string,
+	sideEffecting bool,
+) *SessionCheckpoint {
+	cp := &SessionCheckpoint{
+		SessionID:                       sessionID,
+		Mode:                            AgentModeReAct,
+		CurrentStep:                     stepIndex + 1,
+		CompletedSteps:                  []StepRecord{{StepIndex: stepIndex, ToolName: toolName, IdempotencyKey: idempotencyKey, CompletedAt: time.Now()}},
+		GovernanceIntensityAtCheckpoint: intensity,
+		ComputeStepsSoFar:               stepIndex + 1,
+		TokenUsageSoFar:                 tokens,
+	}
+	if traceSummary != "" {
+		cp.ConversationTrace = []string{traceSummary}
+	}
+	if observationDigest != "" {
+		cp.ObservationHistory = []string{observationDigest}
+	}
+	if sideEffecting {
+		if idempotencyKey == "" {
+			cp.NonRecoverable = true
+			atomic.AddInt64(&s.duplicateSideEffectCount, 1)
+		} else {
+			cp.IdempotencyKeys = map[string]string{strconv.Itoa(stepIndex): idempotencyKey}
+		}
+	}
+	return cp
 }
