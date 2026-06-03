@@ -1438,30 +1438,132 @@ def build_deterministic_validation(
     """Build validation.json for deterministic-only mode."""
     errors: list[str] = []
 
+    def truthy(value: Any) -> bool:
+        if isinstance(value, bool):
+            return value
+        if value is None:
+            return False
+        return str(value).strip().lower() in {"true", "1", "yes"}
+
+    def int_value(value: Any, default: int = 0) -> int:
+        try:
+            return int(float(value))
+        except (TypeError, ValueError):
+            return default
+
+    def probe_label(probe: dict[str, Any]) -> str:
+        return f"{probe.get('store')}:r{probe.get('repeat')}/p{probe.get('probe_id')}"
+
+    def require_all(label: str, probes: list[dict[str, Any]], predicate) -> bool:
+        failed = [p for p in probes if not predicate(p)]
+        if failed:
+            sample = ", ".join(probe_label(p) for p in failed[:5])
+            more = "" if len(failed) <= 5 else f", ... +{len(failed) - 5}"
+            errors.append(f"{label}: {len(failed)}/{len(probes)} failed ({sample}{more})")
+            return False
+        return True
+
     redis_probes = [p for p in recovery_probes if p.get("store") == "redis"]
     memory_probes = [p for p in recovery_probes if p.get("store") == "memory"]
+    expected_per_store = args.repeats * args.deterministic_recovery_probes_per_run
 
     total_expected = len(args.stores) * args.repeats * args.deterministic_recovery_probes_per_run
     if len(recovery_probes) != total_expected:
         errors.append(f"Expected {total_expected} probes, got {len(recovery_probes)}")
 
-    redis_passed = all(p.get("passed") in (True, "True") for p in redis_probes)
-    redis_recovered = all(p.get("resume_recovered") in (True, "True") for p in redis_probes)
-    redis_state_miss_zero = all(not (p.get("state_miss") in (True, "True")) for p in redis_probes)
-    redis_post_ok = all(p.get("post_resume_success") in (True, "True") for p in redis_probes)
-    redis_no_replay = all(int(float(p.get("replayed_completed_side_effects", 0))) == 0 for p in redis_probes)
+    if "redis" in args.stores and len(redis_probes) != expected_per_store:
+        errors.append(f"Expected {expected_per_store} redis probes, got {len(redis_probes)}")
+    if "memory" in args.stores and len(memory_probes) != expected_per_store:
+        errors.append(f"Expected {expected_per_store} memory probes, got {len(memory_probes)}")
 
-    memory_state_miss_all = all(p.get("state_miss") in (True, "True") for p in memory_probes)
-    memory_recovered_zero = all(not (p.get("resume_recovered") in (True, "True")) for p in memory_probes)
-    memory_no_replay = all(int(float(p.get("replayed_completed_side_effects", 0))) == 0 for p in memory_probes)
-    memory_fail_safe = all(p.get("failure_safe_state") in (True, "True") for p in memory_probes)
+    redis_present = "redis" in args.stores and len(redis_probes) > 0
+    memory_present = "memory" in args.stores and len(memory_probes) > 0
 
-    replay_ok = all(p.get("passed", False) for p in replay_probes)
+    redis_cross_gateway = True
+    redis_side_effect = True
+    redis_attempted = True
+    redis_passed = True
+    redis_recovered = True
+    redis_mode_ok = True
+    redis_step_ok = True
+    redis_requires_continuation = True
+    redis_state_miss_zero = True
+    redis_post_ok = True
+    redis_no_replay = True
+    redis_db_before_positive = True
+    redis_db_after_not_less = True
+    if redis_present:
+        redis_cross_gateway = require_all("redis cross-gateway probe", redis_probes,
+                                          lambda p: truthy(p.get("cross_gateway")))
+        redis_side_effect = require_all("redis completed side-effect before failure", redis_probes,
+                                        lambda p: truthy(p.get("side_effect_before_failure_present"))
+                                        and int_value(p.get("db_side_effect_count_before_resume")) > 0)
+        redis_attempted = require_all("redis resume attempted", redis_probes,
+                                      lambda p: truthy(p.get("resume_attempted")))
+        redis_recovered = require_all("redis resume recovered", redis_probes,
+                                      lambda p: truthy(p.get("resume_recovered")))
+        redis_mode_ok = require_all("redis ReAct cooperative mode", redis_probes,
+                                    lambda p: truthy(p.get("resume_mode_react_client_cooperative")))
+        redis_step_ok = require_all("redis resume current_step > 0", redis_probes,
+                                    lambda p: truthy(p.get("resume_current_step_gt_zero"))
+                                    and int_value(p.get("resume_response_current_step")) > 0)
+        redis_requires_continuation = require_all("redis requires client continuation", redis_probes,
+                                                  lambda p: truthy(p.get("resume_requires_client_continuation")))
+        redis_post_ok = require_all("redis post-resume success", redis_probes,
+                                    lambda p: truthy(p.get("post_resume_success"))
+                                    and truthy(p.get("resume_continuation_completed")))
+        redis_state_miss_zero = require_all("redis state miss zero", redis_probes,
+                                            lambda p: not truthy(p.get("state_miss")))
+        redis_no_replay = require_all("redis no replayed completed side effects", redis_probes,
+                                      lambda p: int_value(p.get("replayed_completed_side_effects")) == 0)
+        redis_db_before_positive = require_all("redis DB side-effect count before resume positive", redis_probes,
+                                               lambda p: int_value(p.get("db_side_effect_count_before_resume")) > 0)
+        redis_db_after_not_less = require_all("redis DB side-effect count after resume not lower", redis_probes,
+                                              lambda p: int_value(p.get("db_side_effect_count_after_resume"))
+                                              >= int_value(p.get("db_side_effect_count_before_resume")))
+        redis_passed = require_all("redis deterministic probe passed", redis_probes,
+                                   lambda p: truthy(p.get("passed")))
+
+    memory_cross_gateway = True
+    memory_side_effect = True
+    memory_attempted = True
+    memory_state_miss_all = True
+    memory_recovered_zero = True
+    memory_no_replay = True
+    memory_fail_safe = True
+    if memory_present:
+        memory_cross_gateway = require_all("memory cross-gateway probe", memory_probes,
+                                           lambda p: truthy(p.get("cross_gateway")))
+        memory_side_effect = require_all("memory completed side-effect before failure", memory_probes,
+                                         lambda p: truthy(p.get("side_effect_before_failure_present"))
+                                         and int_value(p.get("db_side_effect_count_before_resume")) > 0)
+        memory_attempted = require_all("memory resume attempted", memory_probes,
+                                       lambda p: truthy(p.get("resume_attempted")))
+        memory_state_miss_all = require_all("memory cross-gateway state miss", memory_probes,
+                                            lambda p: truthy(p.get("state_miss")))
+        memory_recovered_zero = require_all("memory resume recovered zero", memory_probes,
+                                            lambda p: not truthy(p.get("resume_recovered")))
+        memory_no_replay = require_all("memory no replayed completed side effects", memory_probes,
+                                       lambda p: int_value(p.get("replayed_completed_side_effects")) == 0)
+        memory_fail_safe = require_all("memory failure-safe DB state", memory_probes,
+                                       lambda p: truthy(p.get("failure_safe_state")))
+
+    replay_ok = all(truthy(p.get("passed", False)) for p in replay_probes)
     no_dup_se = db_validation.get("db_no_duplicate_side_effect_rows", True)
     no_invalid = db_validation.get("db_no_invalid_final_confirm", True)
     integrity = db_validation.get("db_integrity_check_passed", True)
+    if not replay_ok:
+        errors.append("idempotency replay probe failed")
+    if not no_dup_se:
+        errors.append("duplicate side-effect rows present in DB")
+    if not no_invalid:
+        errors.append("invalid final confirm present in DB")
+    if not integrity:
+        errors.append("SQLite integrity check failed")
 
     all_nodes_ok = len(ips) == len(args.gateways) + 2  # gateways + backend + redis
+    if not all_nodes_ok:
+        errors.append(f"Expected experiment IPs for {len(args.gateways) + 2} nodes, got {len(ips)}")
 
     return {
         "artifact": "cloudlab_business_workflow_distributed_deterministic_v1",
@@ -1492,15 +1594,26 @@ def build_deterministic_validation(
         "db_integrity_check_passed": integrity,
 
         "redis_probe_count": len(redis_probes),
+        "redis_cross_gateway_all": redis_cross_gateway,
         "redis_cross_gateway_probe_all_passed": redis_passed,
         "redis_resume_recovered_all": redis_recovered,
+        "redis_resume_attempted_all": redis_attempted,
+        "redis_react_cooperative_mode_all": redis_mode_ok,
+        "redis_resume_current_step_gt_zero_all": redis_step_ok,
+        "redis_requires_client_continuation_all": redis_requires_continuation,
+        "redis_completed_side_effect_before_failure_all": redis_side_effect,
         "redis_state_miss_zero": redis_state_miss_zero,
         "redis_post_resume_success_all": redis_post_ok,
         "redis_replayed_completed_side_effect_zero": redis_no_replay,
+        "redis_db_side_effect_before_resume_positive_all": redis_db_before_positive,
+        "redis_db_side_effect_after_resume_not_lower_all": redis_db_after_not_less,
 
         "memory_probe_count": len(memory_probes),
         "memory_diagnostic_control_present": len(memory_probes) > 0,
-        "memory_cross_gateway_state_miss_positive": any(p.get("state_miss") in (True, "True") for p in memory_probes),
+        "memory_cross_gateway_probe_all": memory_cross_gateway,
+        "memory_completed_side_effect_before_failure_all": memory_side_effect,
+        "memory_resume_attempted_all": memory_attempted,
+        "memory_cross_gateway_state_miss_positive": any(truthy(p.get("state_miss")) for p in memory_probes),
         "memory_cross_gateway_state_miss_all": memory_state_miss_all,
         "memory_resume_recovered_zero": memory_recovered_zero,
         "memory_failure_safe_db_state": memory_fail_safe,
@@ -1561,6 +1674,22 @@ async def _run_deterministic_probes_for_store(
                       f"recovered={probe.get('resume_recovered')} "
                       f"cross_gw={probe.get('cross_gateway')}")
     return probes
+
+
+def remote_restart_backend_services_for_store(args, ips: dict[str, str], store: str) -> None:
+    """Restart backend services with a fresh SQLite DB for one deterministic store arm."""
+    print(f"[det] Resetting backend services and SQLite DB for store={store}...")
+    for pattern in ("business_e2e_mcp_backend", "business_http_services"):
+        remote_kill(args, args.backend_node, pattern)
+    ssh_run(
+        args,
+        args.backend_node,
+        "rm -f /tmp/http_service.* /tmp/http_manual.* "
+        "/tmp/mcp_backend.* /tmp/cloudlab_business_workflow_distributed.sqlite*",
+        timeout=10,
+    )
+    remote_start_http_service(args, ips)
+    remote_start_mcp_backend(args, ips)
 
 
 def run_deterministic_only(args) -> int:
@@ -1646,13 +1775,22 @@ def run_deterministic_only(args) -> int:
         all_recovery_probes: list[dict[str, Any]] = []
         db_consistent: dict[str, bool] = {}
         all_db_summary_rows: list[dict[str, Any]] = []
+        combined_db_validation = {
+            "db_final_state_consistent": True,
+            "db_no_duplicate_side_effect_rows": True,
+            "db_no_invalid_final_confirm": True,
+            "db_integrity_check_passed": True,
+            "duplicate_side_effect": 0,
+        }
 
         for store in args.stores:
             print(f"\n[det] === Store: {store} ===")
 
-            # Kill old DB so each store starts fresh
-            ssh_run(args, args.backend_node,
-                    "rm -f /tmp/cloudlab_business_workflow_distributed.sqlite*", timeout=5)
+            try:
+                remote_restart_backend_services_for_store(args, ips, store)
+            except RuntimeError as e:
+                print(f"[det] Backend reset failed for store={store}: {e}")
+                continue
 
             print(f"[det] Starting {store}-mode gateways...")
             try:
@@ -1692,10 +1830,32 @@ def run_deterministic_only(args) -> int:
                     db_val_result = validate_db(local_db, dummy_rows, store, 0)
                     all_db_summary_rows.extend(db_val_result.get("db_summary_rows", []))
                     db_consistent[store] = db_val_result.get("db_final_state_consistent", False)
+                    combined_db_validation["db_final_state_consistent"] = (
+                        combined_db_validation["db_final_state_consistent"]
+                        and db_val_result.get("db_final_state_consistent", False)
+                    )
+                    combined_db_validation["db_no_duplicate_side_effect_rows"] = (
+                        combined_db_validation["db_no_duplicate_side_effect_rows"]
+                        and db_val_result.get("db_no_duplicate_side_effect_rows", False)
+                    )
+                    combined_db_validation["db_no_invalid_final_confirm"] = (
+                        combined_db_validation["db_no_invalid_final_confirm"]
+                        and db_val_result.get("db_no_invalid_final_confirm", False)
+                    )
+                    combined_db_validation["db_integrity_check_passed"] = (
+                        combined_db_validation["db_integrity_check_passed"]
+                        and db_val_result.get("db_integrity_check_passed", False)
+                    )
+                    combined_db_validation["duplicate_side_effect"] += int(
+                        db_val_result.get("duplicate_side_effect", 0) or 0
+                    )
                     print(f"  DB consistent: {db_val_result.get('db_final_state_consistent')} "
                           f"dup_side_effect: {db_val_result.get('duplicate_side_effect')}")
             except Exception as exc:
                 print(f"  WARNING: DB retrieval failed: {exc}")
+                db_consistent[store] = False
+                combined_db_validation["db_final_state_consistent"] = False
+                combined_db_validation["db_integrity_check_passed"] = False
 
             # Stop gateways
             for gw in args.gateways:
@@ -1720,7 +1880,7 @@ def run_deterministic_only(args) -> int:
         agg_rows = build_deterministic_agg(all_recovery_probes)
         run_summary = build_deterministic_run_summary(all_recovery_probes, db_consistent)
         validation = build_deterministic_validation(
-            all_recovery_probes, replay_probes, preflight, ips, db_val_result, args,
+            all_recovery_probes, replay_probes, preflight, ips, combined_db_validation, args,
         )
 
         prefix = "cloudlab_business_workflow_distributed_deterministic"
