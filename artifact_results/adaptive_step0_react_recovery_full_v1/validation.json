@@ -1,0 +1,40 @@
+{
+  "artifact": "adaptive_step0_react_recovery_full_v1",
+  "layers": [
+    "mock_full",
+    "vllm_full"
+  ],
+  "row_count": 84,
+  "agg_row_count": 28,
+  "effect_row_count": 28,
+  "variants": [
+    "plangate_adaptive",
+    "plangate_adaptive_react_recovery",
+    "plangate_no_capacity_step0",
+    "plangate_strict"
+  ],
+  "parameter_consistency": true,
+  "all_client_rc_zero": true,
+  "all_client_timed_out_zero": false,
+  "all_error_empty_or_zero": true,
+  "duplicate_side_effect_zero": true,
+  "mock_recovery_success_present": true,
+  "vllm_included": true,
+  "vllm_synthetic_failure_included": true,
+  "plangate_real_absent": true,
+  "agent_llm_base": "https://api.deepseek.com",
+  "backend_llm_base": "http://127.0.0.1:9999/v1",
+  "agent_llm_model": "deepseek-v4-flash",
+  "backend_llm_model": "qwen",
+  "all_local_vllm": false,
+  "trend_checks": {
+    "adaptive_less_low_mid_load_reject_than_strict": true,
+    "adaptive_less_high_load_cascade_than_no_capacity_step0": true,
+    "adaptive_recovery_has_recovered_success_under_synthetic_failure": true,
+    "adaptive_recovery_has_avoided_replay_under_synthetic_failure": true
+  },
+  "trend_warnings": [
+    "client_timed_out non-zero on no_capacity_step0 (expected: backend overload without capacity admission)"
+  ],
+  "errors": []
+}

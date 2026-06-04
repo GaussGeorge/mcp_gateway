@@ -1,0 +1,32 @@
+{
+  "artifact": "adaptive_react_recovery_vllm_smoke_v1",
+  "layer": "vllm",
+  "row_count": 4,
+  "agg_row_count": 4,
+  "variants": [
+    "plangate_adaptive",
+    "plangate_adaptive_react_recovery",
+    "plangate_no_capacity_step0",
+    "plangate_strict"
+  ],
+  "parameter_consistency": true,
+  "all_client_rc_zero": true,
+  "all_client_timed_out_zero": true,
+  "all_error_empty_or_zero": true,
+  "duplicate_side_effect_zero": true,
+  "plangate_real_absent": true,
+  "agent_llm_base": "https://api.deepseek.com",
+  "backend_llm_base": "http://127.0.0.1:9999/v1",
+  "agent_llm_model": "deepseek-v4-flash",
+  "backend_llm_model": "qwen",
+  "cloud_agent_allowed": true,
+  "backend_is_local_vllm": true,
+  "hybrid_deepseek_brain_local_vllm_backend": true,
+  "tool_calls_positive": true,
+  "backend_llm_tokens_positive": true,
+  "zero_tool_call_success_count": 0,
+  "all_local_vllm": false,
+  "errors": [],
+  "react_recovery_success_required": false,
+  "reason": "self-hosted vLLM smoke may not naturally trigger recoverable ReAct failures"
+}

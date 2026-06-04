@@ -1,0 +1,10 @@
+variant,repeat,sessions,concurrency,failure_rate,success,workflow_success_rate,admitted_sessions,admitted_success_rate,rejected_s0,cascade_failed,partial,client_rc,client_timed_out,expected_recoverable_failures,expected_terminal_failures,unexpected_errors,unexpected_error_messages,http_requests_total,http_2xx_total,http_error_total,sqlite_writes_total,side_effects_committed,duplicate_side_effect,idempotency_keys_total,idempotency_replay_hits,resume_attempted,resume_recovered,post_resume_success,avoided_replay_steps,resume_continuation_started,resume_continuation_completed,post_resume_cascade,deterministic_recovery_probe_attempted,deterministic_recovery_probe_passed,db_final_state_consistent,completed_workflows_in_db,failed_workflows_in_db,p50_ms,p95_ms
+ng,1,50,10,0.1,39,78.0,48,81.25,2,2,7,0,0,7,4,0,,145,145,0,452,134,0,150,685,0,0,0,0,0,0,0,0,0,1,148,7,147.77,478.004
+ng,2,50,10,0.1,40,80.0,49,81.633,1,3,6,0,0,7,4,0,,147,147,0,452,136,0,150,685,0,0,0,0,0,0,0,0,0,1,148,7,138.577,181.789
+ng,3,50,10,0.1,39,78.0,49,79.592,1,3,7,0,0,7,4,0,,145,145,0,452,134,0,150,685,0,0,0,0,0,0,0,0,0,1,148,7,122.843,170.286
+plangate_adaptive,1,50,10,0.1,39,78.0,49,79.592,1,3,7,0,0,7,4,0,,145,145,0,452,134,0,150,685,0,0,0,0,0,0,0,0,0,1,148,7,59.132,174.922
+plangate_adaptive,2,50,10,0.1,40,80.0,49,81.633,1,3,6,0,0,7,4,0,,146,146,0,452,135,0,150,685,0,0,0,0,0,0,0,0,0,1,148,7,54.075,153.666
+plangate_adaptive,3,50,10,0.1,39,78.0,49,79.592,1,3,7,0,0,7,4,0,,146,146,0,452,135,0,150,685,0,0,0,0,0,0,0,0,0,1,148,7,61.88,135.545
+plangate_adaptive_react_recovery,1,48,10,0.1,33,68.75,46,71.739,2,0,13,0,0,28,2,0,,155,155,0,452,125,0,144,685,15,0,2,0,15,2,13,1,0,1,148,7,41.589,130.637
+plangate_adaptive_react_recovery,2,49,10,0.1,30,61.224,46,65.217,3,0,16,0,0,33,3,0,,158,158,0,452,122,0,147,685,17,0,1,0,17,1,16,1,0,1,148,7,32.553,125.199
+plangate_adaptive_react_recovery,3,46,10,0.1,29,63.043,45,64.444,1,2,14,0,0,30,3,0,,151,151,0,452,118,0,138,685,16,0,2,0,16,2,14,1,0,1,148,7,36.842,127.744

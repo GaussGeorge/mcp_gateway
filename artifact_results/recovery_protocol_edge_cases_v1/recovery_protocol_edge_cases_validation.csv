@@ -1,0 +1,20 @@
+check_name,passed,details
+bool_flags_verified,true,recovery + react-recovery flags verified via smoke resume payload
+missing_checkpoint_rejected,true,resume for unknown session is rejected
+resume_without_session_id_rejected,true,resume without X-Session-ID is rejected
+wrong_session_id_rejected,true,resume with wrong session ID does not mutate correct session
+live_checkpoint_rejected,true,ACTIVE_CHECKPOINT status cannot be resumed
+non_recoverable_rejected,true,FAILED_TERMINAL / non-recoverable status is rejected
+expired_checkpoint,true,expired checkpoint is rejected (TTL enforced at store or handler level)
+valid_resume_payload_fields,true,valid checkpointed resume returns all required payload fields
+valid_resume_recovered_true,true,valid resume recovered=true
+valid_resume_mode_client_cooperative,true,valid resume returns mode=react_client_cooperative
+valid_resume_requires_client_continuation,true,valid resume requires_client_continuation=true
+valid_resume_current_step_gt_zero,true,valid resume current_step > 0
+no_auto_execution_after_resume,true,gateway does not auto-execute tools after resume
+duplicate_resume_policy_recorded,true,duplicate resume policy is explicitly recorded
+duplicate_resume_no_duplicate_side_effect,true,duplicate resume produces zero side effects
+side_effect_with_idempotency_no_duplicate,true,resume after side-effecting step with idempotency key has no duplicate side effect
+idempotency_absent_policy_recorded,true,actual policy is recorded for missing idempotency key case
+no_llm_or_cloud_dependency,true,"no LLM, vLLM, or cloud provider used"
+no_new_mechanism_code,true,no PlanGate mechanism code modified

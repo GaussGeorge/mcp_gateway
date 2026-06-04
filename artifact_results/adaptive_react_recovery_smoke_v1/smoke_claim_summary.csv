@@ -1,0 +1,11 @@
+claim,status,detail
+execution_stable,passed,Both mock and DeepSeek cloud layers completed all 4 variants without crashes
+all_client_rc_zero,passed,No client return-code errors across all layers
+all_client_timed_out_zero,passed,No client timeouts across all layers
+all_error_empty_or_zero,passed,No runtime errors across all layers
+duplicate_side_effect_zero,passed,No duplicate side effects in either layer
+directional_trend_observed,passed,no_capacity_step0 shows highest cascade in both layers; adaptive_react_recovery shows recovery in mock
+react_recovery_success_present_mock,passed,react_recovered_success=5 avoided_replay_steps=6 in mock smoke
+react_recovery_success_present_cloud,not_applicable,Natural provider smoke without synthetic failure may not trigger recovery
+parameter_consistency,passed,Same 4 variants and adaptive wait thresholds across both layers
+statistically_powered,false,This is smoke evidence only — not powered for comparison

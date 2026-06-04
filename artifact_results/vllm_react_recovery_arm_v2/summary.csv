@@ -1,0 +1,13 @@
+layer,variant,repeat,agents,concurrency,max_steps,failure_step,agent_llm_base,backend_llm_base,agent_llm_model,backend_llm_model,success,cascade_failed,abd_total,rejected_s0_total,rejected_s0_capacity,react_recovery_attempts,react_recovered_success,react_recovery_rejected_nonrecoverable,avoided_replay_steps,continued_after_resume,duplicate_side_effect,tool_calls_total,backend_llm_tokens_total,effective_goodput_s,p95_ms,client_rc,client_timed_out,error,no_fake_success
+vllm_recovery_arm_v2,plangate_adaptive,0,10,2,5,2,https://api.deepseek.com,http://127.0.0.1:9999/v1,deepseek-v4-flash,qwen,0,10,10.0,0,0,0,0,0,0,0,0,30,1500,0.0,0.0,0,0,,True
+vllm_recovery_arm_v2,plangate_adaptive,1,10,2,5,2,https://api.deepseek.com,http://127.0.0.1:9999/v1,deepseek-v4-flash,qwen,0,10,10.0,0,0,0,0,0,0,0,0,30,1500,0.0,0.0,0,0,,True
+vllm_recovery_arm_v2,plangate_adaptive,2,10,2,5,2,https://api.deepseek.com,http://127.0.0.1:9999/v1,deepseek-v4-flash,qwen,0,10,10.0,0,0,0,0,0,0,0,0,30,1500,0.0,0.0,0,0,,True
+vllm_recovery_arm_v2,plangate_adaptive,0,10,4,5,2,https://api.deepseek.com,http://127.0.0.1:9999/v1,deepseek-v4-flash,qwen,0,10,10.0,0,0,0,0,0,0,0,0,14,700,0.0,0.0,0,0,,True
+vllm_recovery_arm_v2,plangate_adaptive,1,10,4,5,2,https://api.deepseek.com,http://127.0.0.1:9999/v1,deepseek-v4-flash,qwen,0,10,10.0,0,0,0,0,0,0,0,0,14,700,0.0,0.0,0,0,,True
+vllm_recovery_arm_v2,plangate_adaptive,2,10,4,5,2,https://api.deepseek.com,http://127.0.0.1:9999/v1,deepseek-v4-flash,qwen,0,10,10.0,0,0,0,0,0,0,0,0,14,700,0.0,0.0,0,0,,True
+vllm_recovery_arm_v2,plangate_adaptive_react_recovery,0,10,2,5,2,https://api.deepseek.com,http://127.0.0.1:9999/v1,deepseek-v4-flash,qwen,8,2,2.0,0,0,10,8,0,16,8,0,64,3200,0.1993,0.0,0,0,,True
+vllm_recovery_arm_v2,plangate_adaptive_react_recovery,1,10,2,5,2,https://api.deepseek.com,http://127.0.0.1:9999/v1,deepseek-v4-flash,qwen,10,0,0.0,0,0,10,10,0,20,10,0,70,3500,0.2185,0.0,0,0,,True
+vllm_recovery_arm_v2,plangate_adaptive_react_recovery,2,10,2,5,2,https://api.deepseek.com,http://127.0.0.1:9999/v1,deepseek-v4-flash,qwen,10,0,0.0,0,0,10,10,0,20,10,0,70,3500,0.2207,0.0,0,0,,True
+vllm_recovery_arm_v2,plangate_adaptive_react_recovery,0,10,4,5,2,https://api.deepseek.com,http://127.0.0.1:9999/v1,deepseek-v4-flash,qwen,2,8,8.0,0,0,2,2,0,4,2,0,22,1100,0.0967,0.0,0,0,,True
+vllm_recovery_arm_v2,plangate_adaptive_react_recovery,1,10,4,5,2,https://api.deepseek.com,http://127.0.0.1:9999/v1,deepseek-v4-flash,qwen,2,8,8.0,0,0,2,2,0,4,2,0,22,1100,0.0963,0.0,0,0,,True
+vllm_recovery_arm_v2,plangate_adaptive_react_recovery,2,10,4,5,2,https://api.deepseek.com,http://127.0.0.1:9999/v1,deepseek-v4-flash,qwen,2,8,8.0,0,0,2,2,0,4,2,0,22,1100,0.0984,0.0,0,0,,True

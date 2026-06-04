@@ -1,0 +1,22 @@
+{
+  "artifact": "adaptive_react_recovery_cloudllm_smoke_v1",
+  "layer": "cloudllm",
+  "provider": "deepseek",
+  "row_count": 4,
+  "agg_row_count": 4,
+  "variants": [
+    "plangate_adaptive",
+    "plangate_adaptive_react_recovery",
+    "plangate_no_capacity_step0",
+    "plangate_strict"
+  ],
+  "parameter_consistency": true,
+  "all_client_rc_zero": true,
+  "all_client_timed_out_zero": true,
+  "all_error_empty_or_zero": true,
+  "duplicate_side_effect_zero": true,
+  "react_recovery_success_required": false,
+  "react_recovery_success_present": false,
+  "reason": "natural provider smoke may not trigger recoverable failure",
+  "errors": []
+}

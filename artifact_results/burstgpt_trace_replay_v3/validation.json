@@ -1,0 +1,132 @@
+{
+  "artifact": "burstgpt_trace_replay_v3",
+  "source_trace_path": "D:\\mcp版本备份\\mcp-governance-main - A\\external\\BurstGPT\\data\\BurstGPT_1.csv",
+  "source_trace_sha256": "4bb3783693d0a435686fbfc885615d2349bd067239079fa4b749f2e679e12122",
+  "selected_windows": [
+    {
+      "window_id": "normal",
+      "window_label": "normal",
+      "start_row": 63444,
+      "end_row": 63467,
+      "start_timestamp": 825570.0,
+      "end_timestamp": 825621.0
+    },
+    {
+      "window_id": "burst",
+      "window_label": "burst",
+      "start_row": 63456,
+      "end_row": 63479,
+      "start_timestamp": 825589.0,
+      "end_timestamp": 825640.0
+    },
+    {
+      "window_id": "peak_burst",
+      "window_label": "peak-burst",
+      "start_row": 68538,
+      "end_row": 68561,
+      "start_timestamp": 829242.0,
+      "end_timestamp": 829293.0
+    }
+  ],
+  "windows": [
+    "normal",
+    "burst",
+    "peak_burst"
+  ],
+  "window_selection_rule": "v2: normal@q50, burst@q25, peak-burst@q20 with min-distance and min-span constraints",
+  "selected_trace_rows": 24,
+  "windows_distinct_by_range": true,
+  "window_spans": [
+    51.0,
+    51.0,
+    51.0
+  ],
+  "window_span_positive": true,
+  "scale_factors": [
+    1.0,
+    1.5,
+    2.0
+  ],
+  "row_count": 135,
+  "agg_row_count": 45,
+  "gateway_counts": {
+    "ng": 27,
+    "static": 27,
+    "pp": 27,
+    "rajomon": 27,
+    "plangate_relaxed": 27
+  },
+  "window_scale_gateway_counts": {
+    "normal|1.0|ng": 3,
+    "normal|1.5|ng": 3,
+    "normal|2.0|ng": 3,
+    "burst|1.0|ng": 3,
+    "burst|1.5|ng": 3,
+    "burst|2.0|ng": 3,
+    "peak_burst|1.0|ng": 3,
+    "peak_burst|1.5|ng": 3,
+    "peak_burst|2.0|ng": 3,
+    "normal|1.0|static": 3,
+    "normal|1.5|static": 3,
+    "normal|2.0|static": 3,
+    "burst|1.0|static": 3,
+    "burst|1.5|static": 3,
+    "burst|2.0|static": 3,
+    "peak_burst|1.0|static": 3,
+    "peak_burst|1.5|static": 3,
+    "peak_burst|2.0|static": 3,
+    "normal|1.0|pp": 3,
+    "normal|1.5|pp": 3,
+    "normal|2.0|pp": 3,
+    "burst|1.0|pp": 3,
+    "burst|1.5|pp": 3,
+    "burst|2.0|pp": 3,
+    "peak_burst|1.0|pp": 3,
+    "peak_burst|1.5|pp": 3,
+    "peak_burst|2.0|pp": 3,
+    "normal|1.0|rajomon": 3,
+    "normal|1.5|rajomon": 3,
+    "normal|2.0|rajomon": 3,
+    "burst|1.0|rajomon": 3,
+    "burst|1.5|rajomon": 3,
+    "burst|2.0|rajomon": 3,
+    "peak_burst|1.0|rajomon": 3,
+    "peak_burst|1.5|rajomon": 3,
+    "peak_burst|2.0|rajomon": 3,
+    "normal|1.0|plangate_relaxed": 3,
+    "normal|1.5|plangate_relaxed": 3,
+    "normal|2.0|plangate_relaxed": 3,
+    "burst|1.0|plangate_relaxed": 3,
+    "burst|1.5|plangate_relaxed": 3,
+    "burst|2.0|plangate_relaxed": 3,
+    "peak_burst|1.0|plangate_relaxed": 3,
+    "peak_burst|1.5|plangate_relaxed": 3,
+    "peak_burst|2.0|plangate_relaxed": 3
+  },
+  "gateway_mode_map": {
+    "ng": "ng",
+    "static": "srl",
+    "pp": "pp",
+    "rajomon": "rajomon",
+    "plangate_relaxed": "mcpdp"
+  },
+  "gateways": [
+    "ng",
+    "static",
+    "pp",
+    "rajomon",
+    "plangate_relaxed"
+  ],
+  "plangate_real_absent": true,
+  "all_client_rc_zero": true,
+  "all_client_timed_out_zero": true,
+  "all_error_empty_or_zero": true,
+  "no_raw_trace_in_artifact": true,
+  "exact_four_files_only": true,
+  "real_agent_trace_claim_not_allowed": true,
+  "production_claim_not_allowed": true,
+  "cloudlab_claim_not_allowed": true,
+  "workflow_trace_claim_not_allowed": true,
+  "backend_mode": "mock_sterile_single_machine",
+  "errors": []
+}
