@@ -459,7 +459,7 @@ The submitted package supports lightweight replay before full reruns. The valida
 
 \subsection{Artifact Availability and Replay Validation}
 
-The artifact is organized as a versioned package rather than as a single monolithic run directory. The submitted GitHub branch contains the gateway implementation, experiment runners, generated figures, and result summaries. The main statistical bundle is \texttt{statistical\_summary\_v2}, which contains the unified statistical summary, effect-size summary, and finding table used to constrain the paper's numerical statements. A lightweight validator checks required directories, run metadata, summary row counts, duplicate-side-effect invariants, deterministic CloudLab recovery invariants, and the absence of transient runtime outputs.
+The artifact is organized as a versioned package rather than as a single monolithic run directory. The submitted GitHub branch contains the gateway implementation, experiment runners, generated figures, and result summaries. The canonical statistical bundle for the JSS manuscript is the versioned package \path{statistical_summary_v4}, which contains the unified statistical summary, effect-size summary, and finding table used to constrain the paper's numerical statements. A lightweight validator checks required directories, run metadata, summary row counts, duplicate-side-effect invariants, deterministic CloudLab recovery invariants, and the absence of transient runtime outputs.
 
 Reruns are grouped by resource need. Mock and HTTP+SQLite sanity runs are lightweight. vLLM reruns require a local OpenAI-compatible vLLM endpoint and model weights. Cloud-provider smoke tests require provider credentials and are used only as scope checks. CloudLab reruns require a multi-node allocation. This separation is important for JSS reproducibility: the paper distinguishes checks that replay quickly from studies that are reproducible but infrastructure-dependent.
 
@@ -607,7 +607,7 @@ The provider-backed results show that admission control is not universally benef
 
 \subsection{Distributed State as a Correctness Requirement}
 
-The CloudLab results show that shared state is not merely an optimization. Cross-gateway resume requires checkpoint availability beyond a single process. The memory-local diagnostic control fails exactly where expected: it cannot find checkpoints created on another gateway. Redis-backed state fixes this lookup problem in the tested deployment. The result should still be read narrowly. It validates shared-state necessity for checkpoint and reservation lookup; it does not claim production Redis high availability, crash recovery, or replicated control-plane fault tolerance.
+The CloudLab results show that shared state is not merely an optimization. Cross-gateway resume requires checkpoint availability beyond a single process. Sticky routing can preserve locality during ordinary traffic, but once a resumed session reaches a different gateway it cannot replace shared checkpoint lookup. The memory-local diagnostic control fails exactly where expected: it cannot find checkpoints created on another gateway. Redis-backed state fixes this lookup problem in the tested deployment. The result should still be read narrowly. It validates shared-state necessity for checkpoint and reservation lookup; it does not claim production Redis high availability, crash recovery, or replicated control-plane fault tolerance.
 
 \subsection{Implications for Service Workflow Engineering}
 
@@ -626,7 +626,7 @@ Metrics such as cascade failure, wasted service time, avoided replay steps, dupl
 
 \subsection{Client Cooperation and Metadata Validity}
 
-\plangate relies on client-provided workflow metadata, including session identifiers, step indexes, idempotency keys, and recovery modes. The evaluation checks malformed metadata and recovery edge cases, but it does not cover a complete adversarial-client model. A client that omits metadata, reuses identifiers incorrectly, or intentionally lies about workflow state can weaken the governance contract. This threat is inherent in making workflow metadata part of the operational interface.
+\plangate relies on client-provided workflow metadata, including session identifiers, step indexes, idempotency keys, and recovery modes. The evaluation checks malformed metadata and recovery edge cases, but it does not cover a complete adversarial-client model. The prototype mitigates accidental or opportunistic misuse through DAG validation, bounded amendment, session-cap limits, commitment and recovery token checks, and idempotency keys, but these controls do not provide Byzantine security against malicious clients. A client that omits metadata, reuses identifiers incorrectly, or intentionally lies about workflow state can weaken the governance contract. This threat is inherent in making workflow metadata part of the operational interface.
 
 \subsection{External Validity}
 
