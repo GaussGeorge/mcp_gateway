@@ -20,8 +20,15 @@
 ## Layout
 
 - [x] Double-column PDF
-- [x] PDF page count = 17
+- [x] PDF page count = 18
+- [x] Abstract word count = 249
 - [x] All JSS figures use PNG files
+
+## Metadata
+
+- [x] PDF title/author placeholders removed from manuscript body
+- [x] Highlights count = 5 and each line < 85 characters
+- [x] No `TODO` or placeholder text remains in `paper/JSS/`
 
 ## Submission follow-up
 

@@ -366,7 +366,7 @@ def plot_backend_boundary() -> str:
     vllm_metrics = [
         ("success_mean", "Success", "#4C78A8"),
         ("cascade_failed_mean", "Cascade", "#E45756"),
-        ("abd_total_mean", "ABD%", "#9467BD"),
+        ("abd_total_mean", "Admitted-\nbut-doomed %", "#9467BD"),
     ]
     for j, (key, label, color) in enumerate(vllm_metrics):
         axes[1].bar(

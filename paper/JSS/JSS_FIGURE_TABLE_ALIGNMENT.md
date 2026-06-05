@@ -27,5 +27,5 @@ This file maps every figure, table, and algorithm in the JSS manuscript to its s
 
 1. `statistical_summary_v4` is the canonical JSS evidence package.
 2. `JSS-C16` is the headline CloudLab correctness result.
-3. `JSS-C17` and `JSS-C18` are the two baseline claims added after the earlier frozen `statistical_summary_v3` package.
-4. Earlier artifacts such as `cloudlab_business_workflow_distributed_v1` and `statistical_summary_v3` are retained for version history and supporting interpretation only.
+3. `JSS-C17` and `JSS-C18` are baseline claims included in the canonical submission package.
+4. Earlier artifacts such as `cloudlab_business_workflow_distributed_v1` are retained only as supporting interpretation, not as the canonical numerical package for the paper.

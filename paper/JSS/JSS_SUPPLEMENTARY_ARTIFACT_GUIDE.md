@@ -8,7 +8,7 @@ The canonical JSS statistical package is:
 
 - `artifact_results/statistical_summary_v4/`
 
-This package is the only canonical numerical source for the current JSS revision. Earlier bundles such as `statistical_summary_v3` are retained for version history, but they are not the main package for the submitted manuscript.
+This package is the only canonical numerical source for the current JSS revision.
 
 The canonical package contains:
 
