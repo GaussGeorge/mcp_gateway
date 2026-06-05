@@ -1,0 +1,13 @@
+variant,concurrency,failure_rate,repeat,sessions,success,cascade_failed,partial,rejected,workflow_success_rate,p95_ms,http_requests_total,sqlite_writes_total,side_effects_committed,idempotency_keys_total,idempotency_replay_hits,duplicate_side_effect,client_rc,client_timed_out,unexpected_error,resume_attempted,resume_recovered,resume_rejected,avoided_replay_steps,post_resume_success,restart_attempted,retry_attempted,replayed_completed_steps,db_final_state_consistent,completed_workflows_in_db,failed_workflows_in_db
+idempotency_only_retry,10,0.1,0,30,24,0,6,0,0.8,181.631,108,1015,1015,1015,56,0,0,0,0,0,0,0,0,0,6,10,8,1,315,41
+idempotency_only_retry,10,0.1,1,30,27,0,3,0,0.9,196.401,99,1015,1015,1015,56,0,0,0,0,0,0,0,0,0,3,5,4,1,315,41
+idempotency_only_retry,10,0.1,2,30,23,0,7,0,0.766667,167.81,116,1015,1015,1015,56,0,0,0,0,0,0,0,0,0,7,15,11,1,315,41
+idempotency_only_retry,20,0.1,0,30,23,0,7,0,0.766667,308.497,112,1015,1015,1015,56,0,0,0,0,0,0,0,0,0,7,12,10,1,315,41
+idempotency_only_retry,20,0.1,1,30,28,0,2,0,0.933333,315.365,101,1015,1015,1015,56,0,0,0,0,0,0,0,0,0,2,8,3,1,315,41
+idempotency_only_retry,20,0.1,2,30,23,0,7,0,0.766667,313.845,111,1015,1015,1015,56,0,0,0,0,0,0,0,0,0,7,10,11,1,315,41
+plangate_adaptive_react_recovery,10,0.1,0,30,26,0,0,4,0.866667,183.435,89,1015,1015,1015,56,0,0,0,0,7,3,4,4,3,0,0,0,1,315,41
+plangate_adaptive_react_recovery,10,0.1,1,30,26,0,0,4,0.866667,185.795,97,1015,1015,1015,56,0,0,0,0,15,11,4,15,11,0,0,0,1,315,41
+plangate_adaptive_react_recovery,10,0.1,2,30,27,0,0,3,0.9,167.186,90,1015,1015,1015,56,0,0,0,0,6,3,3,5,3,0,0,0,1,315,41
+plangate_adaptive_react_recovery,20,0.1,0,30,29,0,0,1,0.966667,323.135,91,1015,1015,1015,56,0,0,0,0,3,2,1,3,2,0,0,0,1,315,41
+plangate_adaptive_react_recovery,20,0.1,1,30,27,0,0,3,0.9,307.343,92,1015,1015,1015,56,0,0,0,0,8,5,3,8,5,0,0,0,1,315,41
+plangate_adaptive_react_recovery,20,0.1,2,30,26,0,0,4,0.866667,310.0,91,1015,1015,1015,56,0,0,0,0,9,5,4,7,5,0,0,0,1,315,41

@@ -1,0 +1,19 @@
+Dear Editors,
+
+Please consider our manuscript, "Session-Aware Governance for Multi-Step LLM Service Workflows," for publication in the Journal of Systems and Software.
+
+This paper studies a software-systems problem that appears in modern agent deployments: current gateway and overload-control mechanisms usually govern individual requests, while the useful unit of work is a dependent multi-step workflow session. Under constrained or shared backends, this mismatch causes cascade waste, ambiguous recovery behavior, and replay risks for side-effecting operations.
+
+We present PlanGate, a session-aware governance gateway for multi-step LLM service workflows. The design combines hard admission for invalid or unsafe workflow declarations, adaptive capacity-driven step-0 admission, continuation-aware ReAct governance, client-cooperative recovery, idempotent side-effect protection, and optional Redis-backed shared state for multi-gateway deployment.
+
+The evaluation is organized by finding and scope rather than by a single benchmark. Controlled business-workflow experiments provide the main waste-reduction result. HTTP+SQLite service studies validate side-effect correctness. CloudLab experiments validate distributed checkpoint availability. Additional mock, vLLM, cloud-provider, request-level-baseline, and idempotency-only-baseline studies help interpret deployability and boundary conditions. We provide a replay validator and consolidated statistical summary package to support artifact inspection and lightweight reproducibility checks.
+
+We believe the manuscript fits JSS because it focuses on software architecture, workflow reliability, gateway control, distributed state management, and empirical evaluation of a deployable service-system design rather than on model-quality benchmarking alone.
+
+This manuscript is original, is not under review elsewhere, and all authors approve the submission. There are no known conflicts with JSS editorial policies.
+
+Sincerely,
+
+Zhuozhen Gao
+Shenzhen University
+2510268002@mails.szu.edu.cn

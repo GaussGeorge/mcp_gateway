@@ -1,11 +1,15 @@
 \documentclass[5p,times]{elsarticle}
 
 \usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
 \usepackage{array}
 \usepackage{booktabs}
 \usepackage{graphicx}
 \usepackage{url}
 \usepackage{xspace}
+\setlength{\bibsep}{0pt plus 0.2ex}
 
 \newcommand{\plangate}{\textsc{PlanGate}\xspace}
 \graphicspath{{figures/}}
@@ -148,6 +152,34 @@ State miss & A resume path cannot find checkpoint or reservation state. \\
 \end{tabular}
 \end{table}
 
+\subsection{Formal Metric Definitions}
+
+The metrics used in the evaluation are measurement definitions, not an optimization objective. Let a workflow session be an ordered sequence of tool requests
+\begin{equation}
+s=\langle r_{s,0}, r_{s,1}, \ldots, r_{s,T_s-1}\rangle .
+\end{equation}
+Let $p_s$ be the number of completed tool steps before the terminal event of session $s$, let $z_s$ be the terminal outcome, and let $t_{s,i}$ be the service time spent by step $i$. We define cascade failure as
+\begin{equation}
+\mathrm{Cascade}(s)=
+\mathbb{1}\!\left[p_s>0 \land z_s \in
+\{\mathrm{fail},\mathrm{timeout},\mathrm{rejected}\}\right].
+\end{equation}
+The wasted service time attributed to session $s$ is
+\begin{equation}
+W(s)=\mathrm{Cascade}(s)\sum_{i=0}^{p_s-1} t_{s,i},
+\qquad
+W(\mathcal{S})=\sum_{s\in\mathcal{S}} W(s).
+\end{equation}
+For durable side effects, let $O$ be the set of logical side-effect identifiers and $n_o$ be the number of committed rows or operations observed for identifier $o$. Duplicate side effects are counted as
+\begin{equation}
+D=\sum_{o\in O}\max(0,n_o-1).
+\end{equation}
+For recovery, if $c_s$ is the completed checkpoint prefix restored for session $s$, the avoided replay count is
+\begin{equation}
+A(s)=\mathbb{1}[\mathrm{Recovered}(s)]\,c_s .
+\end{equation}
+These definitions make the evaluation explicit: reducing cascade waste is different from maximizing raw success, and recovery correctness requires both progress restoration and duplicate-side-effect avoidance.
+
 \subsection{Research Questions}
 
 The paper is organized around five research questions:
@@ -236,6 +268,65 @@ For declared-plan workflows, \plangate uses admission as a commitment point. A c
 
 The adaptive module only applies to capacity-driven decisions; hard validation is handled before this path. The module tracks recent cascade behavior, recoverable-error signals, active sessions, and backend pressure, and combines them into a governance-intensity setting. This setting determines how aggressively new sessions should be rejected before execution.
 
+Table~\ref{tab:adaptive_policy_defaults} reports the default thresholds used by the adaptive admission module. The current experiments use governance intensity, session-cap load, and ReAct step-0 inflight load as active signals. Cascade-rate and recoverable-error thresholds are implemented as extension hooks and remain zero in the submitted runs.
+
+\begin{table}[t]
+\centering
+\caption{Default adaptive-admission state thresholds.}
+\label{tab:adaptive_policy_defaults}
+\footnotesize
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.42\columnwidth}>{\raggedright\arraybackslash}p{0.23\columnwidth}>{\raggedright\arraybackslash}p{0.23\columnwidth}@{}}
+\toprule
+\textbf{Signal / parameter} & \textbf{Green / default} & \textbf{Red / closed} \\
+\midrule
+Governance intensity & $<0.20$ & $\geq0.65$ \\
+Session-cap load & $<0.70$ & $\geq0.90$ \\
+ReAct step-0 inflight load & $<0.70$ & $\geq0.90$ \\
+Cascade-rate hook & -- & $\geq0.15$ \\
+Recoverable-error hook & -- & $\geq0.20$ \\
+Green wait & 200 ms & -- \\
+Yellow wait & 50 ms & -- \\
+Red wait & -- & 0 ms \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Algorithm~\ref{alg:session_admission} summarizes the admission path. The key distinction is that hard rejection is evaluated before the adaptive gate, while continuation and recovery requests use session state rather than the same rule as new-session admission.
+
+\begin{algorithm}[t]
+\caption{Session-aware admission and continuation}
+\label{alg:session_admission}
+\footnotesize
+\begin{algorithmic}[1]
+\Require Request $r$, session state $\sigma$, backend pressure $\rho$, policy $\pi$
+\If{\Call{ViolatesHardInvariant}{$r,\sigma$}}
+  \State \Return \Call{Reject}{hard}
+\EndIf
+\If{\Call{IsRecoveryRequest}{$r$}}
+  \State \Return \Call{ReactRecovery}{$r,\sigma$}
+\EndIf
+\If{\Call{IsContinuation}{$r$}}
+  \If{\textbf{not} \Call{HasSessionState}{$r.session,\sigma$}}
+    \State \Return \Call{Reject}{state-miss}
+  \EndIf
+  \State $v \gets$ \Call{ContinuationValue}{$r.session,\sigma$}
+  \If{\Call{Overloaded}{$\rho$} \textbf{and not} \Call{ContinuationAdmissible}{$v,\rho$}}
+    \State \Return \Call{Reject}{continuation}
+  \EndIf
+  \State \Return \Call{ForwardAndCheckpoint}{$r$}
+\EndIf
+\If{$\pi=\mathrm{no\_capacity\_step0}$}
+  \State \Return \Call{AdmitNewSession}{$r$}
+\ElsIf{$\pi=\mathrm{strict}$ \textbf{and} \Call{CapacityPressure}{$\rho$}}
+  \State \Return \Call{Reject}{capacity-step0}
+\ElsIf{$\pi=\mathrm{adaptive}$ \textbf{and} \Call{AdaptiveGateClosed}{$\rho,\sigma$}}
+  \State \Return \Call{Reject}{capacity-step0}
+\Else
+  \State \Return \Call{AdmitNewSession}{$r$}
+\EndIf
+\end{algorithmic}
+\end{algorithm}
+
 The design is evaluated through three admission policies. A \emph{strict} policy rejects early under capacity pressure. A \emph{no-capacity-step0} policy disables capacity-driven step-0 rejection. The \emph{adaptive} policy keeps hard rejection but changes capacity admission according to observed pressure. This comparison is necessary because constrained local backends and elastic cloud providers can prefer different raw-success trade-offs.
 
 \subsection{ReAct Checkpointing and Recovery}
@@ -243,6 +334,33 @@ The design is evaluated through three admission policies. A \emph{strict} policy
 ReAct workflows choose tools incrementally, so \plangate cannot reserve a complete future plan. Instead, each tool call carries session and step metadata. The gateway records completed progress after successful tool execution and uses this state to distinguish new work from continuation work.
 
 When a recoverable failure occurs, \plangate marks the session as checkpointed. A resume request with the same session identity and explicit recovery mode restores the checkpoint and returns a payload describing the recovered state, current step, and requirement for client continuation. The gateway does not execute future tools during recovery. This boundary prevents hidden server-side replay and keeps future tool choice under client control. Figure~\ref{fig:react_recovery_protocol} summarizes this client-cooperative protocol.
+
+Algorithm~\ref{alg:react_recovery} gives the recovery contract. It deliberately returns a resume payload rather than running the next tool call inside the gateway.
+
+\begin{algorithm}[t]
+\caption{Client-cooperative ReAct recovery}
+\label{alg:react_recovery}
+\footnotesize
+\begin{algorithmic}[1]
+\Require Resume request $r$ with session id $sid$, checkpoint store $C$
+\State $c \gets$ \Call{LookupCheckpoint}{$C,sid$}
+\If{$c=\varnothing$}
+  \State \Return \Call{Reject}{state-miss}
+\EndIf
+\If{$c.status=\mathrm{active}$}
+  \State \Return \Call{Reject}{live-checkpoint}
+\EndIf
+\If{$c.status \ne \mathrm{recoverable}$}
+  \State \Return \Call{Reject}{non-recoverable}
+\EndIf
+\State \Call{RestoreSession}{$sid,c.completedPrefix$}
+\State $payload \gets \{$recovered: true, mode: react-client-cooperative,
+\Statex \hspace{\algorithmicindent} current-step: $c.nextStep$, requires-client-continuation: true,
+\Statex \hspace{\algorithmicindent} avoided-replay-steps: $c.completedPrefix\}$
+\State \Return $payload$
+\Statex \Comment{The gateway restores state but does not execute future tools.}
+\end{algorithmic}
+\end{algorithm}
 
 \begin{figure*}[t]
 \centering
@@ -283,7 +401,33 @@ This structure separates performance findings from correctness checks. CloudLab 
 
 The main policy comparisons use four variants: strict, adaptive, no-capacity-step0, and adaptive-react-recovery. Strict tests aggressive early rejection; no-capacity-step0 removes capacity-driven step-0 rejection; adaptive tests pressure-aware admission; adaptive-react-recovery adds client-cooperative ReAct recovery. The evaluation avoids treating these variants as a universal ranking because their behavior depends on backend elasticity.
 
-The workload layers are scoped by purpose. Controlled business workflows are the core performance setting. Mock and vLLM layers isolate backend congestion and model-backed execution \citep{kwon2023vllm}. HTTP+SQLite workflows exercise persistent side effects and idempotency. Cloud-provider smoke tests check compatibility and admission-policy scope. MCP-Bench-derived smoke and BurstGPT-shaped replay provide workflow-shape and arrival-pattern realism \citep{mcpbench2025,wang2024burstgpt}, but they are not used as headline performance rankings.
+The workload layers are scoped by purpose. Controlled business workflows are the core performance setting. Mock and vLLM layers isolate backend congestion and model-backed execution \citep{kwon2023vllm}. HTTP+SQLite workflows exercise persistent side effects and idempotency. Cloud-provider smoke tests check compatibility and admission-policy scope. MCP-Bench-derived smoke and BurstGPT-shaped replay provide workflow-shape and arrival-pattern realism \citep{mcpbench2025,wang2024burstgpt}, but they are not used as headline performance rankings. Table~\ref{tab:experimental_setup_summary} summarizes the main studies.
+
+\begin{table*}[t]
+\centering
+\caption{Experimental setup summary. Smoke and correctness studies are not interpreted as headline performance rankings.}
+\label{tab:experimental_setup_summary}
+\tiny
+\renewcommand{\arraystretch}{0.82}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}llllll@{}}
+\toprule
+\textbf{Study} & \textbf{Artifact} & \textbf{Backend / deployment} & \textbf{Scale / repeats} & \textbf{Primary metrics} & \textbf{Role} \\
+\midrule
+Core workflow & \texttt{service\_v3} & Controlled P\&S/ReAct service workflow & $C{=}\{20,50,100\}$, $F{=}\{0,0.1,0.2\}$, 5 repeats & Cascade, wasted service time & Main result \\
+Request-level baseline & \texttt{request\_level\_baseline\_v1} & Same workflow harness, per-request queue admission only & $C{=}\{50,100\}$, $F{=}\{0,0.2\}$, 5 repeats & Cascade, wasted service time, request rejects & Baseline \\
+Idempotency-only baseline & \texttt{idempotency\_only\_retry\_baseline\_v1} & HTTP+SQLite workflow, no resume & $C{=}\{10,20\}$, $F{=}0.1$, 3 repeats & Duplicate side effects, replayed steps & Recovery baseline \\
+Full ablation & \texttt{full\_v1} & Mock and local vLLM layers & 84 rows & Trend checks, recovery, cascade & Mechanism \\
+vLLM recovery & \texttt{vllm\_arm\_v2} & DeepSeek brain, local Qwen vLLM backend & $C{=}\{2,4\}$, 3 repeats & Recovered sessions, avoided replay & Feasibility \\
+HTTP+SQLite E2E & \texttt{e2e\_smoke/perf} & External HTTP services and SQLite & 9 + 18 rows & Idempotency, DB consistency & Correctness \\
+CloudLab & \texttt{cloudlab\_det\_v1} & Six nodes, Redis vs memory & Forced cross-gateway probes & State miss, recovery & Distributed correctness \\
+Operator overhead & \texttt{overhead\_v1} & Same gateway/proxy path & $C{=}\{20,50,100\}$, 5 repeats & p95/p99, throughput, CPU/RSS & Deployability \\
+Sensitivity & \texttt{sensitivity\_v1} & Controlled workflow grid & 126 rows & Recovery, cascade & Robustness \\
+\bottomrule
+\end{tabular}
+}
+\renewcommand{\arraystretch}{1.0}
+\end{table*}
 
 The primary performance metrics are completed sessions, cascade failures, step-0 capacity rejections, wasted service time, effective throughput, and tail latency. Recovery metrics include resume attempts, recovered sessions, avoided replay steps, continuation after resume, duplicate side effects, and replayed completed side effects. Distributed metrics include state misses, duplicate admissions, cross-gateway resumes, and final database consistency.
 
@@ -331,11 +475,13 @@ The main service-governance result comes from the controlled business-workflow e
 \begin{figure*}[t]
 \centering
 \includegraphics[width=0.84\textwidth]{fig_jss_core_tradeoff.png}
-\caption{Core service-workflow trade-off. Adaptive admission reduces cascade and wasted service time under constrained business-workflow load; the result concerns waste governance rather than raw-success ranking.}
+\caption{Core service-workflow trade-off at $C{=}100,F{=}0.2$. The panels show completed sessions, step-0 capacity rejections, cascade failures, and wasted service time. The figure reports an admission trade-off rather than a raw-success ranking: adaptive admission reduces cascade and wasted service time under constrained capacity, while early rejection can reduce raw completions in some settings.}
 \label{fig:jss_core_tradeoff}
 \end{figure*}
 
 This result supports RQ1 with an important scope condition. In the same setting, raw workflow success is not the primary optimization target and may differ across policies. We therefore read the result as waste-governance support: when backend capacity and failures make admitted-but-doomed sessions likely, session-aware capacity admission reduces cascade waste and wasted service time.
+
+The request-level baseline shows the same failure mode directly: at $C{=}100,F{=}0.2$, a per-request queue limiter completes 26.4 sessions on average, slightly above adaptive's 25.0, but raises cascade failures to 74.6 and wasted service time to 10{,}573 ms, versus 5.2 and 1{,}218 ms for adaptive governance, because it cannot distinguish a new request from a late continuation that would discard a completed workflow prefix.
 
 \subsection{RQ2: Adaptive Admission Trade-Off}
 
@@ -346,7 +492,7 @@ The cloud-backend smoke test shows the other side of the trade-off. In the singl
 \begin{figure*}[t]
 \centering
 \includegraphics[width=0.84\textwidth]{fig_jss_backend_boundary.png}
-\caption{Backend-dependent admission scope. Constrained backends and elastic providers can favor different raw-success trade-offs, so provider results are interpreted descriptively rather than as a universal policy ranking.}
+\caption{Backend-dependent admission scope. The panels are not a direct performance comparison: the left panel is a single-repeat cloud backend smoke test, while the right panel is a local vLLM full run at $C{=}16$ with three repeats. They illustrate boundary behavior: provider elasticity can make no-capacity admission favorable in the cloud smoke, while constrained local vLLM exposes cascade and ABD pressure.}
 \label{fig:jss_backend_boundary}
 \end{figure*}
 
@@ -356,10 +502,12 @@ Client-cooperative recovery improves recovered progress without turning the gate
 
 The targeted vLLM recovery arm provides model-backed feasibility evidence. At $C{=}2$, the recovery variant increases recovered sessions by 9.33 relative to adaptive, with confidence interval $[8.0,10.0]$. This arm uses a hybrid setup with a DeepSeek agent brain and a local Qwen vLLM backend, so it should not be merged with natural full-vLLM recovery claims. Figure~\ref{fig:jss_recovery_effectiveness} summarizes the recovery results.
 
+An idempotency-only retry baseline clarifies the boundary. Stable idempotency keys keep duplicate-side-effect count at zero, but without resume it records zero recovered sessions and zero avoided replay steps; completed prefixes are replayed instead.
+
 \begin{figure*}[t]
 \centering
 \includegraphics[width=0.84\textwidth]{fig_jss_recovery_effectiveness.png}
-\caption{Client-cooperative ReAct recovery. Recovery restores checkpointed progress and avoids replayed steps, but it does not execute future tools on behalf of the client.}
+\caption{Client-cooperative ReAct recovery. The left panel reports HTTP service-workflow recovery; the right panel reports the targeted vLLM recovery arm. Recovery restores checkpointed progress and avoids replayed steps, but it does not execute future tools on behalf of the client.}
 \label{fig:jss_recovery_effectiveness}
 \end{figure*}
 
@@ -368,6 +516,24 @@ Protocol-level checks support the same scope. The recovery protocol passes 11/11
 \subsection{RQ4: Deployability, Overhead, and Sensitivity}
 
 The operator-overhead study indicates that \plangate's steady-state overhead is modest in the tested gateway path. At $C{=}100$, adaptive versus baseline has a small negative p95 latency delta in this run, approximately $-6.37$ ms, while the throughput delta confidence interval crosses zero. We interpret this as no large overhead under the tested gateway path, not as a general latency-reduction result.
+
+Table~\ref{tab:operator_overhead_c100} reports the $C{=}100$ resource summary. The baseline is the same gateway/proxy path rather than direct-to-backend execution. The table therefore measures incremental mechanism overhead within the gateway path, not the full cost of inserting a gateway into an otherwise direct deployment. This failure-free artifact does not trigger recovery and should not be used as recovery-effectiveness evidence.
+
+\begin{table*}[t]
+\centering
+\caption{Operator overhead at $C{=}100$ in the failure-free overhead artifact.}
+\label{tab:operator_overhead_c100}
+\footnotesize
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.24\textwidth}rrrrrr@{}}
+\toprule
+\textbf{Variant} & \textbf{p95 ms} & \textbf{p99 ms} & \textbf{Throughput} & \textbf{CPU $\Delta$s} & \textbf{Avg RSS MB} & \textbf{Peak RSS MB} \\
+\midrule
+Baseline gateway & 86.3 & 161.6 & 552.1 & 3.92 & 34.4 & 41.2 \\
+Adaptive & 79.9 & 201.3 & 551.3 & 3.98 & 37.2 & 46.3 \\
+Adaptive + recovery & 88.0 & 161.7 & 552.8 & 4.41 & 37.3 & 46.0 \\
+\bottomrule
+\end{tabular}
+\end{table*}
 
 The configuration-sensitivity study shows that governance parameters affect recovery strength. Under $C{=}100,F{=}0.2$, a strict-versus-default recovery-sensitivity comparison changes recovered sessions by $-1.67$. This supports qualitative robustness and sensitivity analysis, not selection of a globally optimal configuration. Component mapping records 9 architecture components mapped to 18 result records, which is used to organize the design rationale rather than to argue that every component improves raw success. Figure~\ref{fig:jss_overhead_sensitivity} summarizes overhead and sensitivity results.
 
@@ -408,7 +574,8 @@ Supporting studies address representativeness and execution stability. A metadat
 \centering
 \caption{Main JSS results and interpretation scope.}
 \label{tab:main_results_summary}
-\footnotesize
+\scriptsize
+\renewcommand{\arraystretch}{0.95}
 \begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.22\textwidth}>{\raggedright\arraybackslash}p{0.39\textwidth}>{\raggedright\arraybackslash}p{0.29\textwidth}@{}}
 \toprule
 \textbf{Role} & \textbf{Supported result} & \textbf{Scope} \\
@@ -421,6 +588,7 @@ Distributed correctness & CloudLab Redis recovers 15/15 forced cross-gateway res
 Provider scope & Cloud backend smoke shows no-capacity can exceed adaptive by 7 successes. & Single-repeat descriptive result. \\
 \bottomrule
 \end{tabular}
+\renewcommand{\arraystretch}{1.0}
 \end{table*}
 
 \section{Discussion}
@@ -429,6 +597,9 @@ Provider scope & Cloud backend smoke shows no-capacity can exceed adaptive by 7 
 \subsection{Why Session-Aware Governance Helps}
 
 The results support the paper's central claim: request-level governance is insufficient for dependent agent workflows. When capacity is constrained, admitting a session that later fails wastes completed tool calls and service time. Adaptive capacity admission reduces this waste by moving some unavoidable rejection earlier while preserving hard rejection for invalid workflows. Recovery contributes a second benefit: it restores a safe point without making the gateway an autonomous agent or replay engine.
+
+The request-level baseline is useful here because it can reject or pass individual calls without looking clearly worse in raw success, yet still accumulates much larger cascade and wasted service time because it has no model of completed prefix value. That gap is the practical difference between request-level and session-level governance.
+Idempotency alone protects durable writes; it does not preserve workflow progress.
 
 \subsection{When Admission Control Can Hurt}
 
@@ -479,6 +650,16 @@ Tool-using LLM research studies how models select tools, call APIs, and solve mu
 Recent agent benchmarks also show why gateway-level governance is needed. WebArena and OSWorld evaluate agents in realistic browser or computer environments \citep{zhou2023webarena,xie2024osworld}. $\tau$-bench models user-agent-tool interaction in business domains, and MCP-Bench connects agents to live MCP servers and hundreds of tools \citep{taubench2024,mcpbench2025}. These benchmarks emphasize task completion and tool-use competence. In this paper, they motivate workflow-shape smoke tests, but they are not the main performance substrate. The core claim is about infrastructure governance under constrained or shared backends, not about agent task accuracy.
 
 MCP standardizes the connection between model applications and external tools \citep{anthropic2024mcp}. This standardization makes the gateway position especially important: the gateway can observe tool calls, session metadata, and backend outcomes without modifying the model. \plangate uses this position to enforce session-aware governance, but it does not require a new agent framework or model-specific tool-use training.
+
+\subsection{Agent Frameworks, Workflow Engines, and Gateways}
+
+Agent workflow frameworks such as LangGraph, AutoGen, Semantic Kernel, and CrewAI help developers construct multi-agent applications, coordinate tool use, and represent agent state \citep{langgraphdocs2026,autogendocs2026}. They help define or execute agent logic; \plangate governs the infrastructure path after tool calls reach the gateway. Service waste, admission pressure, checkpoint lookup, and side-effect replay can arise even when the agent framework chooses tools correctly.
+
+Workflow engines such as Temporal, Apache Airflow, Cadence, and Azure Durable Functions provide durable orchestration, scheduling, retries, and workflow state management \citep{temporaldocs2026,airflowdocs2026}. \plangate does not replace them. It is a lighter gateway mechanism for agent-generated MCP workflows where the agent or application remains responsible for future tool choice.
+
+API gateways and service meshes such as Envoy, Kong Gateway, Istio, and Linkerd provide routing, load balancing, retries, observability, and policy enforcement for service traffic \citep{envoydocs2026,istiodocs2026}. Their policies are usually request- or route-oriented. \plangate instead makes the dependent session explicit: a late continuation step has different waste and recovery implications from a new session at step 0.
+
+LLM gateway and router systems such as LiteLLM and Portkey focus on provider normalization, model routing, cost tracking, and OpenAI-compatible proxy behavior \citep{litellmdocs2026}. \plangate addresses a different layer: multi-tool session lifecycle, side-effect safety, and client-cooperative ReAct recovery across backend services.
 
 \subsection{Service Workflows and Runtime Governance}
 
@@ -536,6 +717,41 @@ The evaluation shows that adaptive governance reduces cascade and wasted service
 Anthropic.
 \newblock Model Context Protocol.
 \newblock \url{https://modelcontextprotocol.io/}, 2024.
+
+\bibitem[Apache Airflow(2026)]{airflowdocs2026}
+Apache Airflow.
+\newblock Apache Airflow documentation.
+\newblock \url{https://airflow.apache.org/docs/}, 2026.
+
+\bibitem[Envoy Proxy(2026)]{envoydocs2026}
+Envoy Proxy.
+\newblock Envoy documentation.
+\newblock \url{https://www.envoyproxy.io/docs/}, 2026.
+
+\bibitem[Microsoft AutoGen(2026)]{autogendocs2026}
+Microsoft AutoGen.
+\newblock AutoGen documentation.
+\newblock \url{https://microsoft.github.io/autogen/}, 2026.
+
+\bibitem[Istio(2026)]{istiodocs2026}
+Istio.
+\newblock Istio documentation.
+\newblock \url{https://istio.io/latest/docs/}, 2026.
+
+\bibitem[LangChain(2026)]{langgraphdocs2026}
+LangChain.
+\newblock LangGraph documentation.
+\newblock \url{https://langchain-ai.github.io/langgraph/}, 2026.
+
+\bibitem[LiteLLM(2026)]{litellmdocs2026}
+LiteLLM.
+\newblock LiteLLM documentation.
+\newblock \url{https://docs.litellm.ai/}, 2026.
+
+\bibitem[Temporal Technologies(2026)]{temporaldocs2026}
+Temporal Technologies.
+\newblock Temporal documentation.
+\newblock \url{https://docs.temporal.io/}, 2026.
 
 \bibitem[Chandy and Lamport(1985)]{chandy1985distributed}
 K. M. Chandy and L. Lamport.

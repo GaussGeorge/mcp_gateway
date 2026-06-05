@@ -14,7 +14,6 @@ from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 ARTIFACT_ROOT = REPO_ROOT / "artifact_results"
-OUT_DIR = ARTIFACT_ROOT / "statistical_summary_v2"
 
 SEED_DEFAULT = 20260603
 BOOTSTRAP_ITERS_DEFAULT = 3000
@@ -24,6 +23,9 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Build JSS-oriented statistical summary artifact")
     parser.add_argument("--bootstrap-iters", type=int, default=BOOTSTRAP_ITERS_DEFAULT)
     parser.add_argument("--seed", type=int, default=SEED_DEFAULT)
+    parser.add_argument("--out-dir-name", type=str, default="statistical_summary_v2")
+    parser.add_argument("--include-request-baseline", action="store_true")
+    parser.add_argument("--include-idempotency-baseline", action="store_true")
     return parser.parse_args()
 
 
@@ -583,6 +585,39 @@ def build_claim_rows(
         "Do not claim CloudLab performance dominance or production Redis HA.",
     )
 
+    e = lookup_effect(effect_rows, "request_baseline_vs_adaptive_C100_F0.2", "cascade_failed")
+    w = lookup_effect(effect_rows, "request_baseline_vs_adaptive_C100_F0.2", "wasted_service_ms")
+    r = lookup_effect(effect_rows, "request_baseline_vs_adaptive_C100_F0.2", "rejected_events")
+    if e and w and r:
+        claim(
+            "JSS-C17",
+            "request_level_baseline_v1",
+            "request_level_baseline",
+            "cascade_failed,wasted_service_ms,rejected_events",
+            f"At C=100,F=0.2 request-level queue admission vs adaptive delta cascade={e['delta']} CI[{e['ci95_low_delta']},{e['ci95_high_delta']}], wasted_ms={w['delta']} CI[{w['ci95_low_delta']},{w['ci95_high_delta']}], rejected_events={r['delta']} CI[{r['ci95_low_delta']},{r['ci95_high_delta']}].",
+            "baseline_evidence",
+            "Baseline rejects individual requests and cannot reason about completed session prefixes; rejected_events compare request-level rejects against PlanGate step-0 rejects.",
+            "Use as evidence that ordinary per-request admission does not capture session-prefix waste semantics.",
+            "Do not claim universal PlanGate dominance or direct equivalence between request-level reject counts and session-aware step-0 semantics.",
+        )
+
+    rr = lookup_effect(effect_rows, "recovery_vs_idempotency_only_C20_F0.1", "resume_recovered")
+    ar = lookup_effect(effect_rows, "recovery_vs_idempotency_only_C20_F0.1", "avoided_replay_steps")
+    rp = lookup_effect(effect_rows, "recovery_vs_idempotency_only_C20_F0.1", "replayed_completed_steps")
+    ds = lookup_effect(effect_rows, "recovery_vs_idempotency_only_C20_F0.1", "duplicate_side_effect")
+    if rr and ar and rp and ds:
+        claim(
+            "JSS-C18",
+            "idempotency_only_retry_baseline_v1",
+            "idempotency_only_baseline",
+            "duplicate_side_effect,avoided_replay_steps,resume_recovered,replayed_completed_steps",
+            f"At C=20,F=0.1 recovery vs idempotency-only delta resume_recovered={rr['delta']} CI[{rr['ci95_low_delta']},{rr['ci95_high_delta']}], avoided_replay_steps={ar['delta']} CI[{ar['ci95_low_delta']},{ar['ci95_high_delta']}], replayed_completed_steps={rp['delta']} CI[{rp['ci95_low_delta']},{rp['ci95_high_delta']}], duplicate_side_effect={ds['delta']} CI[{ds['ci95_low_delta']},{ds['ci95_high_delta']}].",
+            "baseline_evidence",
+            "Idempotency-only retry preserves durable-write safety but does not restore checkpoint progress; the comparison is about progress recovery, not universal raw-success ranking.",
+            "Use to distinguish idempotent retry from checkpoint recovery in side-effecting workflows.",
+            "Do not claim idempotency is unnecessary or that recovery universally improves raw workflow success.",
+        )
+
     return claims
 
 
@@ -597,6 +632,7 @@ def main() -> int:
     args = parse_args()
     rng = random.Random(args.seed)
     errors: list[str] = []
+    out_dir = ARTIFACT_ROOT / args.out_dir_name
 
     sources = {
         "business": ("business_workflow_service_v3", "business_workflow_service_v3_run_summary.csv"),
@@ -665,6 +701,13 @@ def main() -> int:
         "mcpbench": ("mcpbench_smoke_v3", "mcpbench_smoke_summary.csv"),
         "burstgpt": ("burstgpt_trace_replay_v3", "burstgpt_trace_replay_summary.csv"),
     }
+    if args.include_request_baseline:
+        sources["request_baseline"] = ("request_level_baseline_v1", "request_level_baseline_summary.csv")
+    if args.include_idempotency_baseline:
+        sources["idempotency_baseline"] = (
+            "idempotency_only_retry_baseline_v1",
+            "idempotency_only_retry_baseline_summary.csv",
+        )
 
     paths = {key: ARTIFACT_ROOT / artifact / filename for key, (artifact, filename) in sources.items()}
     for key, path in paths.items():
@@ -676,15 +719,15 @@ def main() -> int:
         if payload.get("errors"):
             errors.append(f"source_validation_errors:{artifact}:{payload.get('errors')}")
 
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    out_dir.mkdir(parents=True, exist_ok=True)
     if errors:
         validation = {
-            "artifact": "statistical_summary_v2",
+            "artifact": args.out_dir_name,
             "required_jss_sources_present": not any(e.startswith("missing_source") for e in errors),
             "source_validation_errors_empty": not any(e.startswith("source_validation_errors") for e in errors),
             "errors": errors,
         }
-        (OUT_DIR / "validation.json").write_text(json.dumps(validation, ensure_ascii=False, indent=2), encoding="utf-8")
+        (out_dir / "validation.json").write_text(json.dumps(validation, ensure_ascii=False, indent=2), encoding="utf-8")
         return 1
 
     datasets = {key: read_csv(path) for key, path in paths.items()}
@@ -1335,6 +1378,61 @@ def main() -> int:
             True,
         ),
     ]
+    if args.include_request_baseline:
+        stat_specs.append(
+            (
+                "request_level_baseline",
+                "request_level_baseline",
+                "request_level_baseline_v1",
+                "request_level_baseline_summary.csv",
+                datasets["request_baseline"],
+                ["variant", "concurrency", "failure_rate"],
+                [
+                    "success",
+                    "workflow_success_rate",
+                    "admitted_success_rate",
+                    "rejected_s0",
+                    "request_level_rejected",
+                    "cascade_failed",
+                    "wasted_service_ms",
+                    "wasted_tool_calls",
+                    "p95_ms",
+                    "effective_goodput",
+                    "duplicate_side_effect",
+                ],
+                "Request-level queue-admission baseline; ignores session progress, recovery, and continuation value.",
+                False,
+            )
+        )
+    if args.include_idempotency_baseline:
+        stat_specs.append(
+            (
+                "idempotency_only_retry_baseline",
+                "idempotency_only_baseline",
+                "idempotency_only_retry_baseline_v1",
+                "idempotency_only_retry_baseline_summary.csv",
+                datasets["idempotency_baseline"],
+                ["variant", "concurrency", "failure_rate"],
+                [
+                    "success",
+                    "workflow_success_rate",
+                    "cascade_failed",
+                    "partial",
+                    "duplicate_side_effect",
+                    "resume_recovered",
+                    "avoided_replay_steps",
+                    "post_resume_success",
+                    "restart_attempted",
+                    "retry_attempted",
+                    "replayed_completed_steps",
+                    "http_requests_total",
+                    "sqlite_writes_total",
+                    "p95_ms",
+                ],
+                "Idempotency-only retry baseline for HTTP+SQLite workflows; preserves duplicate-side-effect safety but does not restore checkpoint progress.",
+                False,
+            )
+        )
 
     for experiment, role, artifact, source_csv, rows, group_fields, metrics, boundary, force_desc in stat_specs:
         stat_rows.extend(
@@ -1448,6 +1546,92 @@ def main() -> int:
                         metric,
                     ),
                     claim_boundary="Recovery effect; no automatic future-tool execution claim.",
+                    rng=rng,
+                    bootstrap_iters=args.bootstrap_iters,
+                )
+
+    if args.include_request_baseline:
+        for concurrency in ["50", "100"]:
+            for failure_rate in ["0.0", "0.2"]:
+                for comparison, group_b in [
+                    ("request_baseline_vs_adaptive", "plangate_adaptive"),
+                    ("request_baseline_vs_no_capacity", "plangate_no_capacity_step0"),
+                ]:
+                    for metric, metric_a, metric_b in [
+                        ("success", "success", "success"),
+                        ("cascade_failed", "cascade_failed", "cascade_failed"),
+                        ("wasted_service_ms", "wasted_service_ms", "wasted_service_ms"),
+                        ("rejected_events", "request_level_rejected", "rejected_s0"),
+                    ]:
+                        add_effect(
+                            effect_rows,
+                            experiment="request_level_baseline",
+                            evidence_role="request_level_baseline",
+                            source_artifact="request_level_baseline_v1",
+                            comparison=f"{comparison}_C{concurrency}_F{failure_rate}",
+                            metric=metric,
+                            group_a="request_queue_limit",
+                            group_b=group_b,
+                            values_a=filter_values(
+                                datasets["request_baseline"],
+                                {
+                                    "variant": "request_queue_limit",
+                                    "concurrency": concurrency,
+                                    "failure_rate": failure_rate,
+                                },
+                                metric_a,
+                            ),
+                            values_b=filter_values(
+                                datasets["business"],
+                                {"variant": group_b, "concurrency": concurrency, "failure_rate": failure_rate},
+                                metric_b,
+                            ),
+                            claim_boundary="Request-level queue admission baseline; rejection counts compare request-level rejects against PlanGate step-0 rejects.",
+                            rng=rng,
+                            bootstrap_iters=args.bootstrap_iters,
+                        )
+
+    if args.include_idempotency_baseline:
+        for concurrency in ["10", "20"]:
+            for metric in [
+                "resume_recovered",
+                "avoided_replay_steps",
+                "post_resume_success",
+                "duplicate_side_effect",
+                "replayed_completed_steps",
+                "http_requests_total",
+                "sqlite_writes_total",
+                "cascade_failed",
+                "success",
+            ]:
+                add_effect(
+                    effect_rows,
+                    experiment="idempotency_only_retry_baseline",
+                    evidence_role="idempotency_only_baseline",
+                    source_artifact="idempotency_only_retry_baseline_v1",
+                    comparison=f"recovery_vs_idempotency_only_C{concurrency}_F0.1",
+                    metric=metric,
+                    group_a="plangate_adaptive_react_recovery",
+                    group_b="idempotency_only_retry",
+                    values_a=filter_values(
+                        datasets["idempotency_baseline"],
+                        {
+                            "variant": "plangate_adaptive_react_recovery",
+                            "concurrency": concurrency,
+                            "failure_rate": "0.1",
+                        },
+                        metric,
+                    ),
+                    values_b=filter_values(
+                        datasets["idempotency_baseline"],
+                        {
+                            "variant": "idempotency_only_retry",
+                            "concurrency": concurrency,
+                            "failure_rate": "0.1",
+                        },
+                        metric,
+                    ),
+                    claim_boundary="Idempotency-only retry baseline; compare duplicate-side-effect safety with checkpoint-progress recovery, not universal raw-success ranking.",
                     rng=rng,
                     bootstrap_iters=args.bootstrap_iters,
                 )
@@ -1801,9 +1985,9 @@ def main() -> int:
         "not_allowed",
     ]
 
-    write_csv(OUT_DIR / "statistical_summary.csv", stat_rows, stat_fields)
-    write_csv(OUT_DIR / "effect_size_summary.csv", effect_rows, effect_fields)
-    write_csv(OUT_DIR / "claim_summary.csv", claim_rows, claim_fields)
+    write_csv(out_dir / "statistical_summary.csv", stat_rows, stat_fields)
+    write_csv(out_dir / "effect_size_summary.csv", effect_rows, effect_fields)
+    write_csv(out_dir / "claim_summary.csv", claim_rows, claim_fields)
 
     no_nan = True
     for rows in [stat_rows, effect_rows]:
@@ -1817,7 +2001,7 @@ def main() -> int:
     claim_role_counts = Counter(row["evidence_role"] for row in claim_rows)
 
     validation = {
-        "artifact": "statistical_summary_v2",
+        "artifact": args.out_dir_name,
         "generated_from_artifacts": sorted({artifact for artifact, _ in sources.values()}),
         "jss_core_artifacts_included": {
             "business_workflow_service_v3": "business_workflow_service_v3" in source_artifact_counts,
@@ -1854,6 +2038,8 @@ def main() -> int:
             in source_artifact_counts,
             "mcpbench_smoke_v3": "mcpbench_smoke_v3" in source_artifact_counts,
             "burstgpt_trace_replay_v3": "burstgpt_trace_replay_v3" in source_artifact_counts,
+            "request_level_baseline_v1": "request_level_baseline_v1" in source_artifact_counts,
+            "idempotency_only_retry_baseline_v1": "idempotency_only_retry_baseline_v1" in source_artifact_counts,
         },
         "row_count_statistical_summary": len(stat_rows),
         "row_count_effect_size_summary": len(effect_rows),
@@ -1868,11 +2054,11 @@ def main() -> int:
         "no_nan_or_inf": no_nan,
         "errors": [] if no_nan else ["nan_or_inf_detected"],
     }
-    (OUT_DIR / "validation.json").write_text(json.dumps(validation, ensure_ascii=False, indent=2), encoding="utf-8")
+    (out_dir / "validation.json").write_text(json.dumps(validation, ensure_ascii=False, indent=2), encoding="utf-8")
 
     readme = "\n".join(
         [
-            "# JSS Statistical Summary v2",
+            f"# JSS Statistical Summary ({args.out_dir_name})",
             "",
             "This artifact consolidates JSS-oriented PlanGate evidence into one statistical/effect/claim bundle.",
             "It reads existing artifact CSV files only; it does not run new experiments or modify mechanism code.",
@@ -1888,6 +2074,8 @@ def main() -> int:
             "- business_workflow_e2e_perf_sanity_v1",
             "- cloudlab_business_workflow_distributed_v1",
             "- cloudlab_business_workflow_distributed_deterministic_v1",
+            *([] if not args.include_request_baseline else ["- request_level_baseline_v1"]),
+            *([] if not args.include_idempotency_baseline else ["- idempotency_only_retry_baseline_v1"]),
             "",
             "## Included Supporting/Boundary Artifacts",
             "",
@@ -1901,6 +2089,8 @@ def main() -> int:
             "- cloudlab_random_redis_memory_v1",
             "- mcpbench_smoke_v3",
             "- burstgpt_trace_replay_v3",
+            *([] if not args.include_request_baseline else ["- request_level_baseline_v1 (request-level baseline)"]),
+            *([] if not args.include_idempotency_baseline else ["- idempotency_only_retry_baseline_v1 (idempotent retry baseline)"]),
             "",
             "## Claim Boundaries",
             "",
@@ -1912,6 +2102,12 @@ def main() -> int:
             "- Treat business_workflow_e2e_perf_sanity_v1 as sanity/stability evidence, not as real-service performance dominance.",
             "- Prefer cloudlab_business_workflow_distributed_deterministic_v1 for the clean deterministic CloudLab correctness claim.",
             "- Use architecture_component_ablation_v1 as an evidence map, not as a new performance run.",
+            "- Treat request_level_baseline_v1 as a request-level governance baseline that ignores session progress and recovery."
+            if args.include_request_baseline
+            else "",
+            "- Treat idempotency_only_retry_baseline_v1 as a side-effect-safety baseline that preserves idempotency but does not restore checkpoint progress."
+            if args.include_idempotency_baseline
+            else "",
             "",
             "## Outputs",
             "",
@@ -1923,7 +2119,8 @@ def main() -> int:
             "",
         ]
     )
-    (OUT_DIR / "README_RESULT.md").write_text(readme, encoding="utf-8")
+    readme = "\n".join(line for line in readme.splitlines() if line != "")
+    (out_dir / "README_RESULT.md").write_text(readme + "\n", encoding="utf-8")
 
     print(json.dumps(validation, ensure_ascii=False, indent=2))
     return 0

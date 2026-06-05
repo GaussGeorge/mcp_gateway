@@ -1,0 +1,39 @@
+Artifact Availability Statement
+================================
+
+Repository:
+https://github.com/GaussGeorge/mcp_gateway
+
+Current submission branch:
+https://github.com/GaussGeorge/mcp_gateway/tree/jss-submission-artifacts
+
+Recommended archival action before submission:
+1. Create a GitHub release from `jss-submission-artifacts`.
+2. Archive that release in Zenodo.
+3. Replace the branch URL above with the final release URL and Zenodo DOI in the submission metadata and cover letter if available.
+
+Submission-relevant materials:
+- `paper/JSS/main.pdf`
+- `paper/JSS/main.tex`
+- `paper/JSS/highlights.txt`
+- `paper/JSS/figures/*.png`
+- `scripts/validate_jss_artifacts.py`
+- `scripts/build_jss_statistical_summary.py`
+- `scripts/run_request_level_baseline.py`
+- `scripts/run_idempotency_only_retry_baseline.py`
+- `artifact_results/statistical_summary_v4/`
+- `artifact_results/request_level_baseline_v1/`
+- `artifact_results/idempotency_only_retry_baseline_v1/`
+- `artifact_results/business_workflow_e2e_perf_sanity_v1/`
+- `artifact_results/cloudlab_business_workflow_distributed_deterministic_v1/`
+
+Replay scope:
+- Lightweight replay: `python scripts/validate_jss_artifacts.py`
+- Summary rebuild: `python scripts/build_jss_statistical_summary.py --out-dir-name statistical_summary_v4 --include-request-baseline --include-idempotency-baseline`
+- Full reruns requiring external setup:
+  - local vLLM endpoint and model weights
+  - cloud-provider API keys
+  - CloudLab allocation
+
+Interpretation note:
+`statistical_summary_v4` is the canonical JSS evidence package for the current manuscript revision.

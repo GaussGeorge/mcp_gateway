@@ -41,6 +41,23 @@ REQUIRED_ARTIFACTS = {
         "cloudlab_business_workflow_distributed_deterministic_preflight.json",
         "README_RESULT.md",
     ],
+    "request_level_baseline_v1": [
+        "validation.json",
+        "request_level_baseline_summary.csv",
+        "request_level_baseline_agg.csv",
+        "request_level_baseline_effects.csv",
+        "README_RESULT.md",
+    ],
+    "idempotency_only_retry_baseline_v1": [
+        "validation.json",
+        "idempotency_only_retry_baseline_summary.csv",
+        "idempotency_only_retry_baseline_agg.csv",
+        "idempotency_only_retry_baseline_effects.csv",
+        "idempotency_only_retry_baseline_replay_probe.csv",
+        "idempotency_only_retry_baseline_recovery_probe.csv",
+        "idempotency_only_retry_baseline_db_summary.csv",
+        "README_RESULT.md",
+    ],
     "adaptive_step0_react_recovery_full_v1": ["validation.json"],
     "adaptive_react_recovery_mock_smoke_v1": ["validation.json"],
     "adaptive_react_recovery_vllm_smoke_v1": ["validation.json"],
@@ -52,6 +69,20 @@ REQUIRED_ARTIFACTS = {
     "mcpbench_smoke_v3": ["validation.json"],
     "burstgpt_trace_replay_v3": ["validation.json"],
     "statistical_summary_v2": [
+        "validation.json",
+        "statistical_summary.csv",
+        "effect_size_summary.csv",
+        "claim_summary.csv",
+        "README_RESULT.md",
+    ],
+    "statistical_summary_v3": [
+        "validation.json",
+        "statistical_summary.csv",
+        "effect_size_summary.csv",
+        "claim_summary.csv",
+        "README_RESULT.md",
+    ],
+    "statistical_summary_v4": [
         "validation.json",
         "statistical_summary.csv",
         "effect_size_summary.csv",
@@ -216,6 +247,85 @@ def main() -> int:
             errors.append(f"cloudlab_det_replayed_completed_side_effects:{replayed}")
         check_no_nan(rows, "cloudlab_det_recovery", errors)
 
+    req_val = validations.get("request_level_baseline_v1", {})
+    if req_val:
+        required_true = [
+            "parameter_grid_complete",
+            "cell_repeat_counts_complete",
+            "request_level_baseline_present",
+            "session_progress_unavailable_to_baseline",
+            "recovery_disabled_for_baseline",
+            "continuation_value_disabled_for_baseline",
+            "all_client_rc_zero",
+            "all_client_timed_out_zero",
+            "all_error_empty_or_zero",
+            "duplicate_side_effect_zero",
+            "adaptive_comparison_available",
+            "no_capacity_comparison_available",
+        ]
+        for key in required_true:
+            if req_val.get(key) is not True:
+                errors.append(f"request_baseline_validation:{key}={req_val.get(key)}")
+        if int(req_val.get("row_count_summary", 0)) != 20:
+            errors.append(f"request_baseline_row_count_summary:{req_val.get('row_count_summary')}")
+        if int(req_val.get("agg_row_count", 0)) != 4:
+            errors.append(f"request_baseline_agg_row_count:{req_val.get('agg_row_count')}")
+
+    req_summary_path = ARTIFACT_ROOT / "request_level_baseline_v1" / "request_level_baseline_summary.csv"
+    if req_summary_path.exists():
+        req_rows = read_csv(req_summary_path)
+        if len(req_rows) != 20:
+            errors.append(f"request_baseline_summary_csv_rows:{len(req_rows)}")
+        high_load_req = sum(
+            int(float(row.get("request_level_rejected") or 0))
+            for row in req_rows
+            if int(row.get("concurrency", 0)) == 100 and float(row.get("failure_rate", 0)) == 0.2
+        )
+        if high_load_req <= 0:
+            warnings.append("request_level_baseline high-load request_level_rejected is not positive")
+        check_no_nan(req_rows, "request_baseline_summary", errors)
+
+    idem_val = validations.get("idempotency_only_retry_baseline_v1", {})
+    if idem_val:
+        required_true = [
+            "parameter_grid_complete",
+            "cell_repeat_counts_complete",
+            "http_services_started",
+            "mcp_tools_called_http_services",
+            "sqlite_side_effects_present",
+            "sqlite_wal_enabled",
+            "db_integrity_check_passed",
+            "all_client_rc_zero",
+            "all_client_timed_out_zero",
+            "all_unexpected_error_empty_or_zero",
+            "duplicate_side_effect_zero",
+            "idempotency_only_present",
+            "idempotency_only_recovery_disabled",
+            "idempotency_only_resume_recovered_zero",
+            "idempotency_only_avoided_replay_zero",
+            "recovery_variant_present",
+            "recovery_resume_recovered_positive",
+            "recovery_avoided_replay_steps_positive",
+            "recovery_post_resume_success_positive",
+            "db_final_state_consistent",
+            "db_no_duplicate_idempotency_keys",
+            "db_no_duplicate_side_effect_rows",
+        ]
+        for key in required_true:
+            if idem_val.get(key) is not True:
+                errors.append(f"idempotency_baseline_validation:{key}={idem_val.get(key)}")
+        if int(idem_val.get("row_count_summary", 0)) != 12:
+            errors.append(f"idempotency_baseline_row_count_summary:{idem_val.get('row_count_summary')}")
+        if int(idem_val.get("agg_row_count", 0)) != 4:
+            errors.append(f"idempotency_baseline_agg_row_count:{idem_val.get('agg_row_count')}")
+
+    idem_summary_path = ARTIFACT_ROOT / "idempotency_only_retry_baseline_v1" / "idempotency_only_retry_baseline_summary.csv"
+    if idem_summary_path.exists():
+        idem_rows = read_csv(idem_summary_path)
+        if len(idem_rows) != 12:
+            errors.append(f"idempotency_baseline_summary_csv_rows:{len(idem_rows)}")
+        check_no_nan(idem_rows, "idempotency_baseline_summary", errors)
+
     # Statistical summary v2 checks.
     stat_val = validations.get("statistical_summary_v2", {})
     if stat_val:
@@ -230,6 +340,37 @@ def main() -> int:
             errors.append("statistical_summary_source_validation_errors_not_empty")
         if not stat_val.get("no_nan_or_inf", False):
             errors.append("statistical_summary_nan_or_inf")
+
+    stat_v3 = validations.get("statistical_summary_v3", {})
+    if stat_v3:
+        generated = set(stat_v3.get("generated_from_artifacts", []))
+        for artifact in [
+            "request_level_baseline_v1",
+            "business_workflow_e2e_perf_sanity_v1",
+            "cloudlab_business_workflow_distributed_deterministic_v1",
+        ]:
+            if artifact not in generated:
+                errors.append(f"statistical_summary_v3_missing_generated_artifact:{artifact}")
+        if not stat_v3.get("source_validation_errors_empty", False):
+            errors.append("statistical_summary_v3_source_validation_errors_not_empty")
+        if not stat_v3.get("no_nan_or_inf", False):
+            errors.append("statistical_summary_v3_nan_or_inf")
+
+    stat_v4 = validations.get("statistical_summary_v4", {})
+    if stat_v4:
+        generated = set(stat_v4.get("generated_from_artifacts", []))
+        for artifact in [
+            "request_level_baseline_v1",
+            "idempotency_only_retry_baseline_v1",
+            "business_workflow_e2e_perf_sanity_v1",
+            "cloudlab_business_workflow_distributed_deterministic_v1",
+        ]:
+            if artifact not in generated:
+                errors.append(f"statistical_summary_v4_missing_generated_artifact:{artifact}")
+        if not stat_v4.get("source_validation_errors_empty", False):
+            errors.append("statistical_summary_v4_source_validation_errors_not_empty")
+        if not stat_v4.get("no_nan_or_inf", False):
+            errors.append("statistical_summary_v4_nan_or_inf")
 
     claim_path = ARTIFACT_ROOT / "statistical_summary_v2" / "claim_summary.csv"
     if claim_path.exists():
@@ -257,6 +398,34 @@ def main() -> int:
                 errors.append(f"claim_C16_wrong_support:{c16.get('support_level')}")
             if "production Redis HA" not in c16.get("not_allowed", ""):
                 errors.append("claim_C16_missing_ha_boundary")
+
+    claim_v3_path = ARTIFACT_ROOT / "statistical_summary_v3" / "claim_summary.csv"
+    if claim_v3_path.exists():
+        claims = read_csv(claim_v3_path)
+        claim_ids = {row.get("claim_id") for row in claims}
+        claims_by_id = {row.get("claim_id"): row for row in claims}
+        if "JSS-C17" not in claim_ids:
+            errors.append("missing_claim:JSS-C17")
+        c17 = claims_by_id.get("JSS-C17", {})
+        if c17:
+            if c17.get("source_artifact") != "request_level_baseline_v1":
+                errors.append(f"claim_C17_wrong_source:{c17.get('source_artifact')}")
+            if "session prefix waste" not in c17.get("allowed_use", "") and "session-prefix waste" not in c17.get("allowed_use", ""):
+                errors.append("claim_C17_missing_allowed_use_boundary")
+
+    claim_v4_path = ARTIFACT_ROOT / "statistical_summary_v4" / "claim_summary.csv"
+    if claim_v4_path.exists():
+        claims = read_csv(claim_v4_path)
+        claim_ids = {row.get("claim_id") for row in claims}
+        claims_by_id = {row.get("claim_id"): row for row in claims}
+        if "JSS-C18" not in claim_ids:
+            errors.append("missing_claim:JSS-C18")
+        c18 = claims_by_id.get("JSS-C18", {})
+        if c18:
+            if c18.get("source_artifact") != "idempotency_only_retry_baseline_v1":
+                errors.append(f"claim_C18_wrong_source:{c18.get('source_artifact')}")
+            if "idempotent retry" not in c18.get("allowed_use", "").lower() or "checkpoint recovery" not in c18.get("allowed_use", "").lower():
+                errors.append("claim_C18_missing_allowed_use_boundary")
 
     for artifact in ["business_workflow_e2e_perf_sanity_v1", "cloudlab_business_workflow_distributed_deterministic_v1"]:
         artifact_dir = ARTIFACT_ROOT / artifact
